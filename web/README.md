@@ -60,18 +60,18 @@ proxy.ts                     Clerk: which routes need sign-in
 
 ## Where the explanations come from
 
-AVOCO returns scores only: every result item is `{id, name, value}`. There is no explanation, reason or
-recommendation in the API, and no endpoint that serves one (checked 2026-09-21; Voxera's own Telegram bot
-builds its report text on its own backend the same way). So the interpretation layer lives here:
+The AVOCO API returns scores only: every result item is `{id, name, value}`. There is no explanation text in
+the API and no endpoint that serves one (checked 2026-09-21). The report's content therefore lives in this app:
 
-- `lib/i18n/deep-en.ts`, `deep-ru.ts`: for each of the 8 types, the essence, strengths, watch-outs, how to talk
-  with the type and where it shines; for each of the 14 scales, what it reflects and a reading for a high
-  (60+), moderate (35 to 59) and low score; the text for each zone; and the "How this analysis works" section.
-- `lib/report.ts` picks the text that matches the person's actual score and writes the summary lines.
+| File | What it holds | Source |
+|---|---|---|
+| `lib/i18n/types-en.ts`, `types-ru.ts` | The official description of all 8 types, and the full official report per type: mindset, role in the team, motivation, resources, communication, behaviour under stress, relationships, compatibility | AVOCO's original report ("Vocal Psychotyping System"). Russian translated here from the English |
+| `lib/i18n/deep-en.ts`, `deep-ru.ts` | Zone texts, a short reading per type (strengths, watch-outs, how to talk, where it fits), readings of the 14 emotional scales at high (60+), moderate (35 to 59) and low, and "How this analysis works" | Written for this app. The type readings are drawn from AVOCO's descriptions; the method section from Voxera's published description of the engine: https://rikatv.kz/evrika/aktsii/voxera.html |
+| `lib/report.ts` | Picks the content for each score and assembles the panel behind every row | |
 
-The method section is based on Voxera's published description of the engine (voice features, ML ensemble,
-70 to 90 percent accuracy in their internal studies with 3,000+ respondents):
-https://rikatv.kz/evrika/aktsii/voxera.html. The type and scale texts were written for this app from the
-scale names. Replace them with AVOCO's official descriptions if they provide them.
+**Only the Catalyst has its full official report so far.** The other seven types show AVOCO's official
+description plus the short reading, with a note saying the full report isn't added yet. To add one, give the
+type a `full` object in `types-en.ts` and `types-ru.ts`, in the same shape as `catalyst.full`. Nothing else
+needs to change: the page and the PDF pick it up.
 
 AVOCO does not say which voice features produced an individual score, so the report never claims to.
