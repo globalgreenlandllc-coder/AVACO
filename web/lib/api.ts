@@ -1,0 +1,23 @@
+import "server-only";
+import { auth } from "@clerk/nextjs/server";
+import { GatewayError } from "./gateway";
+
+export const json = (body: unknown, status = 200) => Response.json(body, { status });
+
+/** The signed-in user's id, or a 401 response. */
+export async function requireUser(): Promise<{ userId: string } | { denied: Response }> {
+  const { userId } = await auth();
+  return userId ? { userId } : { denied: json({ error: "unauthorized", message: "Sign in first" }, 401) };
+}
+
+/** Passes the gateway's error code and status through; anything else is a plain 500. */
+export function errorResponse(err: unknown): Response {
+  if (err instanceof GatewayError) {
+    if (err.status >= 500) console.error("Gateway error", err.status, err.code, err.message);
+    // A gateway 401 means OUR key is wrong, which is not the visitor's problem to fix.
+    const status = err.status === 401 ? 502 : err.status;
+    return json({ error: status === 502 ? "upstream_error" : err.code, message: status === 502 ? "Service unavailable" : err.message }, status);
+  }
+  console.error(err);
+  return json({ error: "internal_error", message: "Unexpected error" }, 500);
+}

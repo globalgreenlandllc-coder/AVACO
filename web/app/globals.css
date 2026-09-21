@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/* Tokens. Bars use one teal hue in three steps (leading, active, background), validated for both surfaces. */
+:root {
+  --bg: #f7f4ee;
+  --surface: #fffdf9;
+  --ink: #1c2321;
+  --ink-2: #4b5652;
+  --muted: #737d78;
+  --line: #e4dfd4;
+  --accent: #1f5f5b;
+  --accent-ink: #ffffff;
+  --bar-leading: #1f5f5b;
+  --bar-active: #55948d;
+  --bar-background: #93bab4;
+  --track: #ece7dc;
+  --danger: #a3372c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111413;
+    --surface: #181c1b;
+    --ink: #eef0ec;
+    --ink-2: #b6beb9;
+    --muted: #8a938e;
+    --line: #2a302e;
+    --accent: #6cc2b7;
+    --accent-ink: #0d1312;
+    --bar-leading: #6cc2b7;
+    --bar-active: #3f8a81;
+    --bar-background: #2b5d57;
+    --track: #222827;
+    --danger: #e0786c;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-track: var(--track);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
+}
+
+html { background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+body { min-height: 100dvh; font-family: var(--font-sans); }
+::selection { background: color-mix(in oklab, var(--accent) 25%, transparent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  border-radius: 999px; padding: 0.8rem 1.6rem; font-weight: 600; font-size: 0.95rem;
+  background: var(--accent); color: var(--accent-ink); transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-quiet { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-quiet:hover:not(:disabled) { border-color: var(--ink-2); }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover:not(:disabled) { border-color: var(--danger); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+@keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.18); opacity: 0.15; } }
+.breathe { animation: breathe 2.4s ease-in-out infinite; }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.bar-fill { transform-origin: left; animation: grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .breathe, .bar-fill { animation: none; } }
+
+@media print {
+  :root { --bg: #fff; --surface: #fff; --ink: #111; --ink-2: #333; --muted: #555; --line: #ddd; --track: #eee;
+          --bar-leading: #1f5f5b; --bar-active: #55948d; --bar-background: #93bab4; }
+  .no-print { display: none !important; }
+  .btn-danger { color: var(--danger); }
+.btn-danger:hover:not(:disabled) { border-color: var(--danger); }
+.card { border-color: #ddd; break-inside: avoid; }
+  .bar-fill { animation: none; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

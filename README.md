@@ -2,6 +2,9 @@
 
 - backend-api/  — Your own API (deploy to Vercel). Your platform calls this with a permanent API key.
                   See backend-api/README.md for endpoints, environment variables and deploy steps.
+- web/          — The platform people use (deploy to Vercel as a second project): sign in, record your voice,
+                  get the report. English + Russian. Calls backend-api with the API key, server-side only.
+                  See web/README.md.
 - test-tool/    — Command-line test script that calls AVOCO directly from your Mac.
                   Useful for quickly checking a recording: npm install, create .env, npm run example -- file.m4a
 
