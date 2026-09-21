@@ -40,6 +40,31 @@ Scripts: `npm run dev`, `npm run build`, `npm run typecheck`, `npm test`.
 
 A second Vercel project from the same repository, with **Root Directory = `web`**, and the variables above.
 
+## For companies
+
+A company gets a **workspace** (`/w`): members with roles (admin, manager, viewer), **groups** (a vacancy, a class,
+a team) and an **industry preset** (`lib/presets.ts`) that changes the wording, the "in focus" box on a person's
+report, and the safeguards. Company data lives in this app's own tables (`lib/db/schema.ts`, migrations in
+`drizzle/`, log table `__drizzle_migrations_web`) in the same Neon database as the gateway. Analyses stay in the
+gateway, filed under `g:<groupId>`.
+
+Four ways a recording comes in:
+
+| Way | Where | Notes |
+|---|---|---|
+| Personal invite | `/r/<token>` | No account. The person records, always sees their own report there, and can erase it |
+| One link for a group | `/s/<openToken>` | The visitor types their name, then continues at their own `/r/<token>` |
+| Station mode | `/s/<openToken>?station=1` | A tablet on site. After each recording: a QR code to the person's report, then "next person" |
+| Upload / API | group page, `/api/public/v1/analyses` | Existing files (left or right channel of a stereo call can be chosen), or the company's own software. API docs: `/docs/api` |
+
+Rules built into `lib/workspaces.ts` (every function checks membership first; tests in `tests/workspaces.test.ts`):
+consent is required and names the company; a non-member gets 404 for everything; the person can erase their data,
+which removes it for the company too; the API key is shown once and only its hash is stored; a monthly limit per
+workspace (`REPORTS_PER_MONTH_LIMIT`, default 200) guards open links and is the hook for billing.
+
+Extra environment variable: `DATABASE_URL` (the same Neon database as the gateway). Run `npm run db:migrate` after
+pulling new migrations.
+
 ## Where things are
 
 ```
