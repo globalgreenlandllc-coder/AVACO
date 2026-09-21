@@ -12,6 +12,7 @@ const rank = (key: string) => (ORDER.includes(key) ? ORDER.indexOf(key) : ORDER.
 /**
  * The eight type scores as one shape, drawn for the dark cover. It gives the profile at a glance;
  * the bars further down carry the exact reading, so this needs no table of its own.
+ * The data attributes let the downloaded copy's script (lib/export.ts) repeat the hover.
  */
 export function Radar({ rows, help }: { rows: ScaleRow[]; help: string }) {
   const [active, setActive] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export function Radar({ rows, help }: { rows: ScaleRow[]; help: string }) {
           const ly = label.y + label.sin * 14 + (label.sin > 0.3 ? 10 : label.sin < -0.3 ? -12 : 0);
           const on = active === row.key;
           return (
-            <g key={row.key} tabIndex={0} className="cursor-default outline-none" onMouseEnter={() => setActive(row.key)} onMouseLeave={() => setActive(null)} onFocus={() => setActive(row.key)} onBlur={() => setActive(null)}>
+            <g key={row.key} tabIndex={0} data-radar-point={`${row.name} · ${row.value}`} data-radar-tag={row.tag ?? ""} data-radar-leading={row.zone === "leading" ? "" : undefined} className="cursor-default outline-none" onMouseEnter={() => setActive(row.key)} onMouseLeave={() => setActive(null)} onFocus={() => setActive(row.key)} onBlur={() => setActive(null)}>
               <circle cx={at.x} cy={at.y} r="18" fill="transparent" />
               <circle className="radar-dot" style={{ animationDelay: `${1.1 + i * 0.06}s` }} cx={at.x} cy={at.y} r={on ? 7 : 4.5} fill="var(--cover-gold)" stroke="var(--cover-bg)" strokeWidth="2" />
               <text x={lx} y={ly} textAnchor={anchor} fontSize="13" fontWeight={on || row.zone === "leading" ? 700 : 500} fill={on || row.zone === "leading" ? "var(--cover-ink)" : "var(--cover-muted)"}>{row.name}</text>
@@ -65,7 +66,11 @@ export function Radar({ rows, help }: { rows: ScaleRow[]; help: string }) {
         })}
       </svg>
       <figcaption className="mt-1 min-h-10 text-center text-xs leading-relaxed" style={{ color: "var(--cover-muted)" }} aria-live="polite">
-        {hovered ? <><span className="font-semibold" style={{ color: "var(--cover-ink)" }}>{hovered.name} · {hovered.value}</span>{hovered.tag ? ` · ${hovered.tag}` : ""}</> : help}
+        <span data-radar-help className={hovered ? "hidden" : ""}>{help}</span>
+        <span data-radar-active className={hovered ? "" : "hidden"}>
+          <span data-radar-name className="font-semibold" style={{ color: "var(--cover-ink)" }}>{hovered ? `${hovered.name} · ${hovered.value}` : ""}</span>
+          <span data-radar-zone>{hovered?.tag ? ` · ${hovered.tag}` : ""}</span>
+        </span>
       </figcaption>
     </figure>
   );

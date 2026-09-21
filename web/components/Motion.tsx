@@ -42,7 +42,7 @@ export function CountUp({ value, duration = 1400 }: { value: number; duration?: 
 
   return (
     <>
-      <span aria-hidden className="print:hidden">{shown.toFixed(decimals)}</span>
+      <span aria-hidden data-countup={value} className="print:hidden">{shown.toFixed(decimals)}</span>
       <span className="sr-only print:not-sr-only">{value}</span>
     </>
   );

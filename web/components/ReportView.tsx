@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { buildReportFile, saveFile } from "@/lib/export";
 import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
 import { Bars } from "./Bars";
 import { CountUp, Reveal } from "./Motion";
@@ -43,6 +44,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const article = useRef<HTMLElement>(null);
   const r = t.report;
   const poll = pollUrl ?? `/api/analyses/${initial.id}`;
   const del = deleteUrl === undefined ? `/api/analyses/${initial.id}` : deleteUrl;
@@ -67,6 +70,18 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       router.refresh();
     } else {
       setDeleting(false);
+    }
+  }
+
+  /** Saves the report as it looks here: one HTML file, with its design, fonts and working chapters. */
+  async function download() {
+    if (!article.current) return;
+    setSaving(true);
+    try {
+      const file = await buildReportFile(article.current, `${t.brand} · ${t.report.title} · ${recordedOn}`);
+      saveFile(file, `avoco-report-${report.created_at.slice(0, 10)}.html`);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -125,8 +140,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   const podium = fits.slice(0, 3);
 
   return (
-    <article className="space-y-10">
-      {backLink && <Link href={backLink.href} className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
+    <article ref={article} className="space-y-10">
+      {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
       {top && (
         <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">
@@ -270,9 +285,13 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
       <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.disclaimer}</p>
 
-      <div className="no-print flex flex-wrap gap-3">
-        <button type="button" className="btn" onClick={() => window.print()}>{r.print}</button>
-        {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
+      <div data-no-export className="no-print">
+        <div className="flex flex-wrap gap-3">
+          <button type="button" className="btn" onClick={download} disabled={saving}>{saving ? r.downloading : r.download}</button>
+          <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>
+          {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
+        </div>
+        <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadHelp}</p>
       </div>
     </article>
   );

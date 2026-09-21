@@ -98,55 +98,51 @@ function ChapterBody({ chapter }: { chapter: Chapter }) {
 /**
  * The full reading of the types that lead a profile. On screen: one type and one chapter at a time, picked
  * with pills. In print every chapter of every type follows in order, as in AVOCO's original report.
+ * Every chapter is always in the page and only hidden, and the data attributes name the parts, so the
+ * downloaded copy of the report (lib/export.ts) can switch chapters with its own small script.
  */
 export function Profile({ rows, opening }: { rows: ScaleRow[]; opening: string }) {
   const [typeKey, setTypeKey] = useState(rows[0]?.key);
   const [chapterIndex, setChapterIndex] = useState(0);
   const current = rows.find((row) => row.key === typeKey) ?? rows[0];
   if (!current) return null;
-  const chapters = chaptersOf(current.details, opening);
-  const chapter = chapters[Math.min(chapterIndex, chapters.length - 1)];
 
   return (
-    <div>
-      <div className="no-print">
-        {rows.length > 1 && (
-          <div className="mb-5 flex flex-wrap gap-2" role="tablist">
-            {rows.map((row) => (
-              <button key={row.key} type="button" role="tab" aria-selected={row.key === current.key} className={`pill font-display !text-xl ${row.key === current.key ? "pill-on" : "pill-off"}`} onClick={() => { setTypeKey(row.key); setChapterIndex(0); }}>{row.name}</button>
-            ))}
-          </div>
-        )}
-        {chapters.length > 1 && (
-          <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-3 sm:flex-wrap sm:overflow-visible" role="tablist">
-            {chapters.map((c, i) => (
-              <button key={c.title} type="button" role="tab" aria-selected={c === chapter} className={`pill ${c === chapter ? "pill-on" : "pill-off"}`} onClick={() => setChapterIndex(i)}>
-                <span className="mr-2 tabular-nums opacity-60">{String(i + 1).padStart(2, "0")}</span>{c.title}
-              </button>
-            ))}
-          </div>
-        )}
-        {chapter && (
-          <div key={`${current.key}/${chapter.title}`} className="rise mt-6">
-            <h3 className="mb-6 font-display text-3xl font-medium sm:text-4xl">{chapter.title}</h3>
-            <ChapterBody chapter={chapter} />
-          </div>
-        )}
-      </div>
+    <div data-profile>
+      {rows.length > 1 && (
+        <div className="no-print mb-5 flex flex-wrap gap-2" role="tablist">
+          {rows.map((row) => (
+            <button key={row.key} type="button" role="tab" data-type-tab={row.key} aria-selected={row.key === current.key} className={`pill font-display !text-xl ${row.key === current.key ? "pill-on" : "pill-off"}`} onClick={() => { setTypeKey(row.key); setChapterIndex(0); }}>{row.name}</button>
+          ))}
+        </div>
+      )}
 
-      <div className="hidden print:block">
-        {rows.map((row) => (
-          <div key={row.key}>
-            {rows.length > 1 && <h3 className="mb-2 mt-8 font-display text-4xl font-medium text-accent-text">{row.name}</h3>}
-            {chaptersOf(row.details, opening).map((c, i) => (
-              <div key={c.title} className="mt-8">
-                <h4 className="mb-5 break-after-avoid font-display text-2xl font-medium"><span className="mr-3 text-accent-text">{String(i + 1).padStart(2, "0")}</span>{c.title}</h4>
+      {rows.map((row) => {
+        const chapters = chaptersOf(row.details, opening);
+        const shown = row === current ? Math.min(chapterIndex, chapters.length - 1) : 0;
+        return (
+          <div key={row.key} data-type-panel={row.key} className={`print:block ${row === current ? "" : "hidden"}`}>
+            {rows.length > 1 && <h3 className="mb-2 mt-8 hidden font-display text-4xl font-medium text-accent-text print:block">{row.name}</h3>}
+            {chapters.length > 1 && (
+              <div className="no-print -mx-2 flex gap-2 overflow-x-auto px-2 pb-3 sm:flex-wrap sm:overflow-visible" role="tablist">
+                {chapters.map((c, i) => (
+                  <button key={c.title} type="button" role="tab" data-chapter-tab={i} aria-selected={i === shown} className={`pill ${i === shown ? "pill-on" : "pill-off"}`} onClick={() => setChapterIndex(i)}>
+                    <span className="mr-2 tabular-nums opacity-60">{String(i + 1).padStart(2, "0")}</span>{c.title}
+                  </button>
+                ))}
+              </div>
+            )}
+            {chapters.map((c, i) => (
+              <div key={c.title} data-chapter-panel={i} className={`rise mt-6 print:mt-8 print:block ${i === shown ? "" : "hidden"}`}>
+                <h3 className="mb-6 break-after-avoid font-display text-3xl font-medium sm:text-4xl print:mb-5 print:text-2xl">
+                  <span className="mr-3 hidden text-accent-text print:inline">{String(i + 1).padStart(2, "0")}</span>{c.title}
+                </h3>
                 <ChapterBody chapter={c} />
               </div>
             ))}
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
