@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
-import { emostateRows, failureKind, leadingTypes, psytypeRows } from "@/lib/report";
+import { emostateRows, failureKind, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
 import { Bars } from "./Bars";
 
 export interface Report {
@@ -93,6 +93,8 @@ export function ReportView({ initial, recordedOn, t }: { initial: Report; record
   const emo = emostateRows(report.emostate ?? [], t);
   const leaders = leadingTypes(psy);
   const top = psy[0];
+  const summary = summaryLines(psy, emo, t);
+  const { ui, method } = t.deep;
 
   return (
     <article className="space-y-8">
@@ -126,11 +128,18 @@ export function ReportView({ initial, recordedOn, t }: { initial: Report; record
         </section>
       )}
 
+      {summary.length > 0 && (
+        <section className="border-l-2 border-accent pl-6">
+          <p className="eyebrow">{ui.summaryTitle}</p>
+          <div className="mt-3 space-y-1.5 leading-relaxed text-ink-2">{summary.map((line) => <p key={line}>{line}</p>)}</div>
+        </section>
+      )}
+
       {psy.length > 0 && (
         <section className="card p-8 sm:p-12">
           <h2 className="font-display text-3xl font-medium">{r.psyTitle}</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{r.psyLead}</p>
-          <div className="mt-8"><Bars rows={psy} zoneLabels={r.zones} markers /></div>
+          <div className="mt-8"><Bars rows={psy} markers expandLabel={ui.expand} defaultOpen={top?.key} /></div>
           <p className="mt-6 text-xs text-muted">{r.zoneHelp}</p>
         </section>
       )}
@@ -144,11 +153,29 @@ export function ReportView({ initial, recordedOn, t }: { initial: Report; record
             <Highlight title={r.weakest} names={emo.slice(-3).reverse().map((s) => s.name)} />
           </div>
           <div className="mt-8 grid gap-x-12 sm:grid-cols-2">
-            <Bars rows={emo.slice(0, Math.ceil(emo.length / 2))} />
-            <Bars rows={emo.slice(Math.ceil(emo.length / 2))} />
+            <Bars rows={emo.slice(0, Math.ceil(emo.length / 2))} expandLabel={ui.expand} />
+            <Bars rows={emo.slice(Math.ceil(emo.length / 2))} expandLabel={ui.expand} />
           </div>
         </section>
       )}
+
+      <section className="card p-8 sm:p-12">
+        <h2 className="font-display text-3xl font-medium">{method.title}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{method.lead}</p>
+        <div className="mt-8 grid gap-x-12 gap-y-8 sm:grid-cols-2">
+          {method.sections.map((section) => (
+            <div key={section.title}>
+              <h3 className="font-semibold">{section.title}</h3>
+              {"text" in section && section.text && <p className="mt-2 text-sm leading-relaxed text-ink-2">{section.text}</p>}
+              {"items" in section && section.items && (
+                <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-ink-2">
+                  {section.items.map((item) => <li key={item} className="flex gap-2"><span className="text-accent" aria-hidden>·</span><span>{item}</span></li>)}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.disclaimer}</p>
 

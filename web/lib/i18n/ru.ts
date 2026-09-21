@@ -1,3 +1,4 @@
+import { deepRu } from "./deep-ru";
 import type { Dict } from "./en";
 
 export const ru: Dict = {
@@ -114,4 +115,5 @@ export const ru: Dict = {
   },
   footer: "Анализ голоса AVOCO. Не является медицинским или психологическим диагнозом.",
   language: "Язык",
+  deep: deepRu,
 };

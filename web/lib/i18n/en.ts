@@ -1,3 +1,4 @@
+import { deepEn } from "./deep-en";
 export const en = {
   brand: "AVOCO",
   nav: { record: "New recording", reports: "My reports", signIn: "Sign in", start: "Get started" },
@@ -112,6 +113,7 @@ export const en = {
   },
   footer: "Voice analysis by AVOCO. Not a medical or psychological diagnosis.",
   language: "Language",
+  deep: deepEn,
 };
 
 type Widen<T> = T extends string ? string : T extends readonly (infer U)[] ? Widen<U>[] : { [K in keyof T]: Widen<T[K]> };

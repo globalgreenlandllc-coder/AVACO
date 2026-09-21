@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import { en } from "@/lib/i18n/en";
 import { ru } from "@/lib/i18n/ru";
-import { emostateRows, failureKind, leadingTypes, psytypeRows } from "@/lib/report";
+import { bandOf, emostateRows, failureKind, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
 import { encodeWav } from "@/lib/wav";
 
 describe("report rows", () => {
@@ -20,13 +20,60 @@ describe("report rows", () => {
   });
 
   it("shows an unknown scale under the gateway's label, without a description", () => {
-    expect(psytypeRows(psy, ru)[2]).toEqual({ key: "brand_new_type", name: "brand_new_type", text: null, value: 12, zone: "background" });
+    expect(psytypeRows(psy, ru)[2]).toEqual({ key: "brand_new_type", name: "brand_new_type", text: null, value: 12, zone: "background", tag: "Фоновый", details: [] });
     expect(emostateRows([{ key: "constructor", label: "constructor", value: 1 }], en)[0].name).toBe("constructor");
   });
 
   it("finds leading types, and none for a balanced profile", () => {
     expect(leadingTypes(psytypeRows(psy, en)).map((r) => r.key)).toEqual(["driver"]);
     expect(leadingTypes(psytypeRows(psy.slice(1), en))).toEqual([]);
+  });
+});
+
+describe("explanations", () => {
+  const psy = [
+    { key: "organizer", label: "Organizer", value: 88.6, zone: "leading" as const },
+    { key: "catalyst", label: "Catalyst", value: 45, zone: "active" as const },
+    { key: "skeptic", label: "Skeptic", value: 8, zone: "background" as const },
+  ];
+  const emo = [["expressivity", 73], ["emo_engage", 71], ["authority", 68], ["energy_level", 50], ["person_harmonicity", 27], ["self_control", 12]]
+    .map(([key, value]) => ({ key: key as string, label: key as string, value: value as number }));
+
+  it("explains a type relative to the person's own score and zone", () => {
+    const [organizer, catalyst, skeptic] = psytypeRows(psy, en);
+    expect(organizer.details[0].text).toContain("88.6");
+    expect(organizer.details[0].text).toContain("leading zone");
+    expect(catalyst.details[0].text).toContain("active zone");
+    expect(skeptic.details[0].text).toContain("background zone");
+    expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "The type in brief", "Strengths", "Worth watching", "How to talk with this type", "Where it shines"]);
+    expect(organizer.details[2].items).toHaveLength(3);
+  });
+
+  it("reads an emotional scale by band: high from 60, moderate from 35, low below", () => {
+    expect([100, 60, 59.9, 35, 34.9, 0].map(bandOf)).toEqual(["high", "high", "mid", "mid", "low", "low"]);
+    const rows = emostateRows(emo, en);
+    expect(rows[0]).toMatchObject({ tag: "High" });
+    expect(rows[0].details[0].text).toBe(en.deep.emostate.expressivity.high);
+    expect(rows[3].details[0].text).toBe(en.deep.emostate.energy_level.mid);
+    expect(rows[5].details[0].text).toBe(en.deep.emostate.self_control.low);
+    expect(rows[5].details[0].title).toBe("What your score means: low (12)");
+  });
+
+  it("writes the summary from the scores alone", () => {
+    expect(summaryLines(psytypeRows(psy, en), emostateRows(emo, en), en)).toEqual([
+      "Leading: Organizer (88.6).",
+      "Active alongside: Catalyst (45).",
+      "Most expressed right now: Expressiveness (73), Inspiration (71), Dominance (68).",
+      "Least expressed right now: Self-control (12), Composure (27), Cheerfulness (50).",
+    ]);
+    expect(summaryLines(psytypeRows(psy.slice(2), ru), [], ru)).toEqual(["Ни один тип не достигает ведущей зоны. Сильнее всего выражены: Скептик (8)."]);
+  });
+
+  it("has a full explanation for every AVOCO type and scale, in both languages", () => {
+    for (const dict of [en, ru]) {
+      expect(Object.keys(dict.deep.psytypes).sort()).toEqual(Object.keys(dict.psytypes).sort());
+      expect(Object.keys(dict.deep.emostate).sort()).toEqual(Object.keys(dict.emostate).sort());
+    }
   });
 });
 

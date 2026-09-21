@@ -58,5 +58,20 @@ lib/i18n/                    en.ts and ru.ts (every screen and every scale descr
 proxy.ts                     Clerk: which routes need sign-in
 ```
 
-The descriptions of the eight personality types and fourteen emotional scales in `lib/i18n` were written for
-this app from the scale names. Replace them with AVOCO's official descriptions when you have them.
+## Where the explanations come from
+
+AVOCO returns scores only: every result item is `{id, name, value}`. There is no explanation, reason or
+recommendation in the API, and no endpoint that serves one (checked 2026-09-21; Voxera's own Telegram bot
+builds its report text on its own backend the same way). So the interpretation layer lives here:
+
+- `lib/i18n/deep-en.ts`, `deep-ru.ts`: for each of the 8 types, the essence, strengths, watch-outs, how to talk
+  with the type and where it shines; for each of the 14 scales, what it reflects and a reading for a high
+  (60+), moderate (35 to 59) and low score; the text for each zone; and the "How this analysis works" section.
+- `lib/report.ts` picks the text that matches the person's actual score and writes the summary lines.
+
+The method section is based on Voxera's published description of the engine (voice features, ML ensemble,
+70 to 90 percent accuracy in their internal studies with 3,000+ respondents):
+https://rikatv.kz/evrika/aktsii/voxera.html. The type and scale texts were written for this app from the
+scale names. Replace them with AVOCO's official descriptions if they provide them.
+
+AVOCO does not say which voice features produced an individual score, so the report never claims to.
