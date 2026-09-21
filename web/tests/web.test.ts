@@ -45,8 +45,46 @@ describe("explanations", () => {
     expect(organizer.details[0].text).toContain("leading zone");
     expect(catalyst.details[0].text).toContain("active zone");
     expect(skeptic.details[0].text).toContain("background zone");
-    expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "The type in brief", "Strengths", "Worth watching", "How to talk with this type", "Where it shines"]);
-    expect(organizer.details[2].items).toHaveLength(3);
+  });
+
+  it("gives every type AVOCO's official description", () => {
+    const all = Object.keys(en.psytypes).map((key) => ({ key, label: key, value: 40, zone: "active" as const }));
+    for (const dict of [en, ru]) {
+      for (const row of psytypeRows(all, dict)) {
+        expect(row.details[1].title).toBe(dict.types.ui.overview);
+        expect(row.details[1].text!.length).toBeGreaterThan(400);
+      }
+    }
+    // The three my first draft got wrong, now as AVOCO defines them.
+    expect(en.types.profiles.mediator.overview).toContain("rich inner world");
+    expect(en.types.profiles.skeptic.overview).toContain("self-criticism");
+    expect(en.types.profiles.analyst.overview).toContain("original thinking");
+  });
+
+  it("shows the full original report for a type that has one, chapter by chapter", () => {
+    const catalyst = psytypeRows(psy, en)[1];
+    const chapters = [...new Set(catalyst.details.map((d) => d.group).filter(Boolean))];
+    expect(chapters).toEqual(["Role in the team", "Motivation and psychological need", "Attitude toward resources", "Communication type", "Behaviour under stress", "Relationships", "Compatibility"]);
+
+    const section = (title: string) => catalyst.details.find((d) => d.title === title)!;
+    expect(section("Key strengths").items).toHaveLength(13);
+    expect(section("Risks").items).toHaveLength(6);
+    expect(section("Their vocabulary").chips).toHaveLength(16);
+    expect(section("What they want to hear").chips).toHaveLength(8);
+    expect(section("Second stage of stress").quote).toBe("Pattern: I would have done it better, but I'm surrounded by incompetents");
+    expect(section("Compatibility").ratings).toEqual(expect.arrayContaining([
+      { name: "Organizer", score: 2, label: "2 of 5", note: "structure interferes" },
+      { name: "Harmonizer", score: 5, label: "5 of 5", note: "support each other" },
+    ]));
+    expect(section("Compatibility").ratings).toHaveLength(8);
+    expect(psytypeRows(psy, ru)[1].details).toHaveLength(catalyst.details.length);
+  });
+
+  it("falls back to a short reading, and says so, for a type without its full report yet", () => {
+    const organizer = psytypeRows(psy, en)[0];
+    expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "About this type", "Strengths", "Worth watching", "How to talk with this type", "Where it shines"]);
+    expect(organizer.details.at(-1)!.note).toBe(en.types.ui.partialNote);
+    expect(organizer.details.some((d) => d.group)).toBe(false);
   });
 
   it("reads an emotional scale by band: high from 60, moderate from 35, low below", () => {

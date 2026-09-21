@@ -1,3 +1,4 @@
+import { typesEn } from "./types-en";
 import { deepEn } from "./deep-en";
 export const en = {
   brand: "AVOCO",
@@ -86,14 +87,14 @@ export const en = {
     back: "All reports",
   },
   psytypes: {
-    organizer: { name: "Organizer", text: "Brings structure. Plans ahead, keeps commitments and turns a vague goal into clear steps." },
-    driver: { name: "Driver", text: "Pushes for results. Decides quickly, takes charge and is comfortable with pressure and competition." },
-    catalyst: { name: "Catalyst", text: "Sparks change. Generates ideas, energises people and gets things moving when they are stuck." },
-    performer: { name: "Performer", text: "Expressive and engaging. Enjoys attention, communicates vividly and brings ideas to life for others." },
-    harmonizer: { name: "Harmonizer", text: "Looks after the relationships. Attentive, warm and good at keeping a group working well together." },
-    analyst: { name: "Analyst", text: "Thinks before acting. Looks for facts and logic, notices details and values being accurate." },
-    skeptic: { name: "Skeptic", text: "Questions and tests. Spots risks and weak arguments early, and doesn't accept claims at face value." },
-    mediator: { name: "Mediator", text: "Finds common ground. Listens to every side, stays even-handed and helps people reach agreement." },
+    organizer: { name: "Organizer", text: "Confident, decisive and stress-resistant. Values order, clear rules and an internal code; builds systems, plans time and allocates resources." },
+    driver: { name: "Driver", text: "Passionate and goal-oriented. Takes responsibility and risk, lives by a super-goal, leads people and knows how to handle power." },
+    catalyst: { name: "Catalyst", text: "Energetic, quick and sociable. Switches tasks easily, makes useful connections and values speed; life is a game and humour the main weapon." },
+    performer: { name: "Performer", text: "The most vibrant energy. Charms from the first minutes, creates an atmosphere of celebration and enjoys working with public attention." },
+    harmonizer: { name: "Harmonizer", text: "Highly sensitive to the feelings of others. Sincere, warm and conflict-averse, with a refined sense of beauty; an altruist by nature." },
+    analyst: { name: "Analyst", text: "An original thinker. Introverted, immersed in a rich inner world and devoted to intellectual creativity in a narrow field." },
+    skeptic: { name: "Skeptic", text: "Sensitive, self-critical and meticulous. Weighs every decision, sees risks in advance and keeps their word." },
+    mediator: { name: "Mediator", text: "A rich inner world and deep empathy. Serves universal ideals, stays loyal and seeks autonomy more than achievement." },
   },
   emostate: {
     energy_level: { name: "Cheerfulness", text: "Overall energy and good spirits." },
@@ -114,6 +115,7 @@ export const en = {
   footer: "Voice analysis by AVOCO. Not a medical or psychological diagnosis.",
   language: "Language",
   deep: deepEn,
+  types: typesEn,
 };
 
 type Widen<T> = T extends string ? string : T extends readonly (infer U)[] ? Widen<U>[] : { [K in keyof T]: Widen<T[K]> };

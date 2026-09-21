@@ -1,9 +1,24 @@
 /** Turns gateway results into what the report shows, in the visitor's language. Pure, so it can be tested. */
 import type { Dict } from "./i18n/en";
+import type { FullProfile, TypeProfile } from "./i18n/types-ru";
 
 export type Zone = "leading" | "active" | "background";
 export type Band = "high" | "mid" | "low";
-export interface DetailSection { title: string; text?: string; items?: string[] }
+export interface Rating { name: string; score: number; label: string; note: string }
+export interface DetailSection {
+  /** Chapter heading, shown once above the first section that carries it. */
+  group?: string;
+  title: string;
+  /** Small print under the title (what a stress stage is, for instance). */
+  note?: string;
+  text?: string;
+  items?: string[];
+  /** Short phrases shown as pills: vocabulary, "what they want to hear". */
+  chips?: string[];
+  /** A sentence to set apart: the stress "pattern". */
+  quote?: string;
+  ratings?: Rating[];
+}
 export interface ScaleRow {
   key: string;
   name: string;
@@ -24,10 +39,8 @@ const lookup = <T,>(table: Record<string, T>, key: string): T | null => (Object.
 export const bandOf = (value: number): Band => (value >= 60 ? "high" : value >= 35 ? "mid" : "low");
 
 export function psytypeRows(items: Entry[], t: Dict): ScaleRow[] {
-  const ui = t.deep.ui;
   return items.map((item) => {
     const short = lookup(t.psytypes, item.key);
-    const deep = lookup(t.deep.psytypes, item.key);
     const zone = item.zone ?? "background";
     return {
       key: item.key,
@@ -36,16 +49,94 @@ export function psytypeRows(items: Entry[], t: Dict): ScaleRow[] {
       value: item.value,
       zone,
       tag: t.report.zones[zone],
-      details: deep ? [
-        { title: ui.yourScore, text: t.deep.zoneMeaning[zone].replace("{value}", String(item.value)) },
-        { title: ui.essence, text: deep.essence },
-        { title: ui.strengths, items: deep.strengths },
-        { title: ui.watch, items: deep.watch },
-        { title: ui.communicate, text: deep.communicate },
-        { title: ui.role, text: deep.role },
-      ] : [],
+      details: typeDetails(item.key, item.value, zone, t),
     };
   });
+}
+
+/**
+ * The panel behind a type. AVOCO's official description always; then its full official report
+ * where we have one, or else the short reading drawn from the description.
+ */
+function typeDetails(key: string, value: number, zone: Zone, t: Dict): DetailSection[] {
+  const profile = lookup(t.types.profiles as Record<string, TypeProfile>, key);
+  if (!profile) return [];
+  const ui = t.types.ui;
+  const head: DetailSection[] = [
+    { title: t.deep.ui.yourScore, text: t.deep.zoneMeaning[zone].replace("{value}", String(value)) },
+    { title: ui.overview, text: profile.overview },
+  ];
+  if (profile.full) return [...head, ...fullProfileSections(profile.full, t)];
+
+  const reading = lookup(t.deep.psytypes, key);
+  if (!reading) return head;
+  return [
+    ...head,
+    { title: t.deep.ui.strengths, items: reading.strengths },
+    { title: t.deep.ui.watch, items: reading.watch },
+    { title: t.deep.ui.communicate, text: reading.communicate },
+    { title: t.deep.ui.role, text: reading.role, note: ui.partialNote },
+  ];
+}
+
+/** The chapters of AVOCO's original report, in its order. */
+function fullProfileSections(full: FullProfile, t: Dict): DetailSection[] {
+  const ui = t.types.ui;
+  const g = ui.groups;
+  const { team, motivation, resources, communication: talk, stress, relationships: rel } = full;
+  const ratings = Object.entries(full.compatibility).map(([key, c]) => ({
+    name: lookup(t.psytypes, key)?.name ?? key,
+    score: c.score,
+    label: ui.outOf.replace("{score}", String(c.score)),
+    note: c.note,
+  }));
+
+  return [
+    { title: ui.mindset, text: full.mindset },
+
+    { group: g.team, title: g.team, text: team.intro },
+    { group: g.team, title: ui.roles, text: team.roles },
+    { group: g.team, title: ui.socialRole, text: team.socialRole },
+    { group: g.team, title: ui.strengths, items: team.strengths },
+    { group: g.team, title: ui.risks, items: team.risks },
+    { group: g.team, title: ui.authority, text: team.authority },
+    { group: g.team, title: ui.subordination, text: team.subordination },
+    { group: g.team, title: ui.environment, text: team.environment },
+
+    { group: g.motivation, title: ui.motive, text: motivation.motive },
+    { group: g.motivation, title: ui.needs, text: motivation.needs },
+    { group: g.motivation, title: ui.management, text: motivation.management },
+    { group: g.motivation, title: ui.money, text: motivation.money },
+
+    { group: g.resources, title: ui.time, text: resources.time },
+    { group: g.resources, title: ui.money, text: resources.money },
+    { group: g.resources, title: ui.people, text: resources.people },
+
+    { group: g.communication, title: ui.interaction, items: talk.interaction },
+    { group: g.communication, title: ui.channel, text: talk.channel },
+    { group: g.communication, title: ui.decisions, text: talk.decisions },
+    { group: g.communication, title: ui.speech, text: talk.speech },
+    { group: g.communication, title: ui.wantToHear, chips: talk.wantToHear },
+    { group: g.communication, title: ui.vocabulary, chips: talk.vocabulary },
+
+    { group: g.stress, title: ui.emotion, text: stress.emotion },
+    { group: g.stress, title: ui.mask, items: stress.mask },
+    { group: g.stress, title: ui.triggers, items: stress.triggers },
+    { group: g.stress, title: ui.stage1, note: ui.stage1Note, items: stress.stage1 },
+    { group: g.stress, title: ui.stage2, note: ui.stage2Note, items: stress.stage2, quote: `${ui.pattern}: ${stress.pattern2}` },
+    { group: g.stress, title: ui.extreme, note: ui.extremeNote, items: stress.extreme, quote: `${ui.pattern}: ${stress.patternExtreme}` },
+    { group: g.stress, title: ui.bottom, note: ui.bottomNote, items: stress.bottom },
+    { group: g.stress, title: ui.exit, text: stress.exit },
+    { group: g.stress, title: ui.negative, items: stress.negative },
+
+    { group: g.relationships, title: ui.business, text: rel.business },
+    { group: g.relationships, title: ui.businessProblem, text: rel.businessProblem },
+    { group: g.relationships, title: ui.love, text: rel.love },
+    { group: g.relationships, title: ui.loveProblem, text: rel.loveProblem },
+    { group: g.relationships, title: ui.style, items: rel.style },
+
+    { group: g.compatibility, title: g.compatibility, note: ui.compatibilityLead, ratings },
+  ];
 }
 
 export function emostateRows(items: Entry[], t: Dict): ScaleRow[] {

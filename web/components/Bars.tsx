@@ -46,17 +46,41 @@ export function Bars({ rows, markers = false, expandLabel, defaultOpen }: { rows
 
             {expandable && (
               <div className={`${isOpen ? "block" : "hidden"} space-y-4 pb-2 pt-4 print:block`}>
-                {row.details.map((section) => (
-                  <div key={section.title}>
-                    <p className="eyebrow">{section.title}</p>
-                    {section.text && <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{section.text}</p>}
-                    {section.items && (
-                      <ul className="mt-1.5 space-y-1 text-sm leading-relaxed text-ink-2">
-                        {section.items.map((item) => <li key={item} className="flex gap-2"><span className="text-accent" aria-hidden>·</span><span>{item}</span></li>)}
-                      </ul>
-                    )}
-                  </div>
-                ))}
+                {row.details.map((section, n) => {
+                  const startsChapter = section.group && section.group !== row.details[n - 1]?.group;
+                  const isChapterIntro = section.title === section.group;
+                  return (
+                    <div key={`${section.group ?? ""}/${section.title}`}>
+                      {startsChapter && <h4 className="mb-4 mt-6 border-t border-line pt-6 font-display text-2xl font-medium">{section.group}</h4>}
+                      {!isChapterIntro && <p className="eyebrow">{section.title}</p>}
+                      {section.note && <p className="mt-1.5 text-xs leading-relaxed text-muted">{section.note}</p>}
+                      {section.text && <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{section.text}</p>}
+                      {section.items && (
+                        <ul className="mt-1.5 space-y-1 text-sm leading-relaxed text-ink-2">
+                          {section.items.map((item) => <li key={item} className="flex gap-2"><span className="text-accent" aria-hidden>·</span><span>{item}</span></li>)}
+                        </ul>
+                      )}
+                      {section.chips && (
+                        <ul className="mt-2 flex flex-wrap gap-2">
+                          {section.chips.map((chip) => <li key={chip} className="rounded-full border border-line bg-surface px-3 py-1 text-sm text-ink-2">{chip}</li>)}
+                        </ul>
+                      )}
+                      {section.quote && <p className="mt-3 border-l-2 border-accent pl-4 font-display text-xl leading-snug">{section.quote}</p>}
+                      {section.ratings && (
+                        <ul className="mt-3 grid gap-x-10 gap-y-2 sm:grid-cols-2">
+                          {section.ratings.map((rating) => (
+                            <li key={rating.name} className="flex items-baseline justify-between gap-3 border-b border-line pb-2 text-sm">
+                              <span><span className="font-medium">{rating.name}</span> <span className="text-ink-2">· {rating.note}</span></span>
+                              <span className="shrink-0 tracking-widest" role="img" aria-label={rating.label}>
+                                <span className="text-accent">{"●".repeat(rating.score)}</span><span className="text-line">{"●".repeat(5 - rating.score)}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </li>

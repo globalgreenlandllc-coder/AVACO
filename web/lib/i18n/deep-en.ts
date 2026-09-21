@@ -1,12 +1,13 @@
 /**
  * The interpretation layer. AVOCO returns scores only (id, name, value); everything a person reads
- * about what a score means is written here. Replace with AVOCO's official texts if they provide them.
+ * about what a score means is written here. The official type content lives in types-en.ts; this file holds
+ * the zone texts, a short reading per type (drawn from AVOCO's typology, used until a type's full official
+ * report is added) and the emotional-scale readings, which are this platform's own.
  */
 export const deepEn = {
   ui: {
     expand: "Show explanation",
     yourScore: "What your score means",
-    essence: "The type in brief",
     strengths: "Strengths",
     watch: "Worth watching",
     communicate: "How to talk with this type",
@@ -29,60 +30,52 @@ export const deepEn = {
 
   psytypes: {
     organizer: {
-      essence: "The Organizer turns intentions into order. They think in plans, sequences and deadlines, and feel most at ease when everyone knows who does what and by when.",
-      strengths: ["Reliable: what is promised gets done", "Turns a vague goal into clear steps", "Keeps a team on course under pressure"],
-      watch: ["Can hold on to the plan after the situation has changed", "May come across as rigid or controlling", "Finds improvisation and ambiguity draining"],
-      communicate: "Come prepared. Give the agenda, the facts and the deadline up front, and keep your commitments: a broken promise costs more trust with this type than with any other.",
-      role: "Operations, project management, finance, quality, any role where consistency matters more than novelty.",
+      strengths: ["Builds systems, plans time and allocates resources", "Responsible, disciplined and results-oriented", "Decisive and steady under stress"],
+      watch: ["Expects others to share their principles and their order", "Uncomfortable with chaos and uncertainty", "Tends to divide people into \"us\" and \"them\""],
+      communicate: "Be direct, logical and consistent. Lay out the stages and the necessary steps in advance, and keep to what was agreed.",
+      role: "Building systems, planning, allocating resources: any role where order, standards and reliability decide the result.",
     },
     driver: {
-      essence: "The Driver is oriented to results. They decide fast, take charge without being asked and measure a day by what was achieved.",
-      strengths: ["Decisive when others hesitate", "Comfortable with pressure, risk and competition", "Moves a stalled effort forward"],
-      watch: ["May run over quieter people", "Impatient with detail and long discussion", "Can mistake speed for progress"],
-      communicate: "Be brief and start with the conclusion. Offer options rather than problems, and don't take bluntness personally.",
-      role: "Leadership, sales, crisis work, launching new lines of business.",
+      strengths: ["Takes responsibility and makes the important decisions", "Not afraid of risk; oriented toward victory", "Charismatic: leads people and builds advantageous alliances"],
+      watch: ["Can become fixated on one supremely important idea", "Possessive of their ideas", "A strong appetite for power and authority"],
+      communicate: "Speak with confidence and be concrete. Connect what you propose to their large goal.",
+      role: "The front line: leadership, large goals, influence on big systems and processes.",
     },
     catalyst: {
-      essence: "The Catalyst starts things. They generate ideas easily, infect others with enthusiasm and get restless when nothing is changing.",
-      strengths: ["A steady source of new ideas", "Energises a room", "Quick to see an opportunity"],
-      watch: ["Starts more than they finish", "Loses interest once the work becomes routine", "Can overwhelm a team with changes of direction"],
-      communicate: "Give the big picture first and room to think aloud. Agree the next concrete step before the conversation ends, in writing if it matters.",
-      role: "Innovation, marketing, business development, early stages of a project.",
+      strengths: ["Generates ideas and initiatives", "Attracts people and resources", "Fast, flexible and inventive"],
+      watch: ["Takes on many things and doesn't finish them", "Scatters attention; weak on long-term goals", "Careless with risk"],
+      communicate: "Keep it free, lively and positive. Emphasise opportunities, and agree the next concrete step.",
+      role: "Negotiations, sales, attracting resources, launching new projects.",
     },
     performer: {
-      essence: "The Performer communicates with their whole presence. They enjoy an audience, tell a story well and make ideas vivid for other people.",
-      strengths: ["Engaging speaker and presenter", "Builds rapport quickly", "Makes dry material memorable"],
-      watch: ["Needs recognition, and fades without it", "May favour impression over substance", "Can take criticism personally"],
-      communicate: "Give attention and acknowledge their contribution in front of others. Deliver criticism in private, and tie it to a specific behaviour.",
-      role: "Public speaking, client-facing roles, training, media, hospitality.",
+      strengths: ["Natural charm; a favourable impression from the first minutes", "Rich imagination and creative solutions", "Emotionally \"infects\" others and moves them to act"],
+      watch: ["Tends to promise a lot and declare large-scale intentions", "May present an illusory picture of well-being and guaranteed success", "Needs recognition and a central place"],
+      communicate: "Give attention and recognition. Then agree the specifics, so that large declarations become commitments.",
+      role: "Work with public attention and opinion: presentation, creative work, creating an atmosphere of celebration and motivation.",
     },
     harmonizer: {
-      essence: "The Harmonizer looks after the people. They notice how others feel, smooth tension and keep a group working well together.",
-      strengths: ["Attentive, warm listener", "Creates trust and loyalty", "Holds a team together in hard times"],
-      watch: ["Avoids necessary conflict", "Finds it hard to say no", "Can put others' needs ahead of their own for too long"],
-      communicate: "Start with the person, then the task. Ask for their view directly, because they may not volunteer a disagreement.",
-      role: "HR, care and support roles, customer success, teaching, team coordination.",
+      strengths: ["Easily senses and understands what others feel", "Finds an approach to different people through care", "Genuine emotions; scrupulous in matters of morality"],
+      watch: ["Avoids conflict, even a necessary one", "Cannot stand rudeness, vulgarity or disharmony", "Reacts emotionally to the smallest nuances"],
+      communicate: "Keep the conversation soft, friendly and sincere. Openness and trust matter more to them than arguments.",
+      role: "Roles built on care, support and the humanising of a team or a service.",
     },
     analyst: {
-      essence: "The Analyst needs to understand before acting. They look for facts, logic and cause, notice the detail others miss and care about being accurate.",
-      strengths: ["Thorough and precise", "Decisions that hold up under scrutiny", "Calm, objective view of a problem"],
-      watch: ["Slow to decide when data is incomplete", "May seem distant or critical", "Can get lost in detail and miss the deadline"],
-      communicate: "Bring data and give time to think. Don't push for an answer on the spot, and expect precise questions.",
-      role: "Research, engineering, finance, law, audit, anything where errors are expensive.",
+      strengths: ["Original thinking and unconventional solutions", "Deep, tirelessly developed expertise in a narrow field", "High intelligence and intellectual creativity"],
+      watch: ["May neglect practical duties and subordination", "Reluctant to make contact; can seem detached", "Decisions can look illogical or unpredictable to others"],
+      communicate: "Respect their inner world and don't pry into it. Engage through their field of interest, and give them space and time.",
+      role: "Mathematics, architecture, IT development, art, directing: any profession that needs an original approach.",
     },
     skeptic: {
-      essence: "The Skeptic tests everything. They see the weak point in an argument and the risk in a plan early, and don't accept a claim on anyone's authority.",
-      strengths: ["Spots risks before they become problems", "Hard to mislead or manipulate", "Keeps a group honest"],
-      watch: ["Can drain enthusiasm from a new idea", "Trust comes slowly", "May be heard as negative even when trying to help"],
-      communicate: "Welcome the doubts and answer them with evidence. Never oversell: one exaggeration and the rest of what you say is discounted.",
-      role: "Risk, security, compliance, quality control, due diligence, editing.",
+      strengths: ["Meticulous and responsible; never cuts corners", "Sees risks and plans in advance how to prevent them", "Keeps their word and doesn't let people down"],
+      watch: ["Self-criticism and doubt can hold them back", "Slow to decide: weighs every pro and con", "Resists change that looks hasty or ill-considered"],
+      communicate: "Give time to weigh things and don't push for an impulsive decision. Be precise, and keep criticism gentle: they are already hard on themselves.",
+      role: "Teams where attention to detail, analysis and responsibility matter.",
     },
     mediator: {
-      essence: "The Mediator finds common ground. They hear every side, stay even-handed and help people who disagree reach something they can all accept.",
-      strengths: ["Fair and trusted by opposing sides", "Defuses conflict", "Patient, diplomatic negotiator"],
-      watch: ["May avoid taking a clear position", "Can be slow when a fast, unpopular decision is needed", "Own interests get lost in the search for balance"],
-      communicate: "Explain every side's position and give time to weigh them. Ask what they themselves think, not only what would work for everyone.",
-      role: "Negotiation, partnerships, diplomacy, arbitration, cross-team coordination.",
+      strengths: ["Deep empathy; a good listener and conversationalist", "Loyal to ideas, friends, loved ones and responsibilities", "Notices what others miss; talent for art, music and literature"],
+      watch: ["Puts others' needs ahead of their own", "Can withdraw, become disillusioned and fall into stagnant states", "Low motivation for change and for achievement goals"],
+      communicate: "Be sincere and go deep. Appeal to meaning and ideals rather than gain, and respect their autonomy.",
+      role: "Creative fields, and work that serves an ideal or helps people.",
     },
   },
 
@@ -201,7 +194,7 @@ export const deepEn = {
       },
       {
         title: "What the explanations are, and are not",
-        text: "AVOCO returns scores only. It does not report which features of your voice produced a particular score, so this report cannot tell you that, either. The explanations you read here describe what each type and scale means in general, and how to read a score in your zone. They are written by this platform, not generated from your words.",
+        text: "AVOCO returns scores only. It does not report which features of your voice produced a particular score, so this report cannot tell you that, either. The descriptions of the personality types come from AVOCO's own typology and describe the type in general, not you individually. The readings of the emotional scales and of the zones were written by this platform. Nothing here is generated from your words.",
       },
       {
         title: "Getting a truer picture",
