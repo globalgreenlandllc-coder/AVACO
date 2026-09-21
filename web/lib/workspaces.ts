@@ -7,6 +7,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { and, count, desc, eq, gte, inArray } from "drizzle-orm";
 import { db, groups, members, participants, recordings, workspaces, type Group, type Participant, type Recording, type Role, type Source, type Workspace } from "./db";
+import { asWorkspace, balance, charge, getSettings, NoCredits, workspaceTrial } from "./billing";
 import { gateway, type Analysis } from "./gateway";
 import { isPreset } from "./presets";
 
@@ -35,6 +36,7 @@ export async function createWorkspace(userId: string, input: { name: unknown; in
   const industry = isPreset(input.industry) ? input.industry : "general";
   const [ws] = await db().insert(workspaces).values({ id: crypto.randomUUID(), name, industry, joinCode: token(12), createdBy: userId }).returning();
   await db().insert(members).values({ workspaceId: ws.id, userId, role: "admin" });
+  await workspaceTrial(ws.id);
   return ws;
 }
 
@@ -188,7 +190,12 @@ export async function addRecording(participant: Participant, workspaceId: string
   if (typeof input.audioUrl !== "string") throw new Invalid("audioUrl is required");
   if ((await usageThisMonth(workspaceId)) >= monthlyLimit()) throw new LimitReached("This workspace has reached its monthly limit");
 
+  // The company pays for recordings made for it, never the person recorded.
+  const billed = (await getSettings()).enabled;
+  if (billed && (await balance(asWorkspace(workspaceId))) < 1) throw new NoCredits("This workspace has no credits left");
+
   const created = await gateway.createAnalysis({ audioUrl: input.audioUrl, owner: groupOwner(participant.groupId) });
+  if (billed) await charge(asWorkspace(workspaceId), created.id);
   const [rec] = await db().insert(recordings).values({ id: crypto.randomUUID(), participantId: participant.id, analysisId: created.id, consentAt: new Date() }).returning();
   return rec;
 }

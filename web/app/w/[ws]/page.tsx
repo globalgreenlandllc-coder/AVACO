@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { ApiKeyBox } from "@/components/ApiKeyBox";
+import { BuyCredits } from "@/components/BuyCredits";
 import { CopyField } from "@/components/CopyField";
+import { asWorkspace, balance, getSettings } from "@/lib/billing";
 import { getDict } from "@/lib/i18n";
+import { packViews } from "@/lib/money";
+import { stripeReady } from "@/lib/stripe";
 import { baseUrl, currentUserId, orNotFound, presetOf, userLabels } from "@/lib/page";
 import { PRESETS, PRESET_RULES } from "@/lib/presets";
 import { listGroups, listMembers, monthlyLimit, requireMember, usageThisMonth } from "@/lib/workspaces";
 import { createGroupAction, rotateJoinCodeAction, setRoleAction, updateWorkspaceAction } from "../actions";
 
 export default async function WorkspacePage({ params }: { params: Promise<{ ws: string }> }) {
-  const [{ ws: wsId }, userId, { t }, origin] = await Promise.all([params, currentUserId(), getDict(), baseUrl()]);
+  const [{ ws: wsId }, userId, { t, locale }, origin] = await Promise.all([params, currentUserId(), getDict(), baseUrl()]);
   const { ws, role } = await orNotFound(requireMember(userId, wsId));
   const [groupList, memberList, used] = await Promise.all([listGroups(userId, wsId), listMembers(userId, wsId), usageThisMonth(wsId)]);
+  const [cfg, credits] = await Promise.all([getSettings(), balance(asWorkspace(wsId))]);
   const labels = await userLabels(memberList.map((m) => m.userId));
   const o = t.org;
   const preset = o.presets[presetOf(ws.industry)];
@@ -49,6 +54,21 @@ export default async function WorkspacePage({ params }: { params: Promise<{ ws: 
           </ul>
         )}
       </section>
+
+      {cfg.enabled && (
+        <section className="card space-y-5 p-7 sm:p-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-3xl font-medium">{t.billing.workspace.title}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{t.billing.workspace.lead}</p>
+            </div>
+            <p className="font-display text-6xl font-medium tabular-nums">{credits}</p>
+          </div>
+          {credits < 1 ? <p role="status" className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">{t.billing.workspace.none}</p>
+            : credits <= 5 ? <p role="status" className="rounded-xl border border-line px-4 py-3 text-sm text-ink-2">{t.billing.workspace.low.replace("{n}", String(credits))}</p> : null}
+          {isAdmin && <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "workspace"), cfg.currency, locale)} canPay={stripeReady()} t={t.billing} workspaceId={ws.id} />}
+        </section>
+      )}
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="card space-y-5 p-7">

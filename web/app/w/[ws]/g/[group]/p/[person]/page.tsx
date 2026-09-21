@@ -5,6 +5,8 @@ import { CopyField } from "@/components/CopyField";
 import { ReportView } from "@/components/ReportView";
 import { Trends } from "@/components/Trends";
 import { publicReport } from "@/lib/api";
+import { noteResult } from "@/lib/billing";
+import { fieldFits } from "@/lib/fit";
 import { focusSections } from "@/lib/focus";
 import { formatDate, getDict } from "@/lib/i18n";
 import { baseUrl, currentUserId, orNotFound, presetOf } from "@/lib/page";
@@ -21,6 +23,8 @@ export default async function PersonPage({ params }: { params: Promise<{ ws: str
   const analyses = await personAnalyses(participant.id);
   const latest = analyses[0];
   if (!latest) notFound();
+
+  if (latest.status === "completed" && latest.psytype?.length) await noteResult(latest.id, "workspace", latest.psytype[0].key, fieldFits(latest.psytype, latest.emostate)[0]?.key).catch(() => {});
 
   const o = t.org;
   const preset = presetOf(ws.industry);

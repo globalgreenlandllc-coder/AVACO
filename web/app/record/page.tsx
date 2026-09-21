@@ -8,7 +8,7 @@ export default async function RecordPage() {
       <div>
         <h1 className="font-display text-5xl font-medium">{t.record.title}</h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-2">{t.record.lead}</p>
-        <div className="mt-8"><Recorder t={t.record} /></div>
+        <div className="mt-8"><Recorder t={t.record} payText={t.billing.cap} /></div>
       </div>
       <aside className="lg:pt-32">
         <p className="eyebrow">{t.record.promptsTitle}</p>

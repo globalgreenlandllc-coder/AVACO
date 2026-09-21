@@ -2,7 +2,7 @@
  * The platform's own data: companies (workspaces), their people and what they recorded.
  * The analyses themselves stay in the gateway; a recording here points at one by id.
  */
-import { boolean, index, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export type Role = "admin" | "manager" | "viewer";
 export type Source = "invite" | "open_link" | "station" | "upload" | "api";
@@ -83,3 +83,95 @@ export type Workspace = typeof workspaces.$inferSelect;
 export type Group = typeof groups.$inferSelect;
 export type Participant = typeof participants.$inferSelect;
 export type Recording = typeof recordings.$inferSelect;
+
+// ---------- money: credits, purchases, promo codes, unlocked reports ----------
+
+/** Who holds credits: a person (their Clerk user id) or a company (workspace id). */
+export type OwnerKind = "user" | "workspace";
+export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "refund";
+
+/**
+ * Every movement of credits, and the only source of truth for a balance (the sum of delta).
+ * Nothing is ever updated or deleted here. The unique index makes charging and crediting idempotent:
+ * one purchase credits once, one report charges once, however often the request is repeated.
+ */
+export const creditLedger = pgTable(
+  "credit_ledger",
+  {
+    id: uuid("id").primaryKey(),
+    ownerKind: text("owner_kind").$type<OwnerKind>().notNull(),
+    ownerId: text("owner_id").notNull(),
+    delta: integer("delta").notNull(),
+    reason: text("reason").$type<LedgerReason>().notNull(),
+    /** What this row is about: a purchase id, an analysis id, a promo code. */
+    ref: text("ref"),
+    /** Money received for this row, in the smallest currency unit. Only purchases (and refunds, negative) carry it. */
+    amountCents: integer("amount_cents").notNull().default(0),
+    currency: text("currency").notNull().default("usd"),
+    note: text("note"),
+    createdBy: text("created_by"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ledger_once_idx").on(t.ownerKind, t.ownerId, t.reason, t.ref),
+    index("ledger_owner_idx").on(t.ownerKind, t.ownerId, t.createdAt.desc()),
+    index("ledger_created_idx").on(t.createdAt.desc()),
+  ],
+);
+
+export const purchases = pgTable("purchases", {
+  id: uuid("id").primaryKey(),
+  ownerKind: text("owner_kind").$type<OwnerKind>().notNull(),
+  ownerId: text("owner_id").notNull(),
+  pack: text("pack").notNull(),
+  credits: integer("credits").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: text("currency").notNull(),
+  stripeSessionId: text("stripe_session_id").unique(),
+  status: text("status").$type<"pending" | "paid">().notNull().default("pending"),
+  /** A report to unlock as soon as the payment lands, so the buyer comes back to an open report. */
+  unlockAnalysisId: uuid("unlock_analysis_id"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  paidAt: ts("paid_at"),
+});
+
+export const promoCodes = pgTable("promo_codes", {
+  code: text("code").primaryKey(),
+  credits: integer("credits").notNull(),
+  maxUses: integer("max_uses"),
+  used: integer("used").notNull().default(0),
+  expiresAt: ts("expires_at"),
+  active: boolean("active").notNull().default(true),
+  note: text("note"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+/** A person's own recordings. The analyses live in the gateway; this is what statistics and the free-preview cap count. */
+export const selfRecordings = pgTable(
+  "self_recordings",
+  { analysisId: uuid("analysis_id").primaryKey(), userId: text("user_id").notNull(), createdAt: ts("created_at").notNull().defaultNow() },
+  (t) => [index("self_recordings_user_idx").on(t.userId, t.createdAt.desc())],
+);
+
+/** Reports whose full version is open. */
+export const reportAccess = pgTable("report_access", {
+  analysisId: uuid("analysis_id").primaryKey(),
+  ownerKind: text("owner_kind").$type<OwnerKind>().notNull(),
+  ownerId: text("owner_id").notNull(),
+  source: text("source").$type<"credit" | "free" | "admin">().notNull(),
+  unlockedAt: ts("unlocked_at").notNull().defaultNow(),
+});
+
+/** What a finished report said, for statistics: filled in the first time a completed report is read. */
+export const reportStats = pgTable("report_stats", {
+  analysisId: uuid("analysis_id").primaryKey(),
+  scope: text("scope").$type<"self" | "workspace">().notNull(),
+  leadingType: text("leading_type").notNull(),
+  topField: text("top_field"),
+  completedAt: ts("completed_at").notNull().defaultNow(),
+});
+
+export const settings = pgTable("settings", { key: text("key").primaryKey(), value: jsonb("value").notNull(), updatedAt: ts("updated_at").notNull().defaultNow() });
+
+/** Platform admins, by email. ADMIN_EMAILS in the environment always counts too, so nobody can lock themselves out. */
+export const admins = pgTable("admins", { email: text("email").primaryKey(), addedBy: text("added_by"), createdAt: ts("created_at").notNull().defaultNow() });

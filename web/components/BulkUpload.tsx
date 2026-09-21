@@ -41,7 +41,7 @@ export function BulkUpload({ groupId, t, errors }: { groupId: string; t: Dict["o
 
   return (
     <div className="space-y-4">
-      <input type="file" accept="audio/*,.opus,.m4a" multiple disabled={progress !== null} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="block w-full text-sm text-ink-2 file:mr-4 file:rounded-full file:border file:border-line file:bg-transparent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink" />
+      <input type="file" accept="audio/*,video/*,.opus,.m4a,.mov,.mp4,.webm" multiple disabled={progress !== null} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="block w-full text-sm text-ink-2 file:mr-4 file:rounded-full file:border file:border-line file:bg-transparent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink" />
       <div role="radiogroup" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-2">
         {(["mix", "left", "right"] as const).map((c) => (
           <label key={c} className="flex cursor-pointer items-center gap-2">

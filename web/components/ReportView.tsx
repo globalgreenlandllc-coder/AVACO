@@ -18,6 +18,8 @@ export interface Report {
   psytype: Array<{ key: string; label: string; value: number; zone: "leading" | "active" | "background" }> | null;
   emostate: Array<{ key: string; label: string; value: number }> | null;
   error: string | null;
+  /** Present on a free preview. */
+  locked?: true;
 }
 
 const POLL_MS = 4000;
@@ -38,9 +40,11 @@ export interface ReportViewProps {
   lead?: React.ReactNode;
   /** Leaves out the emotional-state section (a workspace setting). */
   hideEmotions?: boolean;
+  /** A free preview: the cover and the summary, then this (the paywall) in place of everything else. */
+  locked?: React.ReactNode;
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -56,7 +60,11 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     if (report.status !== "processing") return;
     const timer = setInterval(async () => {
       const res = await fetch(poll, { cache: "no-store" }).catch(() => null);
-      if (res?.ok) setReport(await res.json());
+      if (!res?.ok) return;
+      const next: Report = await res.json();
+      setReport(next);
+      // Finished: let the server render the page again, so a free preview gets its paywall.
+      if (next.status !== "processing") router.refresh();
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [poll, report.status]);
@@ -134,7 +142,9 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   const top = psy[0];
   // The types the report is about: up to two leaders, or the strongest one in a balanced profile.
   const profiled = leaders.length > 0 ? leaders.slice(0, 2) : top ? [top] : [];
-  const summary = summaryLines(psy, emo, t);
+  // A preview stays a preview even in the moment before the server hands over the paywall.
+  const isLocked = Boolean(locked) || report.locked === true;
+  const summary = isLocked ? summaryLines(psy, [], t).filter((line) => !line.startsWith(t.deep.fit.summary.split("{")[0])) : summaryLines(psy, emo, t);
   const { ui, method, fit } = t.deep;
   const fits = fitRows(psy, t, emo);
   const podium = fits.slice(0, 3);
@@ -192,6 +202,9 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </Reveal>
       )}
 
+      {locked}
+
+      {!isLocked && (<>
       {profiled.some((type) => type.details.length > 0) && (
         <Reveal as="section">
           <h2 className="font-display text-4xl font-medium sm:text-5xl">{r.profileTitle}</h2>
@@ -285,15 +298,17 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </div>
       </Reveal>
 
+      </>)}
+
       <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.disclaimer}</p>
 
       <div data-no-export className="no-print">
         <div className="flex flex-wrap gap-3">
-          <button type="button" className="btn" onClick={download} disabled={saving}>{saving ? r.downloading : r.download}</button>
-          <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>
+          {!isLocked && <button type="button" className="btn" onClick={download} disabled={saving}>{saving ? r.downloading : r.download}</button>}
+          {!isLocked && <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>}
           {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
         </div>
-        <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadHelp}</p>
+        {!isLocked && <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadHelp}</p>}
       </div>
     </article>
   );

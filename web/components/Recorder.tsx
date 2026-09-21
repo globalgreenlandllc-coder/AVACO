@@ -24,9 +24,11 @@ export interface RecorderProps {
   extraConsent?: string;
   /** Shown when the server answers 429 (a company's monthly limit). */
   limitText?: string;
+  /** Shown when the server answers 402 (no free previews or credits left). */
+  payText?: string;
 }
 
-export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText }: RecorderProps) {
+export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText }: RecorderProps) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -152,6 +154,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       setProgress(t.starting);
       const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined }) });
       if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
+      if (res.status === 402 && (payText || limitText)) { setMessage(payText ?? limitText ?? null); setProgress(null); setPhase("recorded"); return; }
       if (!res.ok) throw new Error(`analyses ${res.status}`);
       const { id } = await res.json();
       router.push(doneUrl.replace("{id}", id));
@@ -198,7 +201,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         {phase === "idle" && (
           <label className="mt-6 cursor-pointer text-sm text-ink-2 underline decoration-line underline-offset-4 hover:text-ink">
             {t.upload} <span className="text-muted">({t.uploadHint})</span>
-            <input type="file" accept="audio/*,.opus,.m4a" className="sr-only" onChange={(e) => chooseFile(e.target.files?.[0])} />
+            <input type="file" accept="audio/*,video/*,.opus,.m4a,.mov,.mp4,.webm" className="sr-only" onChange={(e) => chooseFile(e.target.files?.[0])} />
           </label>
         )}
       </div>

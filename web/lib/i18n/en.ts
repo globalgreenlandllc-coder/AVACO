@@ -1,3 +1,4 @@
+import { billingEn } from "./billing-en";
 import { orgEn } from "./org-en";
 import { typesEn } from "./types-en";
 import { deepEn } from "./deep-en";
@@ -31,8 +32,8 @@ export const en = {
     start: "Start recording",
     stop: "Stop",
     again: "Record again",
-    upload: "Or upload an audio file",
-    uploadHint: "wav, mp3, m4a, ogg or opus",
+    upload: "Or upload an audio or video file",
+    uploadHint: "wav, mp3, m4a, ogg, opus, or a video: mp4, mov, webm",
     minimum: "Keep going: at least 30 seconds",
     ready: "Long enough. Stop whenever you like",
     maxReached: "Maximum length reached",
@@ -47,6 +48,7 @@ export const en = {
       tooShort: "The recording is shorter than 30 seconds. Please record a little longer.",
       tooLong: "The recording is longer than 5 minutes. Please use a shorter one.",
       decode: "This file couldn't be read as audio. Try wav, mp3 or m4a.",
+      tooBig: "This file is too large to open in the browser. Use a file under 500 MB, or a shorter clip.",
       failed: "Something went wrong while sending the recording. Please try again.",
     },
   },
@@ -126,6 +128,7 @@ export const en = {
   deep: deepEn,
   types: typesEn,
   org: orgEn,
+  billing: billingEn,
 };
 
 type Widen<T> = T extends string ? string : T extends readonly (infer U)[] ? Widen<U>[] : { [K in keyof T]: Widen<T[K]> };

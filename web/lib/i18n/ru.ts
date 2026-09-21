@@ -1,3 +1,4 @@
+import { billingRu } from "./billing-ru";
 import { orgRu } from "./org-ru";
 import { typesRu } from "./types-ru";
 import { deepRu } from "./deep-ru";
@@ -33,8 +34,8 @@ export const ru: Dict = {
     start: "Начать запись",
     stop: "Остановить",
     again: "Записать заново",
-    upload: "Или загрузите аудиофайл",
-    uploadHint: "wav, mp3, m4a, ogg или opus",
+    upload: "Или загрузите аудио- или видеофайл",
+    uploadHint: "wav, mp3, m4a, ogg, opus или видео: mp4, mov, webm",
     minimum: "Продолжайте: нужно не меньше 30 секунд",
     ready: "Этого достаточно. Остановите запись, когда захотите",
     maxReached: "Достигнута максимальная длина",
@@ -49,6 +50,7 @@ export const ru: Dict = {
       tooShort: "Запись короче 30 секунд. Пожалуйста, запишите немного дольше.",
       tooLong: "Запись длиннее 5 минут. Пожалуйста, используйте запись покороче.",
       decode: "Не удалось прочитать этот файл как аудио. Попробуйте wav, mp3 или m4a.",
+      tooBig: "Этот файл слишком большой, чтобы открыть его в браузере. Используйте файл меньше 500 МБ или более короткий фрагмент.",
       failed: "При отправке записи что-то пошло не так. Пожалуйста, попробуйте ещё раз.",
     },
   },
@@ -128,4 +130,5 @@ export const ru: Dict = {
   deep: deepRu,
   types: typesRu,
   org: orgRu,
+  billing: billingRu,
 };

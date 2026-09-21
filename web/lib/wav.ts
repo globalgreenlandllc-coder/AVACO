@@ -34,17 +34,22 @@ export function encodeWav(samples: Float32Array, sampleRate = SAMPLE_RATE): Arra
   return buffer;
 }
 
-export type AudioProblem = "decode" | "tooShort" | "tooLong";
+/** The whole file is read into memory to decode it, so very large videos are refused before they freeze the tab. */
+export const MAX_SOURCE_BYTES = 500 * 1024 * 1024;
+
+export type AudioProblem = "decode" | "tooShort" | "tooLong" | "tooBig";
 export class AudioError extends Error {
   constructor(public problem: AudioProblem) { super(problem); }
 }
 
 /**
- * Decodes any audio the browser can play and resamples to 16 kHz mono. Browser only.
+ * Decodes any audio the browser can play, including the sound track of a video, and resamples to 16 kHz mono.
+ * Browser only: a video never leaves the device, only the 16 kHz voice track is uploaded.
  * `channel` picks one side of a stereo recording (0 left, 1 right), which is how a recorded call is
  * split into agent and customer; without it the channels are mixed.
  */
 export async function toAnalysisWav(source: Blob, channel?: 0 | 1): Promise<{ wav: Blob; seconds: number }> {
+  if (source.size > MAX_SOURCE_BYTES) throw new AudioError("tooBig");
   const ctx = new AudioContext();
   let decoded: AudioBuffer;
   try {

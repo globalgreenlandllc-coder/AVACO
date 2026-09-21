@@ -3,7 +3,8 @@
  * DELETE /api/analyses/:id — deletes the report and its audio.
  * Both only ever touch an analysis that belongs to the signed-in user.
  */
-import { errorResponse, json, requireUser } from "@/lib/api";
+import { errorResponse, json, previewReport, publicReport, requireUser } from "@/lib/api";
+import { forgetReport, hasFullAccess } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
 
 type Context = { params: Promise<{ id: string }> };
@@ -16,8 +17,7 @@ export async function GET(_req: Request, ctx: Context) {
   try {
     const analysis = await gateway.getAnalysisFor(user.userId, (await ctx.params).id);
     if (!analysis) return notFound();
-    const { external_user_id: _owner, ...report } = analysis;
-    return json(report);
+    return json((await hasFullAccess(user.userId, analysis.id)) ? publicReport(analysis) : previewReport(analysis));
   } catch (err) {
     return errorResponse(err);
   }
@@ -31,6 +31,7 @@ export async function DELETE(_req: Request, ctx: Context) {
     const { id } = await ctx.params;
     if (!(await gateway.getAnalysisFor(user.userId, id))) return notFound();
     await gateway.deleteAnalysis(id);
+    await forgetReport(id);
     return json({ deleted: true });
   } catch (err) {
     return errorResponse(err);

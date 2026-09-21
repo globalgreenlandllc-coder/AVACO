@@ -12,6 +12,7 @@ export function Header({ locale, t }: { locale: Locale; t: Dict }) {
           <Link href="/record" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.record}</Link>
           <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}</Link>
           <Link href="/w" className="text-ink-2 hover:text-ink">{t.org.nav}</Link>
+          <Link href="/credits" className="hidden text-ink-2 hover:text-ink sm:inline">{t.billing.nav}</Link>
         </Show>
         <LanguageSwitch locale={locale} label={t.language} />
         <Show when="signed-in"><UserButton /></Show>

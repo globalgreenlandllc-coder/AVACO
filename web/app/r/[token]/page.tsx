@@ -7,6 +7,8 @@ import { Qr } from "@/components/Qr";
 import { Recorder } from "@/components/Recorder";
 import { ReportView } from "@/components/ReportView";
 import { publicReport } from "@/lib/api";
+import { noteResult } from "@/lib/billing";
+import { fieldFits } from "@/lib/fit";
 import { formatDate, getDict } from "@/lib/i18n";
 import { baseUrl, presetOf } from "@/lib/page";
 import { PRESET_RULES } from "@/lib/presets";
@@ -23,6 +25,7 @@ export default async function ParticipantPage({ params, searchParams }: { params
 
   const { participant, ws } = found;
   const [latest] = await personAnalyses(participant.id);
+  if (latest?.status === "completed" && latest.psytype?.length) await noteResult(latest.id, "workspace", latest.psytype[0].key, fieldFits(latest.psytype, latest.emostate)[0]?.key).catch(() => {});
   const company = ws.name;
   const fill = (s: string) => s.replace("{name}", participant.name).replace("{company}", company);
   const self = `/r/${token}`;
@@ -70,6 +73,7 @@ export default async function ParticipantPage({ params, searchParams }: { params
           consentText={fill(r.consent)}
           extraConsent={rules.minorsConsent ? r.minors : undefined}
           limitText={r.limit}
+          payText={r.limit}
         />
       </div>
     </div>
