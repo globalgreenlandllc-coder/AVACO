@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import { en } from "@/lib/i18n/en";
 import { ru } from "@/lib/i18n/ru";
-import { fieldFits, FIELDS } from "@/lib/fit";
+import { fieldFits, FIELDS, SECTORS, STATE_SHARE } from "@/lib/fit";
 import { bandOf, emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines, zoneOf } from "@/lib/report";
 import { encodeWav } from "@/lib/wav";
 
@@ -129,41 +129,89 @@ describe("zones", () => {
 });
 
 describe("where you can do your best work", () => {
-  // The scores from a real report: a leading Analyst with an active Mediator.
+  // The scores from a real report: a leading Analyst with an active Mediator, low on energy that day.
   const scores = [["analyst", 56.4], ["mediator", 45], ["organizer", 30], ["harmonizer", 20.5], ["performer", 9.4], ["skeptic", 8.7], ["driver", 8.3], ["catalyst", 7.4]]
     .map(([key, value]) => ({ key: key as string, label: key as string, value: value as number }));
+  const state = [["ability_to_attract", 76], ["openness_to_new", 73], ["ability_to_assert", 70], ["kindness", 66], ["ability_to_set_goals", 65], ["person_harmonicity", 58], ["emo_engage", 56], ["expressivity", 56], ["self_control", 48], ["emotional_confidence", 47], ["person_manifestation", 46], ["stress_tolerance", 44], ["authority", 34], ["energy_level", 12]]
+    .map(([key, value]) => ({ key: key as string, label: key as string, value: value as number }));
+  const avg = (pairs: Array<[number, number]>) => pairs.reduce((s, [w, v]) => s + w * v, 0) / pairs.reduce((s, [w]) => s + w, 0);
 
-  it("ranks every field by the weighted average of the types behind it", () => {
-    const fits = fieldFits(scores);
+  it("scores every field from the personality types, three quarters, and the emotional scales, one quarter", () => {
+    const fits = fieldFits(scores, state);
     expect(fits).toHaveLength(Object.keys(FIELDS).length);
-    expect(fits.slice(0, 3).map((f) => f.key)).toEqual(["research", "arts", "helping"]);
-    expect(fits[0].score).toBeCloseTo((56.4 * 1 + 8.7 * 0.4) / 1.4, 1); // 42.8
-    expect(fits[1].score).toBeCloseTo((45 * 0.8 + 56.4 * 0.6 + 9.4 * 0.4 + 20.5 * 0.3) / 2.1, 1); // 38
-    expect(fits.at(-1)).toMatchObject({ key: "sales", score: 8.1 }); // (7.4 + 0.5 × 8.3 + 0.5 × 9.4) / 2
+    expect(fits.length).toBeGreaterThanOrEqual(25);
+
+    const research = fits.find((f) => f.key === "research")!;
+    const personality = avg([[1, 56.4], [0.4, 8.7], [0.2, 45]]);
+    const rightNow = avg([[1, 73], [0.7, 70], [0.6, 48]]);
+    expect(research.typeScore).toBeCloseTo(personality, 1);
+    expect(research.stateScore).toBeCloseTo(rightNow, 1);
+    expect(research.score).toBeCloseTo((1 - STATE_SHARE) * personality + STATE_SHARE * rightNow, 1);
+    expect(research.sector).toBe("tech");
+    expect(research.types.map((d) => d.key)).toEqual(["analyst", "mediator", "skeptic"]); // strongest contribution first
     expect(fits.map((f) => f.score)).toEqual([...fits.map((f) => f.score)].sort((a, b) => b - a));
   });
 
-  it("stays on the 0 to 100 scale of the types", () => {
-    const flat = (v: number) => fieldFits(scores.map((s) => ({ ...s, value: v }))).map((f) => f.score);
+  it("puts an introverted original thinker with an empathic second type in research, IT and the arts, and last on a stage or in sales", () => {
+    const order = fieldFits(scores, state).map((f) => f.key);
+    expect(order.slice(0, 3)).toEqual(["research", "it", "arts"]);
+    expect(order.slice(3, 6).sort()).toEqual(["counselling", "design", "social"]); // the active Mediator: ideals and empathy
+    expect(order.slice(-2).sort()).toEqual(["sales", "stage"]);
+  });
+
+  it("lets today's state move a score, but not overturn the personality", () => {
+    const calm = state.map((s) => (["stress_tolerance", "self_control", "kindness", "person_harmonicity"].includes(s.key) ? { ...s, value: 95 } : s));
+    const tense = state.map((s) => (["stress_tolerance", "self_control", "kindness", "person_harmonicity"].includes(s.key) ? { ...s, value: 5 } : s));
+    const service = (emo: typeof state) => fieldFits(scores, emo).find((f) => f.key === "service")!;
+    expect(service(calm).score).toBeGreaterThan(service(tense).score);
+    expect(service(calm).typeScore).toBe(service(tense).typeScore);
+    expect(service(calm).score - service(tense).score).toBeLessThanOrEqual(100 * STATE_SHARE); // a quarter at most
+  });
+
+  it("falls back to personality alone without emotional scales (a workspace that hides them)", () => {
+    const fits = fieldFits(scores);
+    expect(fits.every((f) => f.stateScore === null && f.score === f.typeScore && f.scales.length === 0)).toBe(true);
+    expect(fieldFits(scores, [])).toEqual(fits);
+    expect(fieldFits(scores, state.slice(0, 3)).find((f) => f.key === "research")!.stateScore).toBeNull(); // incomplete scales are not guessed
+  });
+
+  it("stays on the 0 to 100 scale of the API", () => {
+    const flat = (v: number) => fieldFits(scores.map((x) => ({ ...x, value: v })), state.map((x) => ({ ...x, value: v }))).map((f) => f.score);
     expect(new Set(flat(100))).toEqual(new Set([100]));
     expect(new Set(flat(0))).toEqual(new Set([0]));
   });
 
   it("says nothing unless all eight types were scored", () => {
-    expect(fieldFits(scores.slice(0, 7))).toEqual([]);
+    expect(fieldFits(scores.slice(0, 7), state)).toEqual([]);
     expect(fitRows(psytypeRows(scores.slice(0, 3), en), en)).toEqual([]);
   });
 
-  it("names the types behind each score, strongest contribution first, in the reader's language", () => {
-    const [top] = fitRows(psytypeRows(scores, en), en);
-    expect(top).toMatchObject({ name: "Research, engineering and IT", score: 42.8, because: "Based on: Analyst 56.4, Skeptic 8.7" });
-    expect(fitRows(psytypeRows(scores, ru), ru)[0].because).toBe("На основе: Аналитик 56.4, Скептик 8.7");
-    expect(summaryLines(psytypeRows(scores, en), [], en)).toContain("Best fit for work: Research, engineering and IT (42.8), Art, writing and creative craft (38).");
+  it("explains each score in the reader's language: sector, example roles, and what it came from", () => {
+    const [top] = fitRows(psytypeRows(scores, en), en, emostateRows(state, en));
+    expect(top.name).toBe("Research and science");
+    expect(top.sector).toBe("Technical and analytical");
+    expect(top.roles).toBe("Roles: Researcher, scientist, academic, R&D specialist");
+    expect(top.because).toMatch(/^Personality [\d.]+: Analyst 56\.4, Mediator 45, Skeptic 8\.7 · Right now [\d.]+: Openness to experience 73, Independence 70, Self-control 48$/);
+
+    const hidden = fitRows(psytypeRows(scores, ru), ru)[0];
+    expect(hidden.because).toMatch(/^Тип личности [\d.]+: Аналитик 56\.4, Медиатор 45, Скептик 8\.7$/);
+    expect(summaryLines(psytypeRows(scores, en), emostateRows(state, en), en).find((l) => l.startsWith("Best fit for work"))).toContain("Research and science");
   });
 
-  it("uses only real type names, and has a name and text for every field in both languages", () => {
-    for (const weights of Object.values(FIELDS)) for (const type of Object.keys(weights)) expect(Object.keys(en.psytypes)).toContain(type);
-    for (const dict of [en, ru]) expect(Object.keys(dict.deep.fit.fields).sort()).toEqual(Object.keys(FIELDS).sort());
+  it("uses only real AVOCO type and scale names, and has a name, text and roles for every field in both languages", () => {
+    for (const rule of Object.values(FIELDS)) {
+      for (const type of Object.keys(rule.types)) expect(Object.keys(en.psytypes)).toContain(type);
+      for (const scale of Object.keys(rule.scales)) expect(Object.keys(en.emostate)).toContain(scale);
+      expect(SECTORS).toContain(rule.sector);
+    }
+    for (const dict of [en, ru]) {
+      expect(Object.keys(dict.deep.fit.fields).sort()).toEqual(Object.keys(FIELDS).sort());
+      expect(Object.keys(dict.deep.fit.sectors).sort()).toEqual([...SECTORS].sort());
+    }
+    // every type and every scale matters somewhere
+    const used = (pick: "types" | "scales") => new Set(Object.values(FIELDS).flatMap((r) => Object.keys(r[pick])));
+    expect(used("types").size).toBe(8);
+    expect(used("scales").size).toBe(14);
   });
 });
 

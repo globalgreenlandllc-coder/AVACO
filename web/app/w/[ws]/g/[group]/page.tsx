@@ -72,7 +72,7 @@ export default async function GroupPage({ params }: { params: Promise<{ ws: stri
             {people.map(({ participant: p, latest }) => {
               const status = latest ? latest.status : "invited";
               const top = latest?.status === "completed" ? latest.psytype?.[0] : undefined;
-              const fit = latest?.status === "completed" && latest.psytype ? fieldFits(latest.psytype)[0] : undefined;
+              const fit = latest?.status === "completed" && latest.psytype ? fieldFits(latest.psytype, ws.hideEmotions ? null : latest.emostate)[0] : undefined;
               const personal = `${origin}/r/${p.token}`;
               return (
                 <li key={p.id} className="card p-5">

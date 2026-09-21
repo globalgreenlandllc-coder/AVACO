@@ -22,7 +22,7 @@ export function apiAnalysis(analysis: Analysis, participant: Participant, ws: Wo
     completed_at: analysis.completed_at,
     psytype,
     emostate: ws.hideEmotions ? null : analysis.emostate,
-    best_fit: psytype ? fieldFits(psytype).map((f) => ({ field: f.key, score: f.score })) : null,
+    best_fit: psytype ? fieldFits(psytype, ws.hideEmotions ? null : analysis.emostate).map((f) => ({ field: f.key, sector: f.sector, score: f.score, personality_score: f.typeScore, state_score: f.stateScore })) : null,
     error: analysis.error ? (analysis.error === "timeout" ? "timeout" : "analysis_failed") : null,
   };
 }

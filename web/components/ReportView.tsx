@@ -136,7 +136,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   const profiled = leaders.length > 0 ? leaders.slice(0, 2) : top ? [top] : [];
   const summary = summaryLines(psy, emo, t);
   const { ui, method, fit } = t.deep;
-  const fits = fitRows(psy, t);
+  const fits = fitRows(psy, t, emo);
   const podium = fits.slice(0, 3);
 
   return (
@@ -221,14 +221,16 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
                   <Ring score={f.score} label={`${f.name}: ${f.score} / 100`} />
                   <span className="font-display text-5xl font-medium text-accent-text" aria-hidden>{String(i + 1).padStart(2, "0")}</span>
                 </div>
-                <p className="mt-4 text-lg font-semibold leading-snug">{f.name}</p>
+                <p className="eyebrow mt-4">{f.sector}</p>
+                <p className="mt-1 text-lg font-semibold leading-snug">{f.name}</p>
                 <p className="mt-2 text-sm leading-relaxed text-ink-2">{f.text}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-2">{f.roles}</p>
                 <p className="mt-2 text-xs text-muted">{f.because}</p>
               </li>
             ))}
           </ol>
 
-          <ol className="mt-8 space-y-5" start={podium.length + 1}>
+          <ol className="mt-8 grid gap-x-12 gap-y-5 sm:grid-cols-2" start={podium.length + 1}>
             {fits.slice(podium.length).map((f, i, rest) => (
               <li key={f.key} className="break-inside-avoid-page">
                 <div className="flex items-baseline justify-between gap-3">
@@ -241,8 +243,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
                 <div className="mt-2 h-2.5 rounded-r-full bg-track" role="img" aria-label={`${f.name}: ${f.score} / 100`}>
                   <div className="bar-fill h-full rounded-r-full" style={{ width: `${f.score}%`, background: i >= rest.length - 3 ? "var(--bar-background)" : "var(--bar-active)", animationDelay: `${i * 50}ms` }} />
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-ink-2">{f.text}</p>
-                <p className="mt-1 text-xs text-muted">{f.because}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-2">{f.roles}</p>
+                <p className="mt-1 text-xs text-muted">{f.sector} · {f.because}</p>
               </li>
             ))}
           </ol>

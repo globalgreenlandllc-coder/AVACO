@@ -52,13 +52,13 @@ export default async function ApiDocsPage() {
   "completed_at": "2026-09-21T10:00:41.000Z",
   "psytype":  [{ "key": "analyst", "label": "Analyst", "value": 56.4, "zone": "leading" }, …],
   "emostate": [{ "key": "ability_to_attract", "label": "Attractiveness", "value": 76 }, …],
-  "best_fit": [{ "field": "research", "score": 42.8 }, …],
+  "best_fit": [{ "field": "research", "sector": "tech", "score": 48.3, "personality_score": 42.8, "state_score": 64.7 }, …],
   "error": null
 }`}</Code>
         <ul className="mt-4 space-y-2 text-sm leading-relaxed text-ink-2">
           <li><code>psytype</code>: eight personality types, 0 to 100, highest first. Zones: 50 and up <code>leading</code>, 30 to 49.9 <code>active</code>, below 30 <code>background</code>.</li>
           <li><code>emostate</code>: fourteen emotional scales, 0 to 100. <code>null</code> when your workspace hides emotional state.</li>
-          <li><code>best_fit</code>: this platform's fit score for fields of work: {Object.keys(FIELDS).join(", ")}.</li>
+          <li><code>best_fit</code>: this platform's fit score for {Object.keys(FIELDS).length} fields of work, best first. <code>score</code> is three quarters <code>personality_score</code> (from the types) and one quarter <code>state_score</code> (from the emotional scales that work leans on; <code>null</code> when emotional state is hidden, and then <code>score</code> equals <code>personality_score</code>). Fields: {Object.keys(FIELDS).join(", ")}.</li>
           <li><code>error</code>: <code>analysis_failed</code> (usually audio too short, too quiet or an unsupported format) or <code>timeout</code>.</li>
         </ul>
       </section>

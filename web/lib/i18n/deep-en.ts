@@ -168,56 +168,148 @@ export const deepEn = {
 
   fit: {
     "title": "Where you can do your best work",
-    "lead": "A fit score for eleven fields of work, from 0 to 100. The higher the score, the more naturally that kind of work comes to you; a low score means it is possible but costs you more effort.",
+    "lead": "A fit score for twenty-five fields of work, from 0 to 100. The higher the score, the more naturally that kind of work comes to you; a low score means it is possible but costs you more effort.",
     "best": "Best fit",
     "effort": "Takes more effort",
-    "because": "Based on",
-    "note": "This score is calculated by this platform, not by AVOCO. Each field is tied to the personality types whose AVOCO descriptions name that kind of work, and the score is the weighted average of your results on those types. It reflects style and inclination, not skill, experience or training.",
+    "personality": "Personality",
+    "rightNow": "Right now",
+    "roles": "Roles",
+    "all": "All fields by sector",
+    "note": "This score is calculated by this platform, not by AVOCO, from everything AVOCO measured. Three quarters of it come from your personality types: each field is tied to the types whose AVOCO descriptions name that kind of work. One quarter comes from the emotional scales that kind of work leans on, as they sound right now, so that part will shift from one recording to the next. The score reflects style and inclination, not skill, experience or training.",
     "summary": "Best fit for work: {names}.",
+    "sectors": {
+      "business": "Business and management",
+      "market": "Sales and communication",
+      "people": "Working with people",
+      "tech": "Technical and analytical",
+      "creative": "Creative",
+      "practical": "Practical and service"
+    },
     "fields": {
       "leadership": {
-        "name": "Leadership and big goals",
-        "text": "Taking responsibility, making the important decisions, leading people toward a large goal."
+        "name": "Leadership and general management",
+        "text": "Taking responsibility, making the important decisions, leading people toward a large goal.",
+        "roles": "CEO, director, department head, team lead"
+      },
+      "entrepreneurship": {
+        "name": "Entrepreneurship and new ventures",
+        "text": "Starting things: spotting an opportunity, moving fast, bringing people and resources together.",
+        "roles": "Founder, business developer, product launcher, franchise owner"
       },
       "operations": {
-        "name": "Operations, planning and systems",
-        "text": "Building systems, planning time, allocating resources, keeping standards."
+        "name": "Operations and process management",
+        "text": "Building systems, keeping standards, making sure the work runs the same way every day.",
+        "roles": "Operations manager, production manager, office manager, supply planner"
+      },
+      "projects": {
+        "name": "Project management",
+        "text": "Turning a goal into a plan, a schedule and delivered results.",
+        "roles": "Project manager, programme coordinator, construction manager, scrum master"
+      },
+      "finance": {
+        "name": "Finance and accounting",
+        "text": "Accuracy with money: records, controls, forecasts and careful decisions.",
+        "roles": "Accountant, financial analyst, controller, bookkeeper, underwriter"
+      },
+      "consulting": {
+        "name": "Consulting and strategy",
+        "text": "Understanding a client's problem quickly and convincing them of a way forward.",
+        "roles": "Management consultant, business analyst, strategy advisor"
       },
       "sales": {
         "name": "Sales, negotiation and partnerships",
-        "text": "Making connections, attracting people and resources, closing agreements."
+        "text": "Making connections, attracting people and resources, closing agreements.",
+        "roles": "Account executive, real-estate agent, business development, recruiter, buyer"
       },
-      "innovation": {
-        "name": "New projects and innovation",
-        "text": "Generating ideas, launching something new, finding unconventional solutions."
-      },
-      "stage": {
-        "name": "Public speaking, media and events",
-        "text": "Working with public attention: presenting, performing, creating an atmosphere."
+      "service": {
+        "name": "Customer service and support",
+        "text": "Patience and goodwill with people who need help, including the difficult ones.",
+        "roles": "Support agent, call-centre operator, client success manager, receptionist"
       },
       "marketing": {
         "name": "Marketing and creative production",
-        "text": "Turning ideas into something vivid that reaches and moves an audience."
+        "text": "Turning ideas into something vivid that reaches and moves an audience.",
+        "roles": "Marketer, brand manager, content creator, copywriter, SMM specialist"
       },
-      "people": {
-        "name": "People, HR and team care",
-        "text": "Looking after the people and the climate in a team; support and trust."
+      "stage": {
+        "name": "Public speaking, media and events",
+        "text": "Working with public attention: presenting, performing, creating an atmosphere.",
+        "roles": "Presenter, speaker, host, actor, PR manager, event producer"
+      },
+      "hr": {
+        "name": "HR and team care",
+        "text": "Looking after the people and the climate in a team; support and trust.",
+        "roles": "HR manager, recruiter, people partner, office culture lead"
+      },
+      "teaching": {
+        "name": "Teaching and training",
+        "text": "Explaining, engaging a group and caring whether each person got it.",
+        "roles": "Teacher, corporate trainer, tutor, coach, instructor"
+      },
+      "counselling": {
+        "name": "Counselling and psychology",
+        "text": "Listening deeply, staying calm and helping a person find their own way.",
+        "roles": "Psychologist, counsellor, therapist, mediator, career adviser"
+      },
+      "healthcare": {
+        "name": "Healthcare and care work",
+        "text": "Care combined with precision and steadiness under pressure.",
+        "roles": "Nurse, doctor, pharmacist, caregiver, medical assistant"
+      },
+      "social": {
+        "name": "Social work and non-profit",
+        "text": "Work that serves an ideal and the people who need it most.",
+        "roles": "Social worker, NGO coordinator, volunteer manager, community organiser"
       },
       "research": {
-        "name": "Research, engineering and IT",
-        "text": "Deep, original work in a narrow field where thinking matters most."
+        "name": "Research and science",
+        "text": "Deep, original work in a narrow field where thinking matters most.",
+        "roles": "Researcher, scientist, academic, R&D specialist"
+      },
+      "it": {
+        "name": "IT and engineering",
+        "text": "Building and fixing complex systems; long, concentrated, precise work.",
+        "roles": "Software developer, engineer, system architect, DevOps, QA engineer"
+      },
+      "data": {
+        "name": "Data and analytics",
+        "text": "Finding what the numbers say, carefully and without jumping to conclusions.",
+        "roles": "Data analyst, statistician, actuary, market researcher"
       },
       "quality": {
         "name": "Quality, risk and audit",
-        "text": "Attention to detail, foreseeing risks, doing things correctly and to the end."
+        "text": "Attention to detail, foreseeing risks, doing things correctly and to the end.",
+        "roles": "Auditor, quality manager, risk analyst, inspector, compliance officer"
+      },
+      "law": {
+        "name": "Law and compliance",
+        "text": "Rules, precedent and argument: holding a position and getting the details right.",
+        "roles": "Lawyer, legal counsel, notary, compliance specialist, contract manager"
       },
       "arts": {
         "name": "Art, writing and creative craft",
-        "text": "Work that draws on a rich inner world, sensitivity and imagination."
+        "text": "Work that draws on a rich inner world, sensitivity and imagination.",
+        "roles": "Writer, musician, artist, film-maker, editor"
       },
-      "helping": {
-        "name": "Teaching, counselling and helping professions",
-        "text": "Empathy, listening and service to other people."
+      "design": {
+        "name": "Design and architecture",
+        "text": "Original ideas given form: a sense of beauty joined to structure.",
+        "roles": "Designer, architect, UX designer, illustrator, interior designer"
+      },
+      "admin": {
+        "name": "Administration and logistics",
+        "text": "Order in documents, schedules and movement of things; nothing gets lost.",
+        "roles": "Administrator, logistics coordinator, dispatcher, executive assistant, records manager"
+      },
+      "hospitality": {
+        "name": "Hospitality, travel and events",
+        "text": "Making people feel welcome and creating an experience they remember.",
+        "roles": "Hotel manager, restaurateur, tour guide, flight attendant, wedding planner"
+      },
+      "safety": {
+        "name": "Safety, security and emergency services",
+        "text": "Clear rules, quick decisions and steadiness when it matters most.",
+        "roles": "Security manager, safety officer, emergency responder, military and police roles"
       }
     }
   },

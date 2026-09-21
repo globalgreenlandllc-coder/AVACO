@@ -21,7 +21,7 @@ export function focusSections(preset: PresetKey, psy: ScaleRow[], emo: ScaleRow[
 
   const build: Record<string, () => DetailSection | null> = {
     fit: () => {
-      const fits = fitRows(psy, t).slice(0, 3);
+      const fits = fitRows(psy, t, emo).slice(0, 5);
       return fits.length ? { title: t.deep.fit.title, items: fits.map((f) => `${f.name}: ${f.score}`) } : null;
     },
     strengths: () => (full ? { title: of(ui.strengths), items: full.team.strengths.slice(0, 6) } : reading ? { title: of(t.deep.ui.strengths), items: reading.strengths } : null),

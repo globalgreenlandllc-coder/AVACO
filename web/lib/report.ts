@@ -178,7 +178,7 @@ export function summaryLines(psy: ScaleRow[], emo: ScaleRow[], t: Dict): string[
   if (leaders.length > 0) lines.push(ui.summaryLeaders.replace("{names}", names(leaders)));
   else if (psy.length > 0) lines.push(ui.summaryBalanced.replace("{names}", names(psy.slice(0, 2))));
   if (active.length > 0) lines.push(ui.summaryActive.replace("{names}", names(active)));
-  const fits = fitRows(psy, t).slice(0, 2);
+  const fits = fitRows(psy, t, emo).slice(0, 2);
   if (fits.length > 0) lines.push(t.deep.fit.summary.replace("{names}", fits.map((f) => `${f.name} (${f.score})`).join(", ")));
   if (emo.length >= 6) {
     lines.push(ui.summaryEmoTop.replace("{names}", names(emo.slice(0, 3))));
@@ -187,17 +187,43 @@ export function summaryLines(psy: ScaleRow[], emo: ScaleRow[], t: Dict): string[
   return lines;
 }
 
-export interface FitRow { key: FieldKey; name: string; text: string; score: number; because: string }
+export interface FitRow {
+  key: FieldKey;
+  sector: string;
+  name: string;
+  text: string;
+  /** Example jobs in this field. */
+  roles: string;
+  score: number;
+  typeScore: number;
+  stateScore: number | null;
+  /** One line naming what the score came from: the types, and the emotional scales as they sound right now. */
+  because: string;
+}
 
-/** Fields of work, best fit first, with the types behind each score named. */
-export function fitRows(psy: ScaleRow[], t: Dict): FitRow[] {
-  return fieldFits(psy).map((fit) => ({
-    key: fit.key,
-    name: t.deep.fit.fields[fit.key].name,
-    text: t.deep.fit.fields[fit.key].text,
-    score: fit.score,
-    because: `${t.deep.fit.because}: ${fit.drivers.map((d) => `${lookup(t.psytypes, d.type)?.name ?? d.type} ${d.value}`).join(", ")}`,
-  }));
+/**
+ * Fields of work, best fit first. Pass the emotional rows to include the state part of the score;
+ * a workspace that hides emotional state passes none, and the score is personality alone.
+ */
+export function fitRows(psy: ScaleRow[], t: Dict, emo: ScaleRow[] = []): FitRow[] {
+  const f = t.deep.fit;
+  const typeName = (key: string) => lookup(t.psytypes, key)?.name ?? key;
+  const scaleName = (key: string) => lookup(t.emostate, key)?.name ?? key;
+  return fieldFits(psy, emo.length > 0 ? emo : null).map((fit) => {
+    const personality = `${f.personality} ${fit.typeScore}: ${fit.types.map((d) => `${typeName(d.key)} ${d.value}`).join(", ")}`;
+    const state = fit.stateScore === null ? "" : ` · ${f.rightNow} ${fit.stateScore}: ${fit.scales.map((d) => `${scaleName(d.key)} ${d.value}`).join(", ")}`;
+    return {
+      key: fit.key,
+      sector: f.sectors[fit.sector],
+      name: f.fields[fit.key].name,
+      text: f.fields[fit.key].text,
+      roles: `${f.roles}: ${f.fields[fit.key].roles}`,
+      score: fit.score,
+      typeScore: fit.typeScore,
+      stateScore: fit.stateScore,
+      because: personality + state,
+    };
+  });
 }
 
 export type FailureKind = "audio" | "timeout" | "generic";
