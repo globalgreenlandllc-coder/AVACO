@@ -30,7 +30,7 @@ function Hearts({ rating, delay }: { rating: Rating; delay: number }) {
 }
 
 /** One block of the report, in the shape of AVOCO's printed pages: a gold tab over a soft card. */
-function SectionCard({ section, chapterTitle, chipsOnGold }: { section: DetailSection; chapterTitle: string; chipsOnGold: boolean }) {
+function SectionCard({ section, chipsOnGold }: { section: DetailSection; chipsOnGold: boolean }) {
   if (section.ratings) {
     return (
       <div className="[column-span:all]">
@@ -60,13 +60,12 @@ function SectionCard({ section, chapterTitle, chipsOnGold }: { section: DetailSe
     );
   }
 
-  const isIntro = section.title === chapterTitle;
   return (
     <div className="card mb-6 break-inside-avoid overflow-hidden">
-      {!isIntro && <p className="tab-title">{section.title}</p>}
-      <div className={`px-6 pb-6 sm:px-7 ${isIntro ? "pt-6" : "pt-4"}`}>
+      <p className="tab-title">{section.title}</p>
+      <div className="px-6 pb-6 pt-4 sm:px-7">
         {section.note && <p className="mb-3 text-xs leading-relaxed text-muted">{section.note}</p>}
-        {section.text && <p className={`leading-relaxed text-ink-2 ${isIntro ? "" : "text-sm"}`}>{section.text}</p>}
+        {section.text && <p className="text-sm leading-relaxed text-ink-2">{section.text}</p>}
         {section.items && (
           <ul className="space-y-2 text-sm leading-relaxed text-ink-2">
             {section.items.map((item) => <li key={item} className="flex gap-3"><span className="mt-2 h-1.5 w-3 shrink-0 rounded-full bg-accent" aria-hidden /><span>{item}</span></li>)}
@@ -80,12 +79,19 @@ function SectionCard({ section, chapterTitle, chipsOnGold }: { section: DetailSe
 
 function ChapterBody({ chapter }: { chapter: Chapter }) {
   const chipSections = chapter.sections.filter((s) => s.chips);
+  // A section named like its chapter is the chapter's opening text: set wide, above the cards.
+  const intro = chapter.sections.filter((s) => s.title === chapter.title && s.text);
   return (
-    <div className="gap-6 sm:columns-2">
-      {chapter.sections.map((section) => (
-        <SectionCard key={section.title} section={section} chapterTitle={chapter.title} chipsOnGold={chipSections.indexOf(section) % 2 === 0} />
+    <>
+      {intro.map((section) => (
+        <p key={section.title} className="mb-8 gap-10 border-l-4 border-accent pl-6 leading-relaxed text-ink-2 sm:columns-2 sm:text-lg">{section.text}</p>
       ))}
-    </div>
+      <div className="gap-6 sm:columns-2">
+        {chapter.sections.filter((s) => !intro.includes(s)).map((section) => (
+          <SectionCard key={section.title} section={section} chipsOnGold={chipSections.indexOf(section) % 2 === 0} />
+        ))}
+      </div>
+    </>
   );
 }
 

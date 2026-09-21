@@ -5,7 +5,7 @@ import type { ScaleRow } from "@/lib/report";
 
 /** AVOCO's own order of the types. A fixed order keeps the shape comparable between two reports. */
 const ORDER = ["organizer", "driver", "catalyst", "performer", "harmonizer", "analyst", "skeptic", "mediator"];
-const W = 520, H = 400, CX = W / 2, CY = H / 2, R = 128;
+const W = 520, H = 430, CX = W / 2, CY = H / 2, R = 150;
 
 const rank = (key: string) => (ORDER.includes(key) ? ORDER.indexOf(key) : ORDER.length);
 

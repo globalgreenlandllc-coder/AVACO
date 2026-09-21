@@ -129,25 +129,22 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       {backLink && <Link href={backLink.href} className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
       {top && (
-        <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14">
+        <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">
           {/* The capsules of AVOCO's printed cover. */}
-          <span className="cover-capsule drift" style={{ top: -90, left: "5%", width: 120, height: 330, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
-          <span className="cover-capsule drift" style={{ top: -90, left: "calc(5% + 76px)", width: 44, height: 200, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", animationDelay: "-3s" }} aria-hidden />
-          <span className="cover-capsule drift" style={{ bottom: -90, right: "4%", width: 120, height: 300, borderRadius: "999px 999px 0 0", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)", animationDelay: "-5s" }} aria-hidden />
-          <span className="cover-capsule drift" style={{ bottom: -90, right: "calc(4% + 76px)", width: 44, height: 190, borderRadius: "999px 999px 0 0", background: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", animationDelay: "-7s" }} aria-hidden />
+          <span className="cover-capsule drift" style={{ top: -90, right: "5%", width: 120, height: 320, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
+          <span className="cover-capsule drift hidden sm:block" style={{ top: -90, right: "5%", width: 44, height: 190, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", animationDelay: "-3s" }} aria-hidden />
+          <span className="cover-capsule drift" style={{ bottom: -90, left: "47%", width: 120, height: 290, borderRadius: "999px 999px 0 0", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)", animationDelay: "-5s" }} aria-hidden />
+          <span className="cover-capsule drift" style={{ bottom: -90, left: "47%", width: 44, height: 150, borderRadius: "999px 999px 0 0", background: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", animationDelay: "-7s" }} aria-hidden />
 
-          <div className="relative flex items-baseline justify-between gap-4">
-            <p className="cover-eyebrow">{r.title} · {recordedOn}</p>
-            <p className="font-display text-xl font-semibold tracking-[0.2em]" style={{ color: "var(--cover-gold)" }}>{t.brand}</p>
-          </div>
+          <p className="cover-eyebrow relative"><span className="font-display text-xl font-semibold tracking-[0.2em]">{t.brand}</span><span className="mx-3 opacity-50">·</span>{r.title} · {recordedOn}</p>
 
-          <div className="relative mt-10 grid items-center gap-10 lg:grid-cols-[1fr_1.15fr]">
+          <div className="relative mt-10 grid items-center gap-10 lg:grid-cols-[1fr_1.15fr] print:mt-6 print:grid-cols-[1fr_1.2fr] print:gap-4">
             <div>
               <p className="text-sm font-semibold" style={{ color: "var(--cover-muted)" }}>{leaders.length === 0 ? r.balancedTitle : leaders.length > 1 ? r.leadingTypes : r.leadingType}</p>
               <div className="mt-3 space-y-6">
                 {profiled.map((type) => (
                   <div key={type.key}>
-                    <h1 className={`gold-text sheen pb-2 font-display font-semibold leading-[0.95] ${profiled.length > 1 ? "text-5xl sm:text-6xl" : "text-6xl sm:text-8xl"}`}>{type.name}</h1>
+                    <h1 className={`gold-text sheen pb-2 font-display font-semibold leading-[0.95] ${profiled.length > 1 ? "text-5xl sm:text-6xl print:text-4xl" : "text-6xl sm:text-8xl print:text-6xl"}`}>{type.name}</h1>
                     <p className="mt-3 flex items-baseline gap-3">
                       <span className="text-4xl font-semibold tabular-nums"><CountUp value={type.value} /></span>
                       <span className="text-sm" style={{ color: "var(--cover-muted)" }}>/ 100</span>
@@ -158,7 +155,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
                 ))}
               </div>
               {profiled.length === 1 && (
-                <p className="mt-6 max-w-md leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>
+                <p className="mt-6 max-w-md leading-relaxed sm:text-lg print:text-sm" style={{ color: "var(--cover-muted)" }}>
                   {leaders.length === 0 && `${r.balancedText.replace("{type}", top.name)} `}{top.text}
                 </p>
               )}
@@ -289,7 +286,7 @@ function Ring({ score, label }: { score: number; label: string }) {
   return (
     <span className="relative grid h-20 w-20 place-items-center" role="img" aria-label={label}>
       <svg viewBox="0 0 80 80" className="absolute inset-0 -rotate-90" aria-hidden>
-        <circle cx="40" cy="40" r={RING_R} fill="none" stroke="var(--track)" strokeWidth="6" />
+        <circle cx="40" cy="40" r={RING_R} fill="none" stroke="color-mix(in oklab, var(--bar-background) 35%, transparent)" strokeWidth="6" />
         <circle className="score-ring" cx="40" cy="40" r={RING_R} fill="none" stroke="var(--bar-leading)" strokeWidth="6" strokeLinecap="round"
           strokeDasharray={RING_LENGTH} strokeDashoffset={RING_LENGTH * (1 - Math.max(0, Math.min(100, score)) / 100)} style={{ "--ring-length": RING_LENGTH } as React.CSSProperties} />
       </svg>
