@@ -1,6 +1,7 @@
 /** Turns gateway results into what the report shows, in the visitor's language. Pure, so it can be tested. */
 import type { Dict } from "./i18n/en";
 import type { FullProfile, TypeProfile } from "./i18n/types-ru";
+import { fieldFits, type FieldKey } from "./fit";
 
 export type Zone = "leading" | "active" | "background";
 export type Band = "high" | "mid" | "low";
@@ -33,6 +34,9 @@ export interface ScaleRow {
 }
 
 type Entry = { key: string; label: string; value: number; zone?: Zone };
+/** AVOCO's thresholds. Applied to the value as shown, so an old stored zone can never contradict the number. */
+export const zoneOf = (value: number): Zone => (value >= 50 ? "leading" : value >= 30 ? "active" : "background");
+
 const lookup = <T,>(table: Record<string, T>, key: string): T | null => (Object.hasOwn(table, key) ? table[key] : null);
 
 /** Emotional scales have no zones in AVOCO; these bands are this platform's reading of 0 to 100. */
@@ -41,7 +45,7 @@ export const bandOf = (value: number): Band => (value >= 60 ? "high" : value >= 
 export function psytypeRows(items: Entry[], t: Dict): ScaleRow[] {
   return items.map((item) => {
     const short = lookup(t.psytypes, item.key);
-    const zone = item.zone ?? "background";
+    const zone = zoneOf(item.value);
     return {
       key: item.key,
       name: short?.name ?? item.label, // an unknown type still shows, under the gateway's label
@@ -75,7 +79,8 @@ function typeDetails(key: string, value: number, zone: Zone, t: Dict): DetailSec
     { title: t.deep.ui.strengths, items: reading.strengths },
     { title: t.deep.ui.watch, items: reading.watch },
     { title: t.deep.ui.communicate, text: reading.communicate },
-    { title: t.deep.ui.role, text: reading.role, note: ui.partialNote },
+    { title: t.deep.ui.role, text: reading.role },
+    { title: ui.pendingTitle, note: ui.partialNote },
   ];
 }
 
@@ -173,11 +178,26 @@ export function summaryLines(psy: ScaleRow[], emo: ScaleRow[], t: Dict): string[
   if (leaders.length > 0) lines.push(ui.summaryLeaders.replace("{names}", names(leaders)));
   else if (psy.length > 0) lines.push(ui.summaryBalanced.replace("{names}", names(psy.slice(0, 2))));
   if (active.length > 0) lines.push(ui.summaryActive.replace("{names}", names(active)));
+  const fits = fitRows(psy, t).slice(0, 2);
+  if (fits.length > 0) lines.push(t.deep.fit.summary.replace("{names}", fits.map((f) => `${f.name} (${f.score})`).join(", ")));
   if (emo.length >= 6) {
     lines.push(ui.summaryEmoTop.replace("{names}", names(emo.slice(0, 3))));
     lines.push(ui.summaryEmoLow.replace("{names}", names(emo.slice(-3).reverse())));
   }
   return lines;
+}
+
+export interface FitRow { key: FieldKey; name: string; text: string; score: number; because: string }
+
+/** Fields of work, best fit first, with the types behind each score named. */
+export function fitRows(psy: ScaleRow[], t: Dict): FitRow[] {
+  return fieldFits(psy).map((fit) => ({
+    key: fit.key,
+    name: t.deep.fit.fields[fit.key].name,
+    text: t.deep.fit.fields[fit.key].text,
+    score: fit.score,
+    because: `${t.deep.fit.because}: ${fit.drivers.map((d) => `${lookup(t.psytypes, d.type)?.name ?? d.type} ${d.value}`).join(", ")}`,
+  }));
 }
 
 export type FailureKind = "audio" | "timeout" | "generic";

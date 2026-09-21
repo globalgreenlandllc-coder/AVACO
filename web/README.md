@@ -67,6 +67,7 @@ the API and no endpoint that serves one (checked 2026-09-21). The report's conte
 |---|---|---|
 | `lib/i18n/types-en.ts`, `types-ru.ts` | The official description of all 8 types, and the full official report per type: mindset, role in the team, motivation, resources, communication, behaviour under stress, relationships, compatibility | AVOCO's original report ("Vocal Psychotyping System"). Russian translated here from the English |
 | `lib/i18n/deep-en.ts`, `deep-ru.ts` | Zone texts, a short reading per type (strengths, watch-outs, how to talk, where it fits), readings of the 14 emotional scales at high (60+), moderate (35 to 59) and low, and "How this analysis works" | Written for this app. The type readings are drawn from AVOCO's descriptions; the method section from Voxera's published description of the engine: https://rikatv.kz/evrika/aktsii/voxera.html |
+| `lib/fit.ts` | "Where you can do your best work": a 0 to 100 fit score for eleven fields of work. Each field is tied to the types whose AVOCO descriptions name that kind of work, with weights; the score is the weighted average of the person's type scores | Calculated by this app. AVOCO's API has no such score. The weights are a judgement and are the place to tune it |
 | `lib/report.ts` | Picks the content for each score and assembles the panel behind every row | |
 
 **Only the Catalyst has its full official report so far.** The other seven types show AVOCO's official

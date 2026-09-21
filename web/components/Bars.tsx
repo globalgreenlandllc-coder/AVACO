@@ -8,7 +8,8 @@ const FILL: Record<Zone, string> = { leading: "var(--bar-leading)", active: "var
 /**
  * Horizontal bars on a 0 to 100 scale. One hue; the zone sets the step and is always written out as
  * text too, so nothing depends on colour alone. Clicking a row opens its full explanation.
- * In print every explanation is open, so the PDF is the complete report.
+ * In print, leading and active types and every emotional scale are open; background types keep their
+ * one-line description, as in AVOCO's original report, which profiles only the types that matter for the person.
  */
 export function Bars({ rows, markers = false, expandLabel, defaultOpen }: { rows: ScaleRow[]; markers?: boolean; expandLabel: string; defaultOpen?: string }) {
   const [open, setOpen] = useState<string | null>(defaultOpen ?? null);
@@ -34,18 +35,18 @@ export function Bars({ rows, markers = false, expandLabel, defaultOpen }: { rows
               <span className="bar-fill block h-full rounded-r-full" style={{ width: `${Math.max(0, Math.min(100, row.value))}%`, background: FILL[row.zone ?? "leading"], animationDelay: `${i * 50}ms` }} />
               {markers && [30, 50].map((mark) => <span key={mark} className="absolute -top-1 h-4 w-px bg-ink-2/40" style={{ left: `${mark}%` }} aria-hidden />)}
             </span>
-            {row.text && !isOpen && <span className="mt-2 block text-sm leading-relaxed text-ink-2 print:hidden">{row.text}</span>}
+            {row.text && !isOpen && <span className={`mt-2 block text-sm leading-relaxed text-ink-2 ${row.zone === "background" ? "" : "print:hidden"}`}>{row.text}</span>}
           </>
         );
 
         return (
-          <li key={row.key} className={`-mx-3 rounded-xl px-3 py-2.5 transition-colors ${isOpen ? "bg-track/50" : "hover:bg-track/40"}`}>
+          <li key={row.key} className={`-mx-3 break-inside-avoid-page rounded-xl px-3 py-2.5 transition-colors ${isOpen ? "bg-track/50" : "hover:bg-track/40"}`}>
             {expandable
               ? <button type="button" className="block w-full text-left" aria-expanded={isOpen} aria-label={`${row.name}: ${expandLabel}`} onClick={() => setOpen(isOpen ? null : row.key)}>{head}</button>
               : <div>{head}</div>}
 
             {expandable && (
-              <div className={`${isOpen ? "block" : "hidden"} space-y-4 pb-2 pt-4 print:block`}>
+              <div className={`${isOpen ? "block" : "hidden"} space-y-4 pb-2 pt-4 ${row.zone === "background" ? "" : "print:block"}`}>
                 {row.details.map((section, n) => {
                   const startsChapter = section.group && section.group !== row.details[n - 1]?.group;
                   const isChapterIntro = section.title === section.group;

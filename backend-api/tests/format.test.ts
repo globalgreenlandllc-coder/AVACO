@@ -6,8 +6,10 @@ describe("zones", () => {
     "%d is %s", (value, zone) => expect(zoneOf(value)).toBe(zone),
   );
 
-  it("uses the raw value, not the rounded one", () => {
-    expect(formatPsytype([{ id: 1, name: "organizer", value: 49.96 }])).toEqual([{ key: "organizer", label: "Organizer", value: 50, zone: "active" }]);
+  it("takes the zone from the rounded value, so it never contradicts the number shown", () => {
+    expect(formatPsytype([{ id: 1, name: "organizer", value: 29.96 }])).toEqual([{ key: "organizer", label: "Organizer", value: 30, zone: "active" }]);
+    expect(formatPsytype([{ id: 1, name: "organizer", value: 49.96 }])).toEqual([{ key: "organizer", label: "Organizer", value: 50, zone: "leading" }]);
+    expect(formatPsytype([{ id: 1, name: "organizer", value: 29.94 }])[0]).toMatchObject({ value: 29.9, zone: "background" });
   });
 });
 

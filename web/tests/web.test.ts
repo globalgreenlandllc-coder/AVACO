@@ -4,7 +4,8 @@ vi.mock("server-only", () => ({}));
 
 import { en } from "@/lib/i18n/en";
 import { ru } from "@/lib/i18n/ru";
-import { bandOf, emostateRows, failureKind, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
+import { fieldFits, FIELDS } from "@/lib/fit";
+import { bandOf, emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines, zoneOf } from "@/lib/report";
 import { encodeWav } from "@/lib/wav";
 
 describe("report rows", () => {
@@ -82,8 +83,9 @@ describe("explanations", () => {
 
   it("falls back to a short reading, and says so, for a type without its full report yet", () => {
     const organizer = psytypeRows(psy, en)[0];
-    expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "About this type", "Strengths", "Worth watching", "How to talk with this type", "Where it shines"]);
-    expect(organizer.details.at(-1)!.note).toBe(en.types.ui.partialNote);
+    expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "About this type", "Strengths", "Worth watching", "How to talk with this type", "Where it shines", "Full AVOCO report"]);
+    expect(organizer.details.at(-1)).toEqual({ title: "Full AVOCO report", note: en.types.ui.partialNote }); // its own entry, after the reading
+    expect(organizer.details.at(-2)!.note).toBeUndefined();
     expect(organizer.details.some((d) => d.group)).toBe(false);
   });
 
@@ -98,6 +100,7 @@ describe("explanations", () => {
   });
 
   it("writes the summary from the scores alone", () => {
+    // psy has only three of the eight types here, so there is no work-fit line (it needs all eight).
     expect(summaryLines(psytypeRows(psy, en), emostateRows(emo, en), en)).toEqual([
       "Leading: Organizer (88.6).",
       "Active alongside: Catalyst (45).",
@@ -112,6 +115,55 @@ describe("explanations", () => {
       expect(Object.keys(dict.deep.psytypes).sort()).toEqual(Object.keys(dict.psytypes).sort());
       expect(Object.keys(dict.deep.emostate).sort()).toEqual(Object.keys(dict.emostate).sort());
     }
+  });
+});
+
+describe("zones", () => {
+  it("follow the value shown, even when an older stored zone disagrees", () => {
+    expect([50, 49.9, 30, 29.9].map(zoneOf)).toEqual(["leading", "active", "active", "background"]);
+    // A report stored before the rounding fix: shown as 30, stored as background.
+    const [row] = psytypeRows([{ key: "organizer", label: "Organizer", value: 30, zone: "background" }], en);
+    expect(row).toMatchObject({ zone: "active", tag: "Active" });
+    expect(row.details[0].text).toContain("active zone");
+  });
+});
+
+describe("where you can do your best work", () => {
+  // The scores from a real report: a leading Analyst with an active Mediator.
+  const scores = [["analyst", 56.4], ["mediator", 45], ["organizer", 30], ["harmonizer", 20.5], ["performer", 9.4], ["skeptic", 8.7], ["driver", 8.3], ["catalyst", 7.4]]
+    .map(([key, value]) => ({ key: key as string, label: key as string, value: value as number }));
+
+  it("ranks every field by the weighted average of the types behind it", () => {
+    const fits = fieldFits(scores);
+    expect(fits).toHaveLength(Object.keys(FIELDS).length);
+    expect(fits.slice(0, 3).map((f) => f.key)).toEqual(["research", "arts", "helping"]);
+    expect(fits[0].score).toBeCloseTo((56.4 * 1 + 8.7 * 0.4) / 1.4, 1); // 42.8
+    expect(fits[1].score).toBeCloseTo((45 * 0.8 + 56.4 * 0.6 + 9.4 * 0.4 + 20.5 * 0.3) / 2.1, 1); // 38
+    expect(fits.at(-1)).toMatchObject({ key: "sales", score: 8.1 }); // (7.4 + 0.5 × 8.3 + 0.5 × 9.4) / 2
+    expect(fits.map((f) => f.score)).toEqual([...fits.map((f) => f.score)].sort((a, b) => b - a));
+  });
+
+  it("stays on the 0 to 100 scale of the types", () => {
+    const flat = (v: number) => fieldFits(scores.map((s) => ({ ...s, value: v }))).map((f) => f.score);
+    expect(new Set(flat(100))).toEqual(new Set([100]));
+    expect(new Set(flat(0))).toEqual(new Set([0]));
+  });
+
+  it("says nothing unless all eight types were scored", () => {
+    expect(fieldFits(scores.slice(0, 7))).toEqual([]);
+    expect(fitRows(psytypeRows(scores.slice(0, 3), en), en)).toEqual([]);
+  });
+
+  it("names the types behind each score, strongest contribution first, in the reader's language", () => {
+    const [top] = fitRows(psytypeRows(scores, en), en);
+    expect(top).toMatchObject({ name: "Research, engineering and IT", score: 42.8, because: "Based on: Analyst 56.4, Skeptic 8.7" });
+    expect(fitRows(psytypeRows(scores, ru), ru)[0].because).toBe("На основе: Аналитик 56.4, Скептик 8.7");
+    expect(summaryLines(psytypeRows(scores, en), [], en)).toContain("Best fit for work: Research, engineering and IT (42.8), Art, writing and creative craft (38).");
+  });
+
+  it("uses only real type names, and has a name and text for every field in both languages", () => {
+    for (const weights of Object.values(FIELDS)) for (const type of Object.keys(weights)) expect(Object.keys(en.psytypes)).toContain(type);
+    for (const dict of [en, ru]) expect(Object.keys(dict.deep.fit.fields).sort()).toEqual(Object.keys(FIELDS).sort());
   });
 });
 

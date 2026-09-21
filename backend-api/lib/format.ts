@@ -23,12 +23,11 @@ export function zoneOf(value: number): Zone {
 }
 
 export function formatPsytype(scales: ScaleValue[]): PsytypeResult[] {
-  return [...scales].sort((a, b) => b.value - a.value).map((s) => ({
-    key: s.name,
-    label: PSYTYPE_LABELS[s.name] ?? s.name,
-    value: Math.round(s.value * 10) / 10,
-    zone: zoneOf(s.value),
-  }));
+  return [...scales].sort((a, b) => b.value - a.value).map((s) => {
+    // The zone is taken from the rounded value, the one people see: 29.96 is shown as 30, so it is "active".
+    const value = Math.round(s.value * 10) / 10;
+    return { key: s.name, label: PSYTYPE_LABELS[s.name] ?? s.name, value, zone: zoneOf(value) };
+  });
 }
 
 export function formatEmostate(scales: ScaleValue[]): EmostateResult[] {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
-import { emostateRows, failureKind, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
+import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
 import { Bars } from "./Bars";
 
 export interface Report {
@@ -94,7 +94,8 @@ export function ReportView({ initial, recordedOn, t }: { initial: Report; record
   const leaders = leadingTypes(psy);
   const top = psy[0];
   const summary = summaryLines(psy, emo, t);
-  const { ui, method } = t.deep;
+  const { ui, method, fit } = t.deep;
+  const fits = fitRows(psy, t);
 
   return (
     <article className="space-y-8">
@@ -141,6 +142,33 @@ export function ReportView({ initial, recordedOn, t }: { initial: Report; record
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{r.psyLead}</p>
           <div className="mt-8"><Bars rows={psy} markers expandLabel={ui.expand} defaultOpen={top?.key} /></div>
           <p className="mt-6 text-xs text-muted">{r.zoneHelp}</p>
+        </section>
+      )}
+
+      {fits.length > 0 && (
+        <section className="card p-8 sm:p-12">
+          <h2 className="font-display text-3xl font-medium">{fit.title}</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{fit.lead}</p>
+          <ol className="mt-8 space-y-5">
+            {fits.map((f, i) => (
+              <li key={f.key} className="break-inside-avoid-page">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-medium">{f.name}</span>
+                  <span className="flex items-baseline gap-3">
+                    {i < 3 && <span className="text-xs text-muted">{fit.best}</span>}
+                    {i >= fits.length - 3 && <span className="text-xs text-muted">{fit.effort}</span>}
+                    <span className="w-10 text-right font-semibold tabular-nums">{f.score}</span>
+                  </span>
+                </div>
+                <div className="mt-2 h-2 rounded-r-full bg-track" role="img" aria-label={`${f.name}: ${f.score} / 100`}>
+                  <div className="bar-fill h-full rounded-r-full" style={{ width: `${f.score}%`, background: i < 3 ? "var(--bar-leading)" : i >= fits.length - 3 ? "var(--bar-background)" : "var(--bar-active)", animationDelay: `${i * 50}ms` }} />
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-ink-2">{f.text}</p>
+                <p className="mt-1 text-xs text-muted">{f.because}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-8 border-t border-line pt-6 text-xs leading-relaxed text-muted">{fit.note}</p>
         </section>
       )}
 

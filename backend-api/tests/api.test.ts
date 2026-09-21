@@ -193,7 +193,7 @@ describe("POST /api/v1/analyses — sync", () => {
     expect(body.completed_at).not.toBeNull();
     expect(body.psytype).toEqual([
       { key: "driver", label: "Driver", value: 68.6, zone: "leading" },
-      { key: "organizer", label: "Organizer", value: 50, zone: "active" },
+      { key: "organizer", label: "Organizer", value: 50, zone: "leading" },
       { key: "brand_new_type", label: "brand_new_type", value: 30, zone: "active" },
       { key: "analyst", label: "Analyst", value: 12.3, zone: "background" },
     ]);

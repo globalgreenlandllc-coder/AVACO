@@ -166,6 +166,62 @@ export const deepEn = {
     },
   },
 
+  fit: {
+    "title": "Where you can do your best work",
+    "lead": "A fit score for eleven fields of work, from 0 to 100. The higher the score, the more naturally that kind of work comes to you; a low score means it is possible but costs you more effort.",
+    "best": "Best fit",
+    "effort": "Takes more effort",
+    "because": "Based on",
+    "note": "This score is calculated by this platform, not by AVOCO. Each field is tied to the personality types whose AVOCO descriptions name that kind of work, and the score is the weighted average of your results on those types. It reflects style and inclination, not skill, experience or training.",
+    "summary": "Best fit for work: {names}.",
+    "fields": {
+      "leadership": {
+        "name": "Leadership and big goals",
+        "text": "Taking responsibility, making the important decisions, leading people toward a large goal."
+      },
+      "operations": {
+        "name": "Operations, planning and systems",
+        "text": "Building systems, planning time, allocating resources, keeping standards."
+      },
+      "sales": {
+        "name": "Sales, negotiation and partnerships",
+        "text": "Making connections, attracting people and resources, closing agreements."
+      },
+      "innovation": {
+        "name": "New projects and innovation",
+        "text": "Generating ideas, launching something new, finding unconventional solutions."
+      },
+      "stage": {
+        "name": "Public speaking, media and events",
+        "text": "Working with public attention: presenting, performing, creating an atmosphere."
+      },
+      "marketing": {
+        "name": "Marketing and creative production",
+        "text": "Turning ideas into something vivid that reaches and moves an audience."
+      },
+      "people": {
+        "name": "People, HR and team care",
+        "text": "Looking after the people and the climate in a team; support and trust."
+      },
+      "research": {
+        "name": "Research, engineering and IT",
+        "text": "Deep, original work in a narrow field where thinking matters most."
+      },
+      "quality": {
+        "name": "Quality, risk and audit",
+        "text": "Attention to detail, foreseeing risks, doing things correctly and to the end."
+      },
+      "arts": {
+        "name": "Art, writing and creative craft",
+        "text": "Work that draws on a rich inner world, sensitivity and imagination."
+      },
+      "helping": {
+        "name": "Teaching, counselling and helping professions",
+        "text": "Empathy, listening and service to other people."
+      }
+    }
+  },
+
   method: {
     title: "How this analysis works",
     lead: "What AVOCO measures, how it turns a voice into scores, and how far to trust it.",

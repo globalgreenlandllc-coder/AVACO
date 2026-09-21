@@ -57,7 +57,8 @@ export const typesEn = {
     style: "Preferred relationship style and priorities",
     compatibilityLead: "How this type gets on with each of the eight types, out of five.",
     outOf: "{score} of 5",
-    partialNote: "AVOCO's full report for this type (role in the team, motivation, communication, stress, relationships, compatibility) has not been added to this platform yet. What follows is AVOCO's official description of the type, with a short reading drawn from it.",
+    pendingTitle: "Full AVOCO report",
+    partialNote: "AVOCO's full report for this type (role in the team, motivation, communication, behaviour under stress, relationships, compatibility) has not been added to this platform yet. Shown above: AVOCO's official description of the type, and a short reading drawn from it.",
   },
 
   profiles: {
