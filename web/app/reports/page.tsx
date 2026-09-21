@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import { Trends } from "@/components/Trends";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { leadingTypes, psytypeRows } from "@/lib/report";
@@ -39,6 +40,15 @@ export default async function ReportsPage() {
           })}
         </ul>
       )}
+
+      <div className="mt-10">
+        <Trends
+          analyses={data}
+          names={(key, fallback) => { const all = { ...t.psytypes, ...t.emostate } as Record<string, { name: string }>; return Object.hasOwn(all, key) ? all[key].name : fallback; }}
+          title={t.org.person.trend}
+          lead={t.org.person.trendLead.replace("{n}", String(data.filter((a) => a.status === "completed").length))}
+        />
+      </div>
     </div>
   );
 }

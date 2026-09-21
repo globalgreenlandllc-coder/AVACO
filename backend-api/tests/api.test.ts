@@ -5,12 +5,16 @@ import { GET as getAnalysisRoute, DELETE as deleteAnalysisRoute } from "@/app/ap
 import { GET as listRoute, POST as createRoute } from "@/app/api/v1/analyses/route";
 import { POST as analyzeRoute } from "@/app/api/v1/analyze/route";
 import { GET as healthRoute } from "@/app/api/v1/health/route";
+import { POST as audioRoute } from "@/app/api/v1/audio/route";
 import { POST as uploadsRoute } from "@/app/api/v1/uploads/route";
 import { analyses, avocoJobs, type Db } from "@/lib/db";
 import { API_KEY, AUDIO_URL, CALLBACK_SECRET, createTestDb, params, request, setEnv, stubAudioHost } from "./helpers/app";
 import { MockAvoco } from "./helpers/mock-avoco";
 
-vi.mock("@vercel/blob", () => ({ del: vi.fn(async () => {}) }));
+vi.mock("@vercel/blob", () => ({
+  del: vi.fn(async () => {}),
+  put: vi.fn(async (name: string) => ({ url: `https://store123.public.blob.vercel-storage.com/${name}` })),
+}));
 
 const mock = new MockAvoco();
 let db: Db;
@@ -41,6 +45,7 @@ describe("API key", () => {
     ["GET /health", healthRoute, "GET"],
     ["POST /analyze", analyzeRoute, "POST"],
     ["POST /uploads", uploadsRoute, "POST"],
+    ["POST /audio", audioRoute, "POST"],
     ["POST /analyses", createRoute, "POST"],
     ["GET /analyses", listRoute, "GET"],
     ["GET /analyses/:id", (req) => getAnalysisRoute(req, params(crypto.randomUUID())), "GET"],
@@ -320,6 +325,33 @@ describe("POST /api/v1/analyze (stateless, unchanged)", () => {
   it("applies the same SSRF block", async () => {
     const res = await analyzeRoute(request("POST", "/api/v1/analyze", { body: { audio_url: "https://evil.example.com/a.m4a" } }));
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/v1/audio", () => {
+  const send = (file: File | null) => {
+    const form = new FormData();
+    if (file) form.append("file", file);
+    return audioRoute(new Request("https://gateway.example.com/api/v1/audio", { method: "POST", headers: { authorization: `Bearer ${API_KEY}` }, body: form }));
+  };
+
+  it("stores a small audio file and returns a URL that /analyses accepts", async () => {
+    const res = await send(new File([new Uint8Array(2048)], "interview.m4a", { type: "audio/mp4" }));
+    expect(res.status).toBe(201);
+    const { url } = await res.json();
+    expect(url).toMatch(/^https:\/\/store123\.public\.blob\.vercel-storage\.com\/audio-\d+\.m4a$/);
+    expect((await create({ audio_url: url })).status).toBe(202);
+  });
+
+  it.each([
+    ["no file", null],
+    ["an empty file", new File([], "a.wav", { type: "audio/wav" })],
+    ["a file over 4 MB", new File([new Uint8Array(4 * 1024 * 1024 + 1)], "a.wav", { type: "audio/wav" })],
+    ["something that isn't audio", new File([new Uint8Array(10)], "notes.pdf", { type: "application/pdf" })],
+  ])("rejects %s", async (_name, file) => {
+    const res = await send(file);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("bad_request");
   });
 });
 

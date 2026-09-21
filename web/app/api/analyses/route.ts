@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     if (body?.consent !== true) return json({ error: "bad_request", message: "Consent is required" }, 400);
     if (typeof body.audioUrl !== "string") return json({ error: "bad_request", message: "audioUrl is required" }, 400);
 
-    const created = await gateway.createAnalysis({ audioUrl: body.audioUrl, userId: user.userId });
+    const created = await gateway.createAnalysis({ audioUrl: body.audioUrl, owner: user.userId });
     return json({ id: created.id }, 202);
   } catch (err) {
     return errorResponse(err);

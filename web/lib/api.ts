@@ -1,6 +1,7 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
-import { GatewayError } from "./gateway";
+import { GatewayError, type Analysis } from "./gateway";
+import { Forbidden, Invalid, LimitReached, NotFound } from "./workspaces";
 
 export const json = (body: unknown, status = 200) => Response.json(body, { status });
 
@@ -12,6 +13,9 @@ export async function requireUser(): Promise<{ userId: string } | { denied: Resp
 
 /** Passes the gateway's error code and status through; anything else is a plain 500. */
 export function errorResponse(err: unknown): Response {
+  if (err instanceof Invalid) return json({ error: "bad_request", message: err.message }, 400);
+  if (err instanceof Forbidden || err instanceof NotFound) return json({ error: "not_found", message: "Not found" }, 404); // never confirm that something exists
+  if (err instanceof LimitReached) return json({ error: "limit_reached", message: err.message }, 429);
   if (err instanceof GatewayError) {
     if (err.status >= 500) console.error("Gateway error", err.status, err.code, err.message);
     // A gateway 401 means OUR key is wrong, which is not the visitor's problem to fix.
@@ -20,4 +24,10 @@ export function errorResponse(err: unknown): Response {
   }
   console.error(err);
   return json({ error: "internal_error", message: "Unexpected error" }, 500);
+}
+
+/** What leaves the server for a report: never the gateway's owner id, and no emotions where a workspace hides them. */
+export function publicReport(analysis: Analysis, hideEmotions = false) {
+  const { external_user_id: _owner, ...report } = analysis;
+  return hideEmotions ? { ...report, emostate: null } : report;
 }

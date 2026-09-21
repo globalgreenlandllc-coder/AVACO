@@ -39,8 +39,12 @@ export class AudioError extends Error {
   constructor(public problem: AudioProblem) { super(problem); }
 }
 
-/** Decodes any audio the browser can play, mixes to mono, resamples to 16 kHz. Browser only. */
-export async function toAnalysisWav(source: Blob): Promise<{ wav: Blob; seconds: number }> {
+/**
+ * Decodes any audio the browser can play and resamples to 16 kHz mono. Browser only.
+ * `channel` picks one side of a stereo recording (0 left, 1 right), which is how a recorded call is
+ * split into agent and customer; without it the channels are mixed.
+ */
+export async function toAnalysisWav(source: Blob, channel?: 0 | 1): Promise<{ wav: Blob; seconds: number }> {
   const ctx = new AudioContext();
   let decoded: AudioBuffer;
   try {
@@ -57,10 +61,16 @@ export async function toAnalysisWav(source: Blob): Promise<{ wav: Blob; seconds:
   // Rendering into a mono 16 kHz offline context does the downmix and the resampling in one pass.
   const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * SAMPLE_RATE), SAMPLE_RATE);
   const node = offline.createBufferSource();
-  node.buffer = decoded;
+  node.buffer = channel !== undefined && decoded.numberOfChannels > channel ? oneChannel(decoded, channel) : decoded;
   node.connect(offline.destination);
   node.start();
   const rendered = await offline.startRendering();
 
   return { wav: new Blob([encodeWav(rendered.getChannelData(0))], { type: "audio/wav" }), seconds: decoded.duration };
+}
+
+function oneChannel(buffer: AudioBuffer, channel: number): AudioBuffer {
+  const mono = new AudioBuffer({ numberOfChannels: 1, length: buffer.length, sampleRate: buffer.sampleRate });
+  mono.copyToChannel(buffer.getChannelData(channel), 0);
+  return mono;
 }

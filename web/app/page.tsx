@@ -17,7 +17,7 @@ export default async function Home() {
       <section className="grid gap-5 sm:grid-cols-3">
         {t.home.steps.map((step, i) => (
           <div key={step.title} className="card p-7">
-            <p className="font-display text-4xl text-accent">{String(i + 1).padStart(2, "0")}</p>
+            <p className="font-display text-4xl text-accent-text">{String(i + 1).padStart(2, "0")}</p>
             <h2 className="mt-4 text-lg font-semibold">{step.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-ink-2">{step.text}</p>
           </div>

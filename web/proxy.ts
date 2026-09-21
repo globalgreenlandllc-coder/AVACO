@@ -1,7 +1,8 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // Recording, reports and the API need a signed-in user. The landing page and sign-in are public.
-const PROTECTED = ["/record", "/reports", "/api/upload-token", "/api/analyses"];
+// Participant links (/r, /s), their APIs and the company API carry their own credentials, so they stay public.
+const PROTECTED = ["/record", "/reports", "/w", "/join", "/api/upload-token", "/api/analyses", "/api/w"];
 
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;

@@ -1,3 +1,4 @@
+import { orgRu } from "./org-ru";
 import { typesRu } from "./types-ru";
 import { deepRu } from "./deep-ru";
 import type { Dict } from "./en";
@@ -73,6 +74,11 @@ export const ru: Dict = {
     leadingTypes: "Ваши ведущие типы",
     balancedTitle: "Сбалансированный профиль",
     balancedText: "Сейчас в вашем голосе не преобладает ни один тип. Сильнее всего выражен {type}.",
+    signature: "Голосовая подпись",
+    signatureHelp: "Восемь типов одной фигурой. Пунктирные кольца отмечают 30 и 50.",
+    profileTitle: "Ваш профиль подробно",
+    profileLead: "Подробнее о типе, который сильнее всего звучит в вашем голосе.",
+    profileLeadTwo: "Подробнее о двух типах, которые сильнее всего звучат в вашем голосе.",
     psyTitle: "Личностный профиль",
     psyLead: "Восемь типов, каждый оценивается от 0 до 100. У большинства людей один-два ведущих типа сочетаются с несколькими активными.",
     emoTitle: "Эмоциональное состояние",
@@ -118,4 +124,5 @@ export const ru: Dict = {
   language: "Язык",
   deep: deepRu,
   types: typesRu,
+  org: orgRu,
 };

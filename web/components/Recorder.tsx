@@ -12,13 +12,30 @@ type ErrorKey = keyof Dict["record"]["errors"];
 const RING = 2 * Math.PI * 54;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-export function Recorder({ t }: { t: Dict["record"] }) {
+export interface RecorderProps {
+  t: Dict["record"];
+  /** Where the Blob upload token comes from, where the analysis is started, and where to go afterwards ({id} = analysis id). */
+  uploadUrl?: string;
+  createUrl?: string;
+  doneUrl?: string;
+  /** Replaces the default consent sentence (a company's link names the company). */
+  consentText?: string;
+  /** A second box that must also be ticked, e.g. "18 or older, or a parent agreed". */
+  extraConsent?: string;
+  /** Shown when the server answers 429 (a company's monthly limit). */
+  limitText?: string;
+}
+
+export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText }: RecorderProps) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
   const [clip, setClip] = useState<{ blob: Blob; url: string } | null>(null);
   const [consent, setConsent] = useState(false);
+  const [extra, setExtra] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const agreed = consent && (!extraConsent || extra);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<ErrorKey | null>(null);
 
@@ -105,8 +122,10 @@ export function Recorder({ t }: { t: Dict["record"] }) {
   function reset() {
     setRecording(null);
     setConsent(false);
+    setExtra(false);
     setSeconds(0);
     setError(null);
+    setMessage(null);
     setPhase("idle");
   }
 
@@ -119,21 +138,24 @@ export function Recorder({ t }: { t: Dict["record"] }) {
   }
 
   async function analyse() {
-    if (!clip || !consent) return;
+    if (!clip || !agreed) return;
     setError(null);
+    setMessage(null);
     setPhase("sending");
     try {
       setProgress(t.preparing);
       const { wav } = await toAnalysisWav(clip.blob);
 
       setProgress(t.uploading);
-      const stored = await upload(`voice-${Date.now()}.wav`, wav, { access: "public", handleUploadUrl: "/api/upload-token", contentType: "audio/wav" });
+      const stored = await upload(`voice-${Date.now()}.wav`, wav, { access: "public", handleUploadUrl: uploadUrl, contentType: "audio/wav" });
 
       setProgress(t.starting);
-      const res = await fetch("/api/analyses", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true }) });
+      const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined }) });
+      if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
       if (!res.ok) throw new Error(`analyses ${res.status}`);
       const { id } = await res.json();
-      router.push(`/reports/${id}`);
+      router.push(doneUrl.replace("{id}", id));
+      router.refresh();
     } catch (err) {
       console.error(err);
       setError(err instanceof AudioError ? err.problem : "failed");
@@ -186,15 +208,22 @@ export function Recorder({ t }: { t: Dict["record"] }) {
           <audio controls src={clip.url} className="w-full" />
           <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-ink-2">
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={phase === "sending"} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
-            <span>{t.consent}</span>
+            <span>{consentText ?? t.consent}</span>
           </label>
+          {extraConsent && (
+            <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-ink-2">
+              <input type="checkbox" checked={extra} onChange={(e) => setExtra(e.target.checked)} disabled={phase === "sending"} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
+              <span>{extraConsent}</span>
+            </label>
+          )}
           <div className="flex flex-wrap gap-3">
-            <button type="button" className="btn" onClick={analyse} disabled={!consent || phase === "sending"}>{phase === "sending" ? progress : t.analyse}</button>
+            <button type="button" className="btn" onClick={analyse} disabled={!agreed || phase === "sending"}>{phase === "sending" ? progress : t.analyse}</button>
             <button type="button" className="btn btn-quiet" onClick={reset} disabled={phase === "sending"}>{t.again}</button>
           </div>
         </div>
       )}
 
+      {message && <p role="alert" className="mt-6 rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">{message}</p>}
       {error && <p role="alert" className="mt-6 rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">{t.errors[error]}</p>}
     </div>
   );

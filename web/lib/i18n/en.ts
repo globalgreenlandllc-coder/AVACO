@@ -1,3 +1,4 @@
+import { orgEn } from "./org-en";
 import { typesEn } from "./types-en";
 import { deepEn } from "./deep-en";
 export const en = {
@@ -71,6 +72,11 @@ export const en = {
     leadingTypes: "Your leading types",
     balancedTitle: "A balanced profile",
     balancedText: "No single type dominates your voice right now. The strongest is {type}.",
+    signature: "Voice signature",
+    signatureHelp: "Your eight type scores as one shape. The dashed rings mark 30 and 50.",
+    profileTitle: "Your profile in depth",
+    profileLead: "A closer look at the type that sounds strongest in your voice.",
+    profileLeadTwo: "A closer look at the two types that sound strongest in your voice.",
     psyTitle: "Personality profile",
     psyLead: "Eight types, each scored from 0 to 100. Most people combine one or two leading types with several active ones.",
     emoTitle: "Emotional state",
@@ -116,6 +122,7 @@ export const en = {
   language: "Language",
   deep: deepEn,
   types: typesEn,
+  org: orgEn,
 };
 
 type Widen<T> = T extends string ? string : T extends readonly (infer U)[] ? Widen<U>[] : { [K in keyof T]: Widen<T[K]> };
