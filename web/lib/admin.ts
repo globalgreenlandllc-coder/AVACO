@@ -5,6 +5,7 @@
 import "server-only";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { and, count, countDistinct, desc, eq, gte, inArray, sql, sum } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { admins, creditLedger, db, groups, members, participants, promoCodes, recordings, reportAccess, reportStats, selfRecordings, workspaces } from "./db";
 
@@ -28,6 +29,22 @@ export async function requireAdmin(): Promise<{ userId: string; email: string }>
   const email = primary?.verification?.status === "verified" ? primary.emailAddress : undefined;
   if (!(await isAdminEmail(email))) notFound();
   return { userId, email: email! };
+}
+
+/**
+ * For the menu: is this signed-in person an admin? Asked on every page, so the answer is remembered for five
+ * minutes per person instead of calling Clerk each time. It only decides whether a link is shown;
+ * the portal itself always checks again with requireAdmin().
+ */
+const adminCheck = unstable_cache(async (userId: string): Promise<boolean> => {
+  const user = await (await clerkClient()).users.getUser(userId).catch(() => null);
+  const primary = user?.emailAddresses.find((e) => e.id === user.primaryEmailAddressId);
+  return primary?.verification?.status === "verified" ? isAdminEmail(primary.emailAddress) : false;
+}, ["is-admin"], { revalidate: 300 });
+
+export async function showAdminLink(): Promise<boolean> {
+  const { userId } = await auth();
+  return userId ? adminCheck(userId).catch(() => false) : false;
 }
 
 const since = (days: number) => new Date(Date.now() - days * DAY);
