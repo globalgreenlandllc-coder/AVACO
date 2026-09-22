@@ -69,7 +69,7 @@ export const orgRu: Widen<typeof orgEn> = {
     copy: "Копировать",
     copied: "Скопировано",
     link: "Ссылка",
-    status: { invited: "Приглашён", processing: "В работе", completed: "Готов", failed: "Ошибка" },
+    status: { invited: "Приглашён", queued: "Ждёт сервис", processing: "В работе", completed: "Готов", failed: "Ошибка" },
     bestFit: "Подходит лучше всего",
     recordedOn: "Записано",
     noPeople: "Здесь пока никого нет.",

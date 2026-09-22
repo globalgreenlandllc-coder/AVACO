@@ -38,6 +38,8 @@ export class MockAvoco {
   alwaysUnauthorized = false;
   /** Force this status (with this body) on analysis calls. */
   analyzeError: { status: number; body: unknown } | null = null;
+  /** Paths that answer 502, as if only part of the backend were down. */
+  failPaths: string[] = [];
 
   get url() {
     return `http://127.0.0.1:${(this.server!.address() as AddressInfo).port}`;
@@ -52,6 +54,7 @@ export class MockAvoco {
     this.expiresIn = 900;
     this.refreshFails = this.loginFails = this.alwaysUnauthorized = false;
     this.analyzeError = null;
+    this.failPaths = [];
   }
 
   async start() {
@@ -105,6 +108,7 @@ export class MockAvoco {
 
     if (this.alwaysUnauthorized || !this.validTokens.has(token)) return { status: 401, body: { detail: "Token expired" } };
     if (this.analyzeError) return this.analyzeError;
+    if (this.failPaths.includes(url.pathname)) return { status: 502, body: "backend unavailable" };
     if (match[2]) return { status: 202, body: { id: fields.id, status: "accepted", message: "Queued" } };
     return { status: 200, body: match[1] === "psytype" ? { psy_types: PSY_TYPES } : { emo_scales: EMO_SCALES } };
   }

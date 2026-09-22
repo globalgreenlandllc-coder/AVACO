@@ -66,7 +66,7 @@ export const orgEn = {
     copy: "Copy",
     copied: "Copied",
     link: "Link",
-    status: { invited: "Invited", processing: "In progress", completed: "Ready", failed: "Failed" },
+    status: { invited: "Invited", queued: "Waiting for the service", processing: "In progress", completed: "Ready", failed: "Failed" },
     bestFit: "Best fit",
     recordedOn: "Recorded",
     noPeople: "No one here yet.",

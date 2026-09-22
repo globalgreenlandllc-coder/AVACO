@@ -8,6 +8,7 @@ import { GET as healthRoute } from "@/app/api/v1/health/route";
 import { POST as audioRoute } from "@/app/api/v1/audio/route";
 import { POST as uploadsRoute } from "@/app/api/v1/uploads/route";
 import { analyses, avocoJobs, type Db } from "@/lib/db";
+import { RETRY_EVERY_MS, QUEUE_MAX_AGE_MS } from "@/lib/analyses";
 import { API_KEY, AUDIO_URL, CALLBACK_SECRET, createTestDb, params, request, setEnv, stubAudioHost } from "./helpers/app";
 import { MockAvoco } from "./helpers/mock-avoco";
 
@@ -173,13 +174,62 @@ describe("POST /api/v1/analyses — async", () => {
     expect(row).toMatchObject({ status: "failed", error: "psytype: Audio is shorter than 30 seconds" });
   });
 
-  it("is 502 upstream_error when AVOCO is down, without leaking the upstream body", async () => {
+  it("queues the recording when AVOCO is down, instead of failing it", async () => {
+    mock.analyzeError = { status: 502, body: "backend unavailable" };
+    const res = await create({ type: "both" });
+    expect(res.status).toBe(202);
+    const { id, status } = await res.json();
+    expect(status).toBe("queued");
+
+    const stored = await (await getAnalysisRoute(request("GET", "/"), params(id))).json();
+    expect(stored).toMatchObject({ status: "queued", error: null, psytype: null });
+    const jobs = await db.select().from(avocoJobs).where(eq(avocoJobs.analysisId, id));
+    expect(jobs.every((j) => j.status === "pending")).toBe(true);
+    const [row] = await db.select().from(analyses).where(eq(analyses.id, id));
+    expect(row.attempts).toBe(1);
+  });
+
+  it("resends a queued recording once AVOCO is back, driven by the next read", async () => {
+    mock.analyzeError = { status: 502, body: "backend unavailable" };
+    const { id } = await (await create({ type: "both" })).json();
+    mock.analyzeError = null; // AVOCO recovers
+
+    // Too soon: the last attempt was a moment ago, so a read doesn't hammer AVOCO.
+    expect((await (await getAnalysisRoute(request("GET", "/"), params(id))).json()).status).toBe("queued");
+    expect(mock.analyzeCalls).toHaveLength(2);
+
+    await db.update(analyses).set({ lastAttemptAt: new Date(Date.now() - RETRY_EVERY_MS - 1000) }).where(eq(analyses.id, id));
+    const retried = await (await getAnalysisRoute(request("GET", "/"), params(id))).json();
+    expect(retried.status).toBe("processing");
+    expect(mock.analyzeCalls).toHaveLength(4); // both jobs sent again, with the same job ids
+    expect(new Set(mock.analyzeCalls.map((c) => c.fields.id)).size).toBe(2);
+    expect(downloads.filter((u) => u === AUDIO_URL)).toHaveLength(2); // the audio was fetched again for the retry
+    expect((await db.select().from(analyses).where(eq(analyses.id, id)))[0].attempts).toBe(2);
+  });
+
+  it("resends only the jobs that did not get through", async () => {
+    // First attempt: psytype accepted, emostate hit the outage.
+    mock.analyzeError = null;
+    mock.failPaths = ["/api/v2/analyze/emostate/callback"];
+    const { id, status } = await (await create({ type: "both" })).json();
+    expect(status).toBe("queued");
+    mock.failPaths = [];
+    await db.update(analyses).set({ lastAttemptAt: new Date(Date.now() - RETRY_EVERY_MS - 1000) }).where(eq(analyses.id, id));
+    await getAnalysisRoute(request("GET", "/"), params(id));
+    expect(mock.analyzeCalls.map((c) => c.path)).toEqual(["/api/v2/analyze/psytype/callback", "/api/v2/analyze/emostate/callback", "/api/v2/analyze/emostate/callback"]);
+  });
+
+  it("gives up on a recording queued for more than a day", async () => {
+    mock.analyzeError = { status: 502, body: "down" };
+    const { id } = await (await create({})).json();
+    await db.update(analyses).set({ createdAt: new Date(Date.now() - QUEUE_MAX_AGE_MS - 1000) }).where(eq(analyses.id, id));
+    expect(await (await getAnalysisRoute(request("GET", "/"), params(id))).json()).toMatchObject({ status: "failed", error: "service_unavailable" });
+  });
+
+  it("still fails a rejected file straight away, without leaking the upstream body", async () => {
     mock.analyzeError = { status: 500, body: { detail: "Traceback: secret internals" } };
-    const res = await create({});
-    expect(res.status).toBe(502);
-    const text = await res.text();
-    expect(JSON.parse(text).error).toBe("upstream_error");
-    expect(text).not.toContain("Traceback");
+    mock.analyzeError = { status: 400, body: { detail: "Audio is shorter than 30 seconds" } };
+    expect((await create({})).status).toBe(422);
   });
 
   it("is 500 server_misconfigured, storing nothing, when the callback secret is missing", async () => {

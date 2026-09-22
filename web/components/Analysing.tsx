@@ -12,7 +12,7 @@ import { Thinking } from "./Thinking";
 const STAGE_AT = [0, 4, 12, 24, 38, 52]; // seconds at which each stage begins
 const TYPICAL = 60;
 
-export function Analysing({ t, startedAt, thoughts }: { t: Dict["report"]["live"]; startedAt: number; thoughts: string[] }) {
+export function Analysing({ t, startedAt, thoughts, queued = false }: { t: Dict["report"]["live"]; startedAt: number; thoughts: string[]; queued?: boolean }) {
   // The server and the browser read the clock at different moments, so the first paint uses the
   // moment the recording started (0 s) and the real clock takes over once the page is live.
   const [now, setNow] = useState<number | null>(null);
@@ -23,9 +23,9 @@ export function Analysing({ t, startedAt, thoughts }: { t: Dict["report"]["live"
   }, []);
 
   const seconds = now === null ? 0 : Math.max(0, (now - startedAt) / 1000);
-  const stage = STAGE_AT.filter((s) => seconds >= s).length - 1;
+  const stage = queued ? 0 : STAGE_AT.filter((s) => seconds >= s).length - 1;
   // Eases toward 95% and waits there: the last step only completes when the real result arrives.
-  const progress = Math.min(95, 100 * (1 - Math.exp(-seconds / (TYPICAL * 0.55))));
+  const progress = queued ? 4 : Math.min(95, 100 * (1 - Math.exp(-seconds / (TYPICAL * 0.55))));
   const overdue = seconds > TYPICAL * 2;
   const clock = `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 
@@ -33,9 +33,9 @@ export function Analysing({ t, startedAt, thoughts }: { t: Dict["report"]["live"
     <div className="card mt-8 overflow-hidden px-7 py-12 sm:px-12" aria-live="polite" aria-busy="true">
       <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <p className="eyebrow">{t.eyebrow}</p>
-          <h1 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{t.title}</h1>
-          <p className="mt-4 max-w-md leading-relaxed text-ink-2">{overdue ? t.slow : t.lead}</p>
+          <p className="eyebrow">{queued ? t.queuedEyebrow : t.eyebrow}</p>
+          <h1 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{queued ? t.queuedTitle : t.title}</h1>
+          <p className="mt-4 max-w-md leading-relaxed text-ink-2">{queued ? t.queuedLead : overdue ? t.slow : t.lead}</p>
 
           <ol className="mt-8 space-y-3">
             {t.stages.map((label, i) => {
@@ -56,7 +56,7 @@ export function Analysing({ t, startedAt, thoughts }: { t: Dict["report"]["live"
         </div>
 
         <div className="flex flex-col items-center">
-          <Thinking thoughts={thoughts} label={t.title} />
+          <Thinking thoughts={queued ? [t.queuedThought] : thoughts} label={queued ? t.queuedTitle : t.title} />
           <div className="mt-6 w-full max-w-xs">
             <div className="flex items-baseline justify-between text-xs text-muted"><span>{t.progress}</span><span className="tabular-nums">{Math.round(progress)}%</span></div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>

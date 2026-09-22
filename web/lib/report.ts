@@ -230,7 +230,7 @@ export type FailureKind = "audio" | "timeout" | "generic";
 
 /** The gateway stores errors like "psytype: <AVOCO's reason>" or "timeout". We show our own wording, never the raw text. */
 export function failureKind(error: string | null): FailureKind {
-  if (error === "timeout") return "timeout";
+  if (error === "timeout" || error === "service_unavailable") return "timeout";
   if (!error || /unavailable|internal error/i.test(error)) return "generic";
   return "audio";
 }

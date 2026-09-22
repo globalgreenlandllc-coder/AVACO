@@ -41,8 +41,8 @@ export async function POST(req: Request) {
 
     if (mode === "sync") return json(formatAnalysis(await runJobsNow(analysis.id, jobs, audio, channel)));
 
-    await submitJobs(analysis.id, jobs, audio, channel);
-    return json({ id: analysis.id, status: "processing" }, 202);
+    const status = await submitJobs(analysis.id, jobs, audio, channel);
+    return json({ id: analysis.id, status }, 202);
   } catch (err) {
     // If the row exists it is already marked failed; its id lets the caller look it up.
     return handleRouteError(err, analysisId ? { analysis_id: analysisId } : {});

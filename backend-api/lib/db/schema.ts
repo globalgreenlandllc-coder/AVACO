@@ -2,7 +2,8 @@ import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-o
 import type { EmostateResult, PsytypeResult } from "../format";
 
 export type AnalysisType = "both" | "psytype" | "emostate";
-export type AnalysisStatus = "processing" | "completed" | "failed";
+/** queued: AVOCO was unavailable when the audio was submitted; the gateway keeps trying until it gets through. */
+export type AnalysisStatus = "queued" | "processing" | "completed" | "failed";
 export type JobKind = "psytype" | "emostate";
 export type JobStatus = "pending" | "completed" | "failed";
 
@@ -22,6 +23,9 @@ export const analyses = pgTable(
     psytype: jsonb("psytype").$type<PsytypeResult[]>(),
     emostate: jsonb("emostate").$type<EmostateResult[]>(),
     error: text("error"),
+    /** Submission attempts to AVOCO, and when the last one was made. */
+    attempts: integer("attempts").notNull().default(0),
+    lastAttemptAt: ts("last_attempt_at"),
     createdAt: ts("created_at").notNull().defaultNow(),
     completedAt: ts("completed_at"),
   },
@@ -37,6 +41,8 @@ export const avocoJobs = pgTable(
     kind: text("kind").$type<JobKind>().notNull(),
     status: text("status").$type<JobStatus>().notNull().default("pending"),
     rawResult: jsonb("raw_result").$type<unknown>(),
+    /** When AVOCO accepted this job. Null means it still has to be (re)sent. */
+    submittedAt: ts("submitted_at"),
     createdAt: ts("created_at").notNull().defaultNow(),
     completedAt: ts("completed_at"),
   },

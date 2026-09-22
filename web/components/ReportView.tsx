@@ -14,7 +14,7 @@ import { Radar } from "./Radar";
 
 export interface Report {
   id: string;
-  status: "processing" | "completed" | "failed";
+  status: "queued" | "processing" | "completed" | "failed";
   created_at: string;
   psytype: Array<{ key: string; label: string; value: number; zone: "leading" | "active" | "background" }> | null;
   emostate: Array<{ key: string; label: string; value: number }> | null;
@@ -58,14 +58,14 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
   // While AVOCO works, ask again every few seconds. The result arrives on the gateway's webhook.
   useEffect(() => {
-    if (report.status !== "processing") return;
+    if (report.status !== "processing" && report.status !== "queued") return;
     const timer = setInterval(async () => {
       const res = await fetch(poll, { cache: "no-store" }).catch(() => null);
       if (!res?.ok) return;
       const next: Report = await res.json();
       setReport(next);
       // Finished: let the server render the page again, so a free preview gets its paywall.
-      if (next.status !== "processing") router.refresh();
+      if (next.status !== "processing" && next.status !== "queued") router.refresh();
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [poll, report.status]);
@@ -104,11 +104,11 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     </div>
   );
 
-  if (report.status === "processing") {
+  if (report.status === "processing" || report.status === "queued") {
     return (
       <div>
         {heading}
-        <Analysing t={r.live} startedAt={new Date(report.created_at).getTime()} thoughts={thoughtsFor(t)} />
+        <Analysing t={r.live} startedAt={new Date(report.created_at).getTime()} thoughts={thoughtsFor(t)} queued={report.status === "queued"} />
       </div>
     );
   }

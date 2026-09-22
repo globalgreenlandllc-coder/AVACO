@@ -11,7 +11,8 @@ export interface EmostateResult { key: string; label: string; value: number }
 
 export interface Analysis {
   id: string;
-  status: "processing" | "completed" | "failed";
+  /** queued: the analysis service was unavailable; the gateway retries by itself. */
+  status: "queued" | "processing" | "completed" | "failed";
   type: "both" | "psytype" | "emostate";
   external_user_id: string | null;
   created_at: string;
