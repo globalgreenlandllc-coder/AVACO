@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { Thinking } from "./Thinking";
 
 /**
  * The live "analysing" screen. AVOCO reports nothing until it is done, so the stages advance on a clock
@@ -10,9 +11,8 @@ import type { Dict } from "@/lib/i18n";
  */
 const STAGE_AT = [0, 4, 12, 24, 38, 52]; // seconds at which each stage begins
 const TYPICAL = 60;
-const BARS = 48;
 
-export function Analysing({ t, startedAt }: { t: Dict["report"]["live"]; startedAt: number }) {
+export function Analysing({ t, startedAt, thoughts }: { t: Dict["report"]["live"]; startedAt: number; thoughts: string[] }) {
   // The server and the browser read the clock at different moments, so the first paint uses the
   // moment the recording started (0 s) and the real clock takes over once the page is live.
   const [now, setNow] = useState<number | null>(null);
@@ -56,7 +56,7 @@ export function Analysing({ t, startedAt }: { t: Dict["report"]["live"]; started
         </div>
 
         <div className="flex flex-col items-center">
-          <Signal />
+          <Thinking thoughts={thoughts} label={t.title} />
           <div className="mt-6 w-full max-w-xs">
             <div className="flex items-baseline justify-between text-xs text-muted"><span>{t.progress}</span><span className="tabular-nums">{Math.round(progress)}%</span></div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
@@ -66,19 +66,6 @@ export function Analysing({ t, startedAt }: { t: Dict["report"]["live"]; started
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-/** A voice-like bar signal with a scan line passing over it. Pure CSS animation; nothing to compute. */
-function Signal() {
-  return (
-    <div className="relative flex h-32 w-full max-w-xs items-center justify-center gap-[3px]" aria-hidden>
-      {Array.from({ length: BARS }, (_, i) => {
-        const base = 0.25 + 0.75 * Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.37));
-        return <span key={i} className="signal-bar w-1 rounded-full bg-accent" style={{ height: `${Math.round(base * 100)}%`, animationDelay: `${(i * 0.06) % 1.6}s`, animationDuration: `${1.2 + (i % 5) * 0.15}s` }} />;
-      })}
-      <span className="scan-line pointer-events-none absolute inset-y-0 w-10" />
     </div>
   );
 }

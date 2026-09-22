@@ -91,7 +91,18 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .signal-bar { transform-origin: center; animation: signal 1.4s ease-in-out infinite; }
 @keyframes scan { from { left: -12%; } to { left: 104%; } }
 .scan-line { background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--accent) 45%, transparent), transparent); animation: scan 2.6s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .breathe, .bar-fill, .signal-bar, .scan-line { animation: none; } }
+@keyframes orbit { to { transform: rotate(360deg); } }
+.orbit { transform-origin: 0 0; animation: orbit 12s linear infinite; }
+@keyframes node-glow { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+.node { animation: node-glow 2s ease-in-out infinite; }
+@keyframes edge-pulse { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.7; } }
+.edge { animation: edge-pulse 3s ease-in-out infinite; }
+@keyframes core-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+.core { transform-origin: 0 0; animation: core-breathe 2.4s ease-in-out infinite; }
+.core-dot { transform-origin: 0 0; animation: core-breathe 2.4s ease-in-out infinite reverse; }
+@keyframes thought-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.thought { animation: thought-in 0.5s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .breathe, .bar-fill, .signal-bar, .scan-line, .orbit, .node, .edge, .core, .core-dot, .thought { animation: none; } }
 
 /* The report. Shapes come from AVOCO's printed report: capsules, gold tabs, soft cream panels. */
 .cover {

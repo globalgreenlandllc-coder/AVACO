@@ -108,7 +108,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     return (
       <div>
         {heading}
-        <Analysing t={r.live} startedAt={new Date(report.created_at).getTime()} />
+        <Analysing t={r.live} startedAt={new Date(report.created_at).getTime()} thoughts={thoughtsFor(t)} />
       </div>
     );
   }
@@ -306,6 +306,13 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       </div>
     </article>
   );
+}
+
+/** Lines of thought for the analysing screen: the measurements, then each type and scale the engine scores. */
+function thoughtsFor(t: Dict): string[] {
+  const types = Object.values(t.psytypes as Record<string, { name: string }>).map((x) => t.report.live.thinkType.replace("{name}", x.name));
+  const scales = Object.values(t.emostate as Record<string, { name: string }>).map((x) => t.report.live.thinkScale.replace("{name}", x.name));
+  return [...t.report.live.thoughts, ...types, ...scales];
 }
 
 const RING_R = 34;

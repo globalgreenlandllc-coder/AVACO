@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 import { AudioError, MAX_SECONDS, MIN_SECONDS, toAnalysisWav } from "@/lib/wav";
+import { Thinking } from "./Thinking";
 
 type Phase = "idle" | "recording" | "recorded" | "sending";
 type ErrorKey = keyof Dict["record"]["errors"];
@@ -39,6 +40,8 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const [message, setMessage] = useState<string | null>(null);
   const agreed = consent && (!extraConsent || extra);
   const [progress, setProgress] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
+  const [uploaded, setUploaded] = useState(0);
   const [error, setError] = useState<ErrorKey | null>(null);
 
   const recorder = useRef<MediaRecorder | null>(null);
@@ -145,12 +148,15 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     setMessage(null);
     setPhase("sending");
     try {
+      setStep(0); setUploaded(0);
       setProgress(t.preparing);
       const { wav } = await toAnalysisWav(clip.blob);
 
+      setStep(1);
       setProgress(t.uploading);
-      const stored = await upload(`voice-${Date.now()}.wav`, wav, { access: "public", handleUploadUrl: uploadUrl, contentType: "audio/wav" });
+      const stored = await upload(`voice-${Date.now()}.wav`, wav, { access: "public", handleUploadUrl: uploadUrl, contentType: "audio/wav", onUploadProgress: (p) => setUploaded(p.percentage) });
 
+      setStep(2);
       setProgress(t.starting);
       const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined }) });
       if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
@@ -218,6 +224,27 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
               <input type="checkbox" checked={extra} onChange={(e) => setExtra(e.target.checked)} disabled={phase === "sending"} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
               <span>{extraConsent}</span>
             </label>
+          )}
+          {phase === "sending" && (
+            <div className="grid items-center gap-6 rounded-2xl border border-line p-6 sm:grid-cols-[auto_1fr]" aria-live="polite" aria-busy="true">
+              <Thinking size={150} thoughts={[t.busy.steps[step]]} label={t.busy.thinking} />
+              <div>
+                <p className="font-semibold">{t.busy.thinking}</p>
+                <ol className="mt-3 space-y-2 text-sm">
+                  {t.busy.steps.map((label, i) => (
+                    <li key={label} className={`flex items-center gap-3 ${i > step ? "opacity-40" : ""}`}>
+                      <span className="grid h-5 w-5 shrink-0 place-items-center" aria-hidden>
+                        {i < step ? <span className="pop grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold text-accent-ink">✓</span>
+                          : i === step ? <span className="relative grid h-5 w-5 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" /><span className="relative h-2 w-2 rounded-full bg-accent" /></span>
+                          : <span className="h-1.5 w-1.5 rounded-full bg-line" />}
+                      </span>
+                      <span className={i === step ? "font-semibold" : ""}>{label}{i === 1 && step === 1 ? <span className="ml-2 text-xs text-muted">{t.busy.uploadPct.replace("{n}", String(Math.round(uploaded)))}</span> : null}</span>
+                    </li>
+                  ))}
+                </ol>
+                {step === 1 && <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(uploaded)}><div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${uploaded}%` }} /></div>}
+              </div>
+            </div>
           )}
           <div className="flex flex-wrap gap-3">
             <button type="button" className="btn" onClick={analyse} disabled={!agreed || phase === "sending"}>{phase === "sending" ? progress : t.analyse}</button>

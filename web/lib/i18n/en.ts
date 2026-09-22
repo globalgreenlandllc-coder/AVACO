@@ -43,6 +43,7 @@ export const en = {
     preparing: "Preparing audio…",
     uploading: "Uploading…",
     starting: "Starting analysis…",
+    busy: {"thinking": "Getting your voice ready", "steps": ["Converting the recording", "Uploading", "Handing over to the analysis"], "uploadPct": "{n}% uploaded"},
     errors: {
       mic: "We couldn't access the microphone. Allow microphone access in your browser and try again.",
       tooShort: "The recording is shorter than 30 seconds. Please record a little longer.",
@@ -65,7 +66,7 @@ export const en = {
     recordedOn: "Recorded",
     processingTitle: "Analysing your voice…",
     processingText: "This usually takes about a minute. You can keep this page open or come back later: the report is saved to your account.",
-    live: {"eyebrow": "Live analysis", "title": "Listening to your voice", "lead": "This usually takes about a minute. You can keep this page open or come back later: the report is saved to your account.", "slow": "This one is taking longer than usual. The analysis service is busy; the report will appear here as soon as it is ready, and it is saved to your account either way.", "stages": ["Recording received", "Cleaning the audio and removing silence", "Measuring pitch, tempo, pauses and timbre", "Comparing your voice with the eight personality types", "Scoring the fourteen emotional scales", "Writing your report"], "progress": "Progress", "elapsed": "{time} elapsed", "done": "done", "inProgress": "in progress"},
+    live: {"eyebrow": "Live analysis", "title": "Listening to your voice", "lead": "This usually takes about a minute. You can keep this page open or come back later: the report is saved to your account.", "slow": "This one is taking longer than usual. The analysis service is busy; the report will appear here as soon as it is ready, and it is saved to your account either way.", "stages": ["Recording received", "Cleaning the audio and removing silence", "Measuring pitch, tempo, pauses and timbre", "Comparing your voice with the eight personality types", "Scoring the fourteen emotional scales", "Writing your report"], "progress": "Progress", "elapsed": "{time} elapsed", "done": "done", "inProgress": "in progress", "thoughts": ["Listening to the recording…", "Measuring the fundamental frequency…", "Tracking jitter and shimmer…", "Timing the pauses…", "Reading the intonation contour…", "Mapping the timbre…"], "thinkType": "Comparing with the {name}…", "thinkScale": "Scoring {name}…"},
     failedTitle: "The analysis didn't complete",
     failedAudio: "The recording couldn't be analysed. It is usually too short, too quiet, or in a format that isn't supported.",
     failedTimeout: "The analysis took too long and was stopped. Please try again.",
