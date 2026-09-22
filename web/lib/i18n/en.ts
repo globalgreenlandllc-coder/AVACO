@@ -65,6 +65,7 @@ export const en = {
     recordedOn: "Recorded",
     processingTitle: "Analysing your voice…",
     processingText: "This usually takes about a minute. You can keep this page open or come back later: the report is saved to your account.",
+    live: {"eyebrow": "Live analysis", "title": "Listening to your voice", "lead": "This usually takes about a minute. You can keep this page open or come back later: the report is saved to your account.", "slow": "This one is taking longer than usual. The analysis service is busy; the report will appear here as soon as it is ready, and it is saved to your account either way.", "stages": ["Recording received", "Cleaning the audio and removing silence", "Measuring pitch, tempo, pauses and timbre", "Comparing your voice with the eight personality types", "Scoring the fourteen emotional scales", "Writing your report"], "progress": "Progress", "elapsed": "{time} elapsed", "done": "done", "inProgress": "in progress"},
     failedTitle: "The analysis didn't complete",
     failedAudio: "The recording couldn't be analysed. It is usually too short, too quiet, or in a format that isn't supported.",
     failedTimeout: "The analysis took too long and was stopped. Please try again.",

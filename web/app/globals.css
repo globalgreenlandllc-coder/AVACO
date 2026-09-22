@@ -87,7 +87,11 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .breathe { animation: breathe 2.4s ease-in-out infinite; }
 @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .bar-fill { transform-origin: left; animation: grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-@media (prefers-reduced-motion: reduce) { .breathe, .bar-fill { animation: none; } }
+@keyframes signal { 0%, 100% { transform: scaleY(0.35); opacity: 0.55; } 50% { transform: scaleY(1); opacity: 1; } }
+.signal-bar { transform-origin: center; animation: signal 1.4s ease-in-out infinite; }
+@keyframes scan { from { left: -12%; } to { left: 104%; } }
+.scan-line { background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--accent) 45%, transparent), transparent); animation: scan 2.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .breathe, .bar-fill, .signal-bar, .scan-line { animation: none; } }
 
 /* The report. Shapes come from AVOCO's printed report: capsules, gold tabs, soft cream panels. */
 .cover {

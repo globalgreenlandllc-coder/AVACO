@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Analysing } from "./Analysing";
 import type { Dict } from "@/lib/i18n";
 import { buildReportFile, saveFile } from "@/lib/export";
 import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
@@ -107,14 +108,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     return (
       <div>
         {heading}
-        <div className="card mt-8 flex flex-col items-center px-7 py-20 text-center" aria-live="polite">
-          <div className="relative grid h-24 w-24 place-items-center">
-            <span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden />
-            <span className="relative h-10 w-10 rounded-full bg-accent" aria-hidden />
-          </div>
-          <h1 className="mt-10 font-display text-4xl font-medium">{r.processingTitle}</h1>
-          <p className="mt-4 max-w-md leading-relaxed text-ink-2">{r.processingText}</p>
-        </div>
+        <Analysing t={r.live} startedAt={new Date(report.created_at).getTime()} />
       </div>
     );
   }
