@@ -51,6 +51,7 @@ export const en = {
       decode: "This file couldn't be read as audio. Try wav, mp3 or m4a.",
       tooBig: "This file is too large to open in the browser. Use a file under 500 MB, or a shorter clip.",
       failed: "Something went wrong while sending the recording. Please try again.",
+      unavailable: "The voice analysis service (AVOCO) is temporarily unavailable, so your recording could not be analysed. Nothing was lost: your recording is still here. Please try again in a few minutes.",
     },
   },
   reports: {

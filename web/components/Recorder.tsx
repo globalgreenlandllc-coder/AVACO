@@ -161,6 +161,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined }) });
       if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
       if (res.status === 402 && (payText || limitText)) { setMessage(payText ?? limitText ?? null); setProgress(null); setPhase("recorded"); return; }
+      if (res.status === 502 || res.status === 503) { setError("unavailable"); setProgress(null); setPhase("recorded"); return; }
       if (!res.ok) throw new Error(`analyses ${res.status}`);
       const { id } = await res.json();
       router.push(doneUrl.replace("{id}", id));
