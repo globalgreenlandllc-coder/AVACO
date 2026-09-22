@@ -53,7 +53,8 @@ export async function showAdminLink(): Promise<boolean> {
 }
 
 const since = (days: number) => new Date(Date.now() - days * DAY);
-const dayOf = (column: unknown) => sql<string>`to_char(date_trunc('day', ${column}), 'YYYY-MM-DD')`;
+// Days are UTC everywhere: said explicitly, so the charts don't depend on the database's timezone setting.
+const dayOf = (column: unknown) => sql<string>`to_char(date_trunc('day', ${column} at time zone 'UTC'), 'YYYY-MM-DD')`;
 
 export interface Overview {
   revenue: { today: number; week: number; month: number; all: number };
