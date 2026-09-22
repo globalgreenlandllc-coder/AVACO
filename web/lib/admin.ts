@@ -33,18 +33,23 @@ export async function requireAdmin(): Promise<{ userId: string; email: string }>
 
 /**
  * For the menu: is this signed-in person an admin? Asked on every page, so the answer is remembered for five
- * minutes per person instead of calling Clerk each time. It only decides whether a link is shown;
- * the portal itself always checks again with requireAdmin().
+ * minutes per person. Inside a cached function nothing may read the current request, which Clerk's own client
+ * does; so this asks Clerk's REST API directly, which needs only the secret key.
+ * It only decides whether a button is shown; the portal itself always checks again with requireAdmin().
  */
 const adminCheck = unstable_cache(async (userId: string): Promise<boolean> => {
-  const user = await (await clerkClient()).users.getUser(userId).catch(() => null);
-  const primary = user?.emailAddresses.find((e) => e.id === user.primaryEmailAddressId);
-  return primary?.verification?.status === "verified" ? isAdminEmail(primary.emailAddress) : false;
-}, ["is-admin"], { revalidate: 300 });
+  const res = await fetch(`https://api.clerk.com/v1/users/${encodeURIComponent(userId)}`, { headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` } });
+  if (!res.ok) throw new Error(`Clerk user lookup failed: ${res.status}`);
+  const user = await res.json() as { primary_email_address_id: string | null; email_addresses: Array<{ id: string; email_address: string; verification: { status: string } | null }> };
+  const primary = user.email_addresses.find((e) => e.id === user.primary_email_address_id);
+  return primary?.verification?.status === "verified" ? isAdminEmail(primary.email_address) : false;
+}, ["is-admin-v2"], { revalidate: 300 });
 
 export async function showAdminLink(): Promise<boolean> {
   const { userId } = await auth();
-  return userId ? adminCheck(userId).catch(() => false) : false;
+  if (!userId) return false;
+  // A failure here must not break every page, but it must not be silent either.
+  return adminCheck(userId).catch((err) => { console.error("Admin button check failed", err); return false; });
 }
 
 const since = (days: number) => new Date(Date.now() - days * DAY);
