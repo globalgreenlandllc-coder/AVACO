@@ -245,14 +245,12 @@ describe("translations", () => {
   });
 });
 
-describe("locale detection", () => {
-  it("picks Russian for ru/kk/be/uk browsers and English otherwise", async () => {
-    const { pickFromHeader } = await import("@/lib/i18n");
-    expect(pickFromHeader("ru-RU,ru;q=0.9,en;q=0.8")).toBe("ru");
-    expect(pickFromHeader("kk-KZ,kk;q=0.9")).toBe("ru");
-    expect(pickFromHeader("en-US,en;q=0.9,ru;q=0.5")).toBe("en");
-    expect(pickFromHeader("de")).toBe("en");
-    expect(pickFromHeader(null)).toBe("en");
+describe("default language", () => {
+  it("is English for everyone; the switch, not the browser, chooses Russian", async () => {
+    const mod = await import("@/lib/i18n");
+    expect("pickFromHeader" in mod).toBe(false);
+    expect(mod.isLocale("ru") && mod.isLocale("en")).toBe(true);
+    expect(mod.isLocale("kk")).toBe(false);
   });
 });
 

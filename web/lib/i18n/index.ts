@@ -1,4 +1,4 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { en, type Dict } from "./en";
 import { ru } from "./ru";
 
@@ -9,17 +9,10 @@ const dictionaries: Record<Locale, Dict> = { en, ru };
 
 export const isLocale = (v: unknown): v is Locale => v === "en" || v === "ru";
 
-/** The visitor's choice (cookie) wins; otherwise the browser's language; otherwise English. */
+/** English for everyone until the visitor picks a language with the switch; the choice is kept in a cookie for a year. */
 export async function getLocale(): Promise<Locale> {
   const chosen = (await cookies()).get(LOCALE_COOKIE)?.value;
-  if (isLocale(chosen)) return chosen;
-  return pickFromHeader((await headers()).get("accept-language"));
-}
-
-export function pickFromHeader(header: string | null): Locale {
-  const first = (header ?? "").split(",")[0]?.trim().toLowerCase() ?? "";
-  // Russian is widely read across the region AVOCO serves (kk, be, uk browsers included).
-  return /^(ru|kk|be|uk)\b/.test(first) ? "ru" : "en";
+  return isLocale(chosen) ? chosen : "en";
 }
 
 export async function getDict(): Promise<{ locale: Locale; t: Dict }> {
