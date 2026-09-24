@@ -81,6 +81,24 @@ describe("explanations", () => {
     expect(psytypeRows(psy, ru)[1].details).toHaveLength(catalyst.details.length);
   });
 
+  it("opens the Analyst's full official report, chapter by chapter, in both languages", () => {
+    const rows = psytypeRows([{ key: "analyst", label: "Analyst", value: 61, zone: "leading" }], en);
+    const chapters = [...new Set(rows[0].details.map((d) => d.group).filter(Boolean))];
+    expect(chapters).toEqual(["Role in the team", "Motivation and psychological need", "Attitude toward resources", "Communication type", "Behaviour under stress", "Relationships", "Compatibility"]);
+    const section = (title: string) => rows[0].details.find((d) => d.title === title)!;
+    expect(section("Key strengths").items).toHaveLength(14);
+    expect(section("Their vocabulary").chips).toHaveLength(16);
+    expect(section("Second stage of stress").quote).toBe("Pattern: Nobody needs me, let them decide for themselves");
+    expect(section("Compatibility").ratings).toEqual(expect.arrayContaining([
+      { name: "Analyst", score: 5, label: "5 of 5", note: "respect for space" },
+      { name: "Mediator", score: 4, label: "4 of 5", note: "deep understanding" },
+      { name: "Performer", score: 2, label: "2 of 5", note: "too bright" },
+    ]));
+    expect(rows[0].details.some((d) => d.title === "Full AVOCO report")).toBe(false); // no "not added yet" note any more
+    const ru_ = psytypeRows([{ key: "analyst", label: "Analyst", value: 61, zone: "leading" }], ru)[0];
+    expect(ru_.details).toHaveLength(rows[0].details.length);
+  });
+
   it("falls back to a short reading, and says so, for a type without its full report yet", () => {
     const organizer = psytypeRows(psy, en)[0];
     expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "About this type", "Strengths", "Worth watching", "How to talk with this type", "Where it shines", "Full AVOCO report"]);
