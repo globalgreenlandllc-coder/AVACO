@@ -99,12 +99,37 @@ describe("explanations", () => {
     expect(ru_.details).toHaveLength(rows[0].details.length);
   });
 
+  it("opens the full official reports of the Organizer, the Performer and the Skeptic", () => {
+    const cases = [
+      { key: "organizer", strengths: 11, chips: 16, pattern: "If you want something done right, do it yourself", best: { name: "Organizer", score: 5, label: "5 of 5", note: "very similar" } },
+      { key: "performer", strengths: 13, chips: 15, pattern: "I wanted to do the right thing, but they didn't understand me", best: { name: "Catalyst", score: 5, label: "5 of 5", note: "happy partnership" } },
+      { key: "skeptic", strengths: 16, chips: 16, pattern: "Follow the rules and everything will be fine", best: { name: "Harmonizer", score: 5, label: "5 of 5", note: "deep acceptance" } },
+    ] as const;
+    for (const c of cases) {
+      const row = psytypeRows([{ key: c.key, label: c.key, value: 55, zone: "leading" }], en)[0];
+      const chapters = [...new Set(row.details.map((d) => d.group).filter(Boolean))];
+      expect(chapters).toEqual(["Role in the team", "Motivation and psychological need", "Attitude toward resources", "Communication type", "Behaviour under stress", "Relationships", "Compatibility"]);
+      const section = (title: string) => row.details.find((d) => d.title === title)!;
+      expect(section("Key strengths").items).toHaveLength(c.strengths);
+      expect(section("Their vocabulary").chips).toHaveLength(c.chips);
+      expect(section("Second stage of stress").quote).toBe(`Pattern: ${c.pattern}`);
+      expect(section("Compatibility").ratings).toHaveLength(8);
+      expect(section("Compatibility").ratings).toEqual(expect.arrayContaining([c.best]));
+      expect(row.details.some((d) => d.title === "Full AVOCO report")).toBe(false);
+      const ru_ = psytypeRows([{ key: c.key, label: c.key, value: 55, zone: "leading" }], ru)[0];
+      expect(ru_.details).toHaveLength(row.details.length);
+    }
+    // the compatibility tables agree with each other: A's rating of B equals B's rating of A
+    const score = (a: string, b: string) => (en.types.profiles as Record<string, { full?: { compatibility: Record<string, { score: number }> } }>)[a].full!.compatibility[b].score;
+    for (const a of ["catalyst", "analyst", "organizer", "performer", "skeptic"]) for (const b of ["catalyst", "analyst", "organizer", "performer", "skeptic"]) expect(score(a, b)).toBe(score(b, a));
+  });
+
   it("falls back to a short reading, and says so, for a type without its full report yet", () => {
-    const organizer = psytypeRows(psy, en)[0];
-    expect(organizer.details.map((d) => d.title)).toEqual(["What your score means", "About this type", "Strengths", "Worth watching", "How to talk with this type", "Where it shines", "Full AVOCO report"]);
-    expect(organizer.details.at(-1)).toEqual({ title: "Full AVOCO report", note: en.types.ui.partialNote }); // its own entry, after the reading
-    expect(organizer.details.at(-2)!.note).toBeUndefined();
-    expect(organizer.details.some((d) => d.group)).toBe(false);
+    const driver = psytypeRows([{ key: "driver", label: "Driver", value: 70, zone: "leading" }], en)[0];
+    expect(driver.details.map((d) => d.title)).toEqual(["What your score means", "About this type", "Strengths", "Worth watching", "How to talk with this type", "Where it shines", "Full AVOCO report"]);
+    expect(driver.details.at(-1)).toEqual({ title: "Full AVOCO report", note: en.types.ui.partialNote }); // its own entry, after the reading
+    expect(driver.details.at(-2)!.note).toBeUndefined();
+    expect(driver.details.some((d) => d.group)).toBe(false);
   });
 
   it("reads an emotional scale by band: high from 60, moderate from 35, low below", () => {
