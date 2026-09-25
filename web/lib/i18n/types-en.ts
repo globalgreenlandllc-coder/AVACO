@@ -602,6 +602,184 @@ export const typesEn = {
     },
     harmonizer: {
       overview: "The Harmonizer is a person with high emotional sensitivity who easily senses and understands the feelings of others. They easily find an approach to different people through care and personal compliments. Sincerity, openness, and trust in communication are important to them. Harmonizers tend to pay attention to details and prefer a soft, friendly communication style. They value support and try to avoid conflicts, therefore they need the conversation to be as comfortable and good-natured as possible. They strive for harmonization and humanization. They cannot stand hints of vulgarity, rudeness, or disharmony. They have a refined sense of beauty. These are people of genuine, not feigned, emotions. They sympathize and empathize with others. They react emotionally to the smallest nuances of what is happening. They easily grasp all shades of their interlocutor's mood. They are scrupulous in matters of morality. By nature, they are altruists and pacifists.",
+      full: {
+        "mindset": "Reflects emotional experiences, oriented toward relationships. The dominant focus is on the social and the just. They worry and care about others.",
+        "team": {
+          "intro": "The Harmonizer is the heart of the team, creating a harmonious atmosphere and strengthening interpersonal connections. They possess high emotional intelligence, the ability to understand the needs of others, and to build trusting relationships. The Harmonizer plays a key role in preventing conflicts, maintaining morale, and inspiring the team. Their kindness, empathy, and care help strengthen everyone's sense of belonging to the community. They have an inner sense of beauty and harmony.",
+          "roles": "Harmonizers play a key role in the team as administrators, mediators, harmonizers, and integrators. Their skills are applied in areas such as human resources (HR), public relations (PR), facilitation, and customer service. They handle work requiring attention to a specific person and their individual problems well. They bring beauty to everything they touch. Indispensable editors of any creative product. The best employees in customer service and care departments. Excellent designers and decorators.",
+          "socialRole": "The Harmonizer harmonizes the collective, maintains morale, and helps people discover their strengths. They act as a mediator in conflicts, an advocate for employee interests, and an inspirer who maintains a comfortable atmosphere in the team.",
+          "strengths": [
+            "High emotional intelligence.",
+            "Ability to find compromises and prevent conflicts.",
+            "Sincerity and care for others.",
+            "Ability to win people over, build trust, and establish long-term connections.",
+            "Kindness, care, and empathy.",
+            "Skills in harmonizing space and collective.",
+            "Developed intuition.",
+            "Ability to protect and care for others.",
+            "Ability to inspire and offer support.",
+            "Ability to sense beauty and harmony.",
+            "Tactfulness, delicacy, modesty.",
+            "Ability to pity, empathize, sympathize.",
+            "Altruism. Incapable of causing harm to others."
+          ],
+          "risks": [
+            "Tendency to put others' interests above their own.",
+            "Emotional burnout due to excessive involvement in others' problems.",
+            "Softness. Inability to fight back and defend themselves from an aggressor.",
+            "Inability to exercise control.",
+            "Inability to say no."
+          ],
+          "authority": "Harmonizers respect authorities who show care and offer emotional support. They tend to remain loyal even to leaders who do not always meet expectations if they see it as a way to maintain harmony and stability in the team.",
+          "subordination": "Harmonizers are willing to follow established subordination, but only if it is based on principles of mutual respect. For them, human relationships and creating a trusting atmosphere are often more important than strict adherence to formal rules.",
+          "environment": "The ideal environment is teams with an emphasis on trust and open communication. They feel comfortable in a stable, good-natured atmosphere where their efforts to harmonize the collective are valued and supported."
+        },
+        "motivation": {
+          "motive": "Creating harmony and humanization, creating warm connections with people.",
+          "needs": "The Harmonizer strives for recognition of their heartfelt qualities and participation in collective activities. It is important for them to feel that their care and support are valued. The need to be part of a group and maintain emotional comfort motivates them to help others, even if it requires significant personal resources. They seek mutual understanding, goodwill, and emotional closeness to maintain a sense of belonging to a common cause.",
+          "management": "The world is in danger, and it must be saved! They cannot be harshly criticized; do not raise your voice. Support them in failures, but demand more. Warn against excessive focus on process; remind them of results. Praise them for results and express gratitude. Ask: \"How are your loved ones doing?\" and send \"regards.\" Stimulate initiative.",
+          "money": "Money for them is a means of maintaining a comfortable standard of living and an opportunity to help others, especially loved ones or colleagues."
+        },
+        "resources": {
+          "time": "They have a flexible attitude toward time, often willing to spend it helping others. However, they may put off their own affairs to solve others' problems. Prone to procrastination in the absence of feedback or when having to deal with unpleasant matters.",
+          "money": "They spend money on the needs of the team or loved ones, sometimes even to their own detriment. They are not always effective at managing resources; they may overpay for comfort or additional services.",
+          "people": "They treat people with understanding, often even justifying those who do not deserve it. They see colleagues as partners, try to take everyone's needs into account, and put themselves in others' shoes, sometimes to the detriment of the common cause. In controversial situations, they most often side with the client or the weaker party."
+        },
+        "communication": {
+          "interaction": [
+            "Communicate with a friendly tone, creating a warm atmosphere.",
+            "Avoid harsh criticism and authoritarianism, even when corrections are necessary.",
+            "Maintain emotional connection, use personal compliments.",
+            "Emphasize their care and contribution, show sincere gratitude.",
+            "Give them the opportunity to express their thoughts and feelings; do not interrupt.",
+            "Encourage their initiative, especially that related to supporting and harmonizing relationships.",
+            "The Harmonizer will choose the optimal way of communicating themselves.",
+            "Do not try to deceive them. They experience the strongest and most persistent discomfort from insincerity. Do not feign friendliness or a cheerful mood — they will immediately sense the lie.",
+            "Simply ask for what you need. The Harmonizer cannot say \"no.\"",
+            "In relationships with the Harmonizer, a good quarrel is better than a bad peace."
+          ],
+          "channel": "Care, comfort, compliments. Prefer personal meetings, video calls, or warm communication in correspondence. The channel is based on expressions of engagement and emotional support, where compliments and approval play a key role.",
+          "decisions": "They make decisions through the prism of emotions and a sense of belonging. They are often guided by harmony in relationships and the opinions of people significant to them. They feel with their body; high intuition.",
+          "speech": "Smooth, quiet, polite, expressive, apologetic. Toned and clear.",
+          "wantToHear": [
+            "Your contribution is invaluable",
+            "You create an amazing atmosphere",
+            "Thank you for your support",
+            "It's easy and pleasant to work with you",
+            "You are a true example of a heartfelt person",
+            "Your approach is inspiring",
+            "Thank you"
+          ],
+          "vocabulary": [
+            "Pleasant to work together",
+            "You make our team stronger",
+            "That was so nice",
+            "I feel your care",
+            "Looks great",
+            "Thank you for the warmth",
+            "Clever",
+            "Good job",
+            "You are just a wonderful person",
+            "It's a pleasure to cooperate with you"
+          ]
+        },
+        "stress": {
+          "emotion": "Distress, self-flagellation: \"Something is wrong with me.\"",
+          "mask": [
+            "Expression of confusion: corners of the mouth turned down, eyebrows raised in a \"house\" shape.",
+            "Fussiness, trying to please.",
+            "Appearance of uncertainty in speech, avoiding direct answers."
+          ],
+          "triggers": [
+            "Lack of gratitude or sensitivity to their care.",
+            "Harsh, sharp remarks or criticism.",
+            "Demands to act quickly, neglecting harmony.",
+            "Rejection of their human qualities or ignoring their participation."
+          ],
+          "stage1": [
+            "Increased fussiness, attempting to \"save the situation.\"",
+            "Self-doubt, refusing to express opinions directly.",
+            "Apologizing for not coping, even when they are.",
+            "Phrases: \"Sorry, that's my mistake,\" \"I probably won't be able to handle this.\""
+          ],
+          "stage2": [
+            "Deepened self-flagellation: \"How could I have done that?\"",
+            "Auto-aggression, tearfulness.",
+            "Constant worry about others, even to their own detriment.",
+            "Increased fearfulness: \"I've let everyone down again.\""
+          ],
+          "pattern2": "It's all because of me, I'm not good enough",
+          "extreme": [
+            "Feeling of complete uselessness and rejection.",
+            "Refusal to take initiative, distancing from others.",
+            "Loss of self-belief, feeling that everyone has turned away."
+          ],
+          "patternExtreme": "Nobody needs me, I'd better leave",
+          "bottom": [
+            "Deep resentment toward the injustice of the surrounding world.",
+            "Chronic guilt for everything that happens.",
+            "Constant feeling of disconnection from people and inability to restore inner harmony."
+          ],
+          "exit": "To recover, it is necessary to show gratitude to the Harmonizer for their engagement, emphasize their significance. It is important to make them understand that their contribution is valued and mistakes are not critical. Warm, sensitive support and a trusting conversation will help restore their confidence.",
+          "negative": [
+            "Excessive tendency toward somatic manifestations of stress and worry.",
+            "Role of \"rescuers\" or \"wounded healers\" trying to help others despite their own difficulties.",
+            "Tendency to become victims of manipulation by others.",
+            "Tendency to complain and whine, constant expression of dissatisfaction.",
+            "Living for the interests of others, often to the detriment of their own needs and desires.",
+            "Constant feelings of guilt and resentment caused by perceiving injustice.",
+            "Excessive desire to please, making them vulnerable to manipulation."
+          ]
+        },
+        "relationships": {
+          "business": "Emotional contact is important in partnership; relationships often go beyond purely business, and the partner essentially becomes a family member. Humanistic ideas often serve as the motive. They like to be responsible for customer service, creating beauty and harmony, and take on the role of communicator in the partnership. They build business for enjoyment, will not sacrifice comfort solely for profit, but they will not let you down either.",
+          "businessProblem": "If they lose their sense of inner harmony, their effectiveness drops significantly; they become offended and unable to act rationally.",
+          "love": "Care and emotional support. Harmonizers perceive love through participation in each other's lives, attention to small details, and sincere care. Softness in communication and a partner's willingness to listen to their worries are important to them.",
+          "loveProblem": "Harmonizers may become overly dependent on their partner's mood and approval. If they do not receive care in return, they begin to feel unnecessary and fall into despair. Sometimes their excessive desire to help and please turns into self-sacrifice, which can lead to emotional exhaustion. In stressful situations, they tend to avoid open conflicts, withdrawing into themselves, which can provoke misunderstanding and alienation. Conflicts may also arise if the partner is cold or ignores the Harmonizer's emotional needs.",
+          "style": [
+            "Strive for emotional closeness, where softness and mutual understanding reign.",
+            "Prefer relationships where they can be useful and support their partner.",
+            "Value honesty and sincerity in feelings.",
+            "Oriented toward care and comfort, create a cozy atmosphere in the couple.",
+            "Long conversations, sharing emotions, and shared memories are important.",
+            "Genuinely strive for harmony and avoid conflicts."
+          ]
+        },
+        "compatibility": {
+          "organizer": {
+            "score": 4,
+            "note": "appreciating care"
+          },
+          "driver": {
+            "score": 3,
+            "note": "supporting ideas"
+          },
+          "catalyst": {
+            "score": 4,
+            "note": "share energy"
+          },
+          "performer": {
+            "score": 3,
+            "note": "emotional support"
+          },
+          "harmonizer": {
+            "score": 5,
+            "note": "understanding each other"
+          },
+          "analyst": {
+            "score": 2,
+            "note": "lack of connection"
+          },
+          "skeptic": {
+            "score": 5,
+            "note": "perfect balance"
+          },
+          "mediator": {
+            "score": 5,
+            "note": "deep harmony"
+          }
+        }
+      },
     },
     analyst: {
       overview: "The Analyst is a personality type distinguished by original thinking and unconventional solutions, a worldview that gives birth to creativity and novelty. They are focused on intellectual creativity and the creation of intellectual products. An introverted type who prefers to withdraw from social activity, they are more immersed in their own unique and rich inner world, which they protect as much as possible from external idle curiosity. Among such people, one often finds mathematicians, architects, IT developers, artists, and directors — anyone whose profession requires an original approach and thinking. They may have a rich inner world but do not express it outwardly. These are simple-hearted, somewhat naive people characterized by social inexperience. They may be disciplined in their passions but neglect practical duties and subordination. They may seem detached, have difficulty engaging in social processes, and are reluctant to make contact with other people. As a rule, they possess high intelligence and always tirelessly develop themselves in a narrow area of interest, achieving significant success in it. They are often called servants of their talent because their talent manifests more than their personality itself. They are characterized by unpredictability due to their original thinking and, from the majority's perspective, illogical actions and decisions. Intellectual creativity — always and in everything.",
@@ -999,6 +1177,184 @@ export const typesEn = {
     },
     mediator: {
       overview: "This personality type has a rich inner world and the ability to see beauty even in the smallest details. Their emotional depth makes them good listeners and conversationalists. Their inner compass is attuned to fundamental universal ideals, which they choose to serve. Those around them often mistake this for self-sacrifice or masochism, which can indeed happen when this personality type feels out of place in the material world and falls into depressive states. Such people easily empathize with others' pain and are ready to help, often prioritizing others' needs over their own. Their tendency toward reflection and sensitivity make them talented in art, music, literature, or other creative fields, as they sense the primordial harmony of the world and its subtle aspects. They always remain true to their ideas, friends, loved ones, and responsibilities, provided these align with their worldview. Thanks to their sensitivity, they often notice things that others miss. These are people with a rich inner world who bring depth, sincerity, and service to the world. Often, their presence, even unnoticed by the majority, can harmonize the space. On the other side, they are antisocial, disillusioned with life and people. They tend to experience \"persistent stagnant\" states, a lack of a sparkling sense of humor, and a lack of hearty laughter (more often, one might see a Pierrot-like smile). They find solace in spirituality, poetry, creativity, and philosophy. From a materialistic and achievement-oriented perspective, this personality type has low motivation for change, development and achieving goals. They strive for autonomy and independence from everyone.",
+      full: {
+        "mindset": "They are fatalists, focused on their own mistakes, regrets, and missed opportunities. A state of deep sorrow, longing for \"home/God/fate/love/the beautiful things far away.\" Self-flagellation; a desire to free themselves from a burdensome inner state through service or renunciation of all material things. They remain silent when criticized; they feel hatred toward external control. Inside, the complaints of an underappreciated genius resound, along with the dialogue: \"Why are you all dissatisfied with me specifically?\", \"Everyone around me is wrong, but they must figure it out and fix it themselves; I know this, but it's useless to tell them.\" Stance: \"I will not speak 'in favor' of anything!\" \"Do it or don't do it — the problems won't get any smaller.\" A desire to minimize one's own actions and decisions.",
+        "team": {
+          "intro": "This is a wise and level-headed team member who strives to create harmony and order. They are known for their deep analytical skills, understanding of people's motivations, and ability to see the connections between events. The Mediator helps the team overcome challenges by maintaining stability and building trusting relationships. Their altruism and commitment to values make them indispensable in support roles.",
+          "roles": "The Mediator can excel in roles such as psychologist, coach, consultant, project manager, personal assistant, support specialist, HR analyst, and service manager. People with this personality type are skilled at expressing their emotions and conveying personal observations through writing. Their creativity usually touches people's hearts. Their meticulousness and patience help them handle large volumes of information. They easily spot even the smallest errors.",
+          "socialRole": "Harmonization. The Mediator brings disparate elements together into a unified system, creating harmony and order. They help the team find motivation in challenging situations and inspire people to overcome obstacles. They serve as a unifying force.",
+          "strengths": [
+            "The ability to deeply analyze and comprehend complex phenomena.",
+            "A sincere desire to help and support others.",
+            "Wisdom and the ability to see the connections between events and phenomena.",
+            "The ability to experience profound emotions and attain transcendent states.",
+            "A deep understanding of other people's motivations and one's own inner world.",
+            "A willingness and desire to serve higher purposes or other people.",
+            "A strong commitment to values and loyalty to loved ones.",
+            "The ability to find motivation and positive aspects in difficult situations and to overcome challenges."
+          ],
+          "risks": [
+            "Tendency toward self-isolation and excessive self-criticism.",
+            "Excessive altruism, leading to emotional exhaustion.",
+            "Difficulties with quick decision-making and taking active initiative.",
+            "Negativism, detachment, aloofness, fatalism; unwillingness to take responsibility for anything.",
+            "A tendency to minimize one's own actions and decisions.",
+            "Focus on mistakes, regret, and missed opportunities.",
+            "The Traumatized Mediator is focused on holding its ground and quietly neutralizing competitors (parasites)."
+          ],
+          "authority": "These people recognize authority when it demonstrates wisdom, respect, and care for others. The Mediator is able to question leadership if it lacks empathy and a humane approach, but avoids open conflict, sabotage, or overt rebellion. Their critical stance toward authority stems from a desire for harmony and respect in relationships. They have a strong aversion to pressure from above, yet in moments of criticism, they will remain silent.",
+          "subordination": "They perceive subordination as a way to maintain order and harmony. They strive to follow established rules if they see them as beneficial to the collective. However, it is important for them to find a balance between adhering to formal norms and maintaining a humane approach to people.",
+          "environment": "The Mediator prefers a calm and predictable environment where there is time for analysis and reflection. They work comfortably in teams where support, empathy, and stability are valued."
+        },
+        "motivation": {
+          "motive": "To be useful and recognized in one's service and, at times, self-sacrifice.",
+          "needs": "Contemplation. A sense of unity. The Mediator seeks recognition of their role in service, maintaining harmony, and stability. It is important for them to feel that their efforts are useful and valuable to others on a universal human level. The need to belong to a group and preserve inner peace motivates them to help others, find meaning in difficult situations, and strengthen bonds. Recognition of their service and understanding of their inner state create a comfortable environment for the Mediator.",
+          "management": "Speak about the higher purpose of the Mediator's work. Acknowledge their dedication, loyalty, and even their willingness to sacrifice. Emphasize the supreme importance of deadlines, and encourage self-organization. Introduce them to corporate rituals, policies, or codes of conduct. Avoid putting pressure on them, but do not allow whining or detachment to take hold. Remote work, flexible schedules, and the ability to work in a comfortable environment are important for their productivity.",
+          "money": "For the Mediator, money is a means of maintaining stability and harmony. They view it as validation of their value to society, using it to meet basic needs and to help others."
+        },
+        "resources": {
+          "time": "They perceive time as a resource for reflection and contemplation. They often spend it on deep thinking and searching for meaning, which can slow down their responsiveness. However, they value the opportunity to work at their own pace.",
+          "money": "Money is used rationally, without unnecessary spending. This type is willing to give it up for charity or collective needs if it contributes to harmony.",
+          "people": "They see potential in people and strive to unite their efforts to achieve a common goal. They know how to connect with each team member, creating an atmosphere of trust and belonging. This allows them to be a key figure in the group, providing emotional stability."
+        },
+        "communication": {
+          "interaction": [
+            "Show genuine interest and goodwill.",
+            "Create an atmosphere of respect and understanding; avoid harsh wording.",
+            "Emphasize their contribution to collective harmony and stability.",
+            "Praise them for their wisdom and deep understanding of issues.",
+            "Demonstrate tolerance for their slowness and tendency toward reflection.",
+            "Avoid pressure; give them time for contemplation and thought."
+          ],
+          "channel": "Directive (go, do, bring, come up with). They respond well to clear and precise communication that prompts them to action, as their internal actor is inert. They prefer personal conversations or written messages where they can articulate their thoughts and receive a concrete response. They favor solitude.",
+          "decisions": "Decisions are made after deep analysis, following an intuitive check with their inner compass and conscience, taking into account the opinions of others and the broader context. The emotional component plays a significant role.",
+          "speech": "Hypergeneralizations: \"this is all,\" \"it says so in such and such place,\" \"all of this means.\" They may become verbose in describing their inner world, but only with those who open up to them. With most people, they may remain misunderstood. Heavy silences, philosophical pauses, and deep sighs are often present.",
+          "wantToHear": [
+            "Your contribution is invaluable",
+            "We appreciate your care",
+            "Thank you for your support",
+            "You create harmony",
+            "You always feel things so deeply",
+            "Your opinion matters to us",
+            "That was a wise decision",
+            "You bring peace and awareness"
+          ],
+          "vocabulary": [
+            "Harmony",
+            "Meaning",
+            "Support",
+            "Stability",
+            "Wisdom",
+            "Deep analysis",
+            "Care",
+            "Feelings",
+            "Comfort",
+            "Recognition",
+            "Empathy",
+            "Shared experience"
+          ]
+        },
+        "stress": {
+          "emotion": "Sadness (Pierrot), feeling of being unwanted.",
+          "mask": [
+            "Expressionless, detached face.",
+            "Downcast gaze, avoiding eye contact.",
+            "Sluggish movements, lack of initiative.",
+            "A desire to fade away and withdraw from the transience of the world."
+          ],
+          "triggers": [
+            "Emotional pain caused by human vices, addictions, attachments solely to profit and the material world.",
+            "The irrelevance of ideals.",
+            "Harsh criticism, which may come across as tactless to this sensitive nature.",
+            "Insensitivity of those around them, disrespect for their inner world and state.",
+            "A feeling of being abandoned or ignored.",
+            "Loss of confidence in their own usefulness.",
+            "Lack of results or recognition for their efforts.",
+            "Pressure demanding action without regard for their state."
+          ],
+          "stage1": [
+            "Quiet disappointment in others and in oneself.",
+            "Doubts about one's own value: \"Maybe I really am not needed.\"",
+            "Attempts to draw attention to values through gentle hints.",
+            "Attempts to become even more inconspicuous."
+          ],
+          "stage2": [
+            "Loss of interest in life, refusal to take active action, quiet blaming of others for one's failures, and shifting responsibility onto circumstances.",
+            "Immersion in thoughts about one's own uselessness and the transience of the world.",
+            "A sense of detachment, refusal to participate in collective processes."
+          ],
+          "pattern2": "Why should I try so hard if no one notices?",
+          "extreme": [
+            "Complete emotional burnout.",
+            "Withdrawal into oneself, refusal to communicate.",
+            "Contempt for this world and all the people in it (tendency to generalize).",
+            "Feelings of inner emptiness and detachment."
+          ],
+          "patternExtreme": "My life is meaningful.",
+          "bottom": [
+            "Contempt for existence.",
+            "Complete descent into self-destruction, both physically and emotionally.",
+            "Loss of contact with the outside world.",
+            "Conviction that \"no one understands or appreciates.\""
+          ],
+          "exit": "The Mediator requires solitude, a harmonious space, and a connection with beauty. Attention to their worldview and understanding from those around them are essential. It is important to emphasize their significance and assign tasks where their contribution will be evident. Support through personal communication and praise will help restore their self-confidence.",
+          "negative": [
+            "A tendency to become their own shadow, renouncing their own desires and needs.",
+            "An inclination toward masochism and self-torment, manifesting on both physical and psychological levels.",
+            "A display of spiritual pride, expressed in the belief: \"I am not understood here, but I am a servant of another world.\"",
+            "Prone to shifting responsibility onto circumstances, fate, karma, God, or enemies.",
+            "They remain silent when criticized and harbor a deep resentment toward external control."
+          ]
+        },
+        "relationships": {
+          "business": "It is important to understand that the Mediator does not aspire to entrepreneurship as such and has difficulties with material goals and accurately assessing their own value. The Mediator is suited to a partner who shares their worldview and values their talent — someone sensitive, generous, and willing to take on all leadership functions, granting their partner full latitude in exchange for their talent, diligence, loyalty, and refined perception of creativity (and beyond). Interaction will be easier if the projects are life-centered in nature: eco-startups, alternative spiritual education, retreat centers — anything related to helping people, animals, or nature. A small team or a duo is ideal for the Mediator, as large groups can cause stress.",
+          "businessProblem": "Issues arise if the Mediator's tendency toward reflection, slowness, and sensitivity are not taken into account. Due to their empathy and inability to say no, Mediators may take on too much, fail to cope, and burn out. They also face difficulties when it comes to discussing problems or disagreements. The Mediator tends to avoid conflict and suppress aggression, which often prevents issues from being resolved until their critical mass destroys the partnership. They may become overwhelmed by a wave of emotional problems and retreat into isolation. They react painfully to demands that do not take their state into account. Under stress, they experience a significant loss of energy, leading to regret, self-examination, and a persistent fixation on negative events — requiring a long recovery period. Their psyche is fragile.",
+          "love": "Care and emotional involvement without intrusiveness; preserving autonomy. For the Mediator, love is expressed through sincere attention and support for their emotional experiences. They value deep conversations, spending time together, and warmth in relationships. They express gratitude through intellectual or highly unusual, personalized gifts filled with meaning (books, interesting trinkets, unique experiences). They may not speak openly about their feelings, but they will consistently be present during difficult times. If they open up and invite a partner into their inner world, this is a sign of deep trust.",
+          "loveProblem": "Mediators may become overly dependent on their partner's emotional state, forgetting their own needs. Their tendency toward self-criticism and rumination leads them to place responsibility for their happiness on their partner. Conflicts arise if the partner ignores their emotional experiences or demonstrates indifference. In prolonged difficulties, they may withdraw, making it difficult to restore connection. Pain and disappointment can leave a wound that lasts a lifetime. Obsession and fixation on \"oh, if only\" prevent the possibility of moving forward. Prone to masochism and \"Stockholm syndrome.\"",
+          "style": [
+            "Strive for deep, sincere relationships where there is room for mutual support.",
+            "Oriented toward emotional closeness and understanding.",
+            "Value a partner who is tolerant of their moods and does not rush them.",
+            "Stability and predictability in relationships are important.",
+            "Prone to self-sacrifice for the sake of harmony in the couple.",
+            "Need a partner who helps them see the positive side of life."
+          ]
+        },
+        "compatibility": {
+          "organizer": {
+            "score": 4,
+            "note": "maintain order"
+          },
+          "driver": {
+            "score": 4,
+            "note": "complementarity"
+          },
+          "catalyst": {
+            "score": 3,
+            "note": "energetical balance"
+          },
+          "performer": {
+            "score": 3,
+            "note": "inspire with feelings"
+          },
+          "harmonizer": {
+            "score": 5,
+            "note": "deep harmony"
+          },
+          "analyst": {
+            "score": 4,
+            "note": "understanding distance"
+          },
+          "skeptic": {
+            "score": 4,
+            "note": "creating security"
+          },
+          "mediator": {
+            "score": 5,
+            "note": "perfect acceptance"
+          }
+        }
+      },
     },
   },
 };

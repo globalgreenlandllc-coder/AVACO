@@ -99,11 +99,13 @@ describe("explanations", () => {
     expect(ru_.details).toHaveLength(rows[0].details.length);
   });
 
-  it("opens the full official reports of the Organizer, the Performer and the Skeptic", () => {
+  it("opens the full official reports of the Organizer, Performer, Skeptic, Harmonizer and Mediator", () => {
     const cases = [
       { key: "organizer", strengths: 11, chips: 16, pattern: "If you want something done right, do it yourself", best: { name: "Organizer", score: 5, label: "5 of 5", note: "very similar" } },
       { key: "performer", strengths: 13, chips: 15, pattern: "I wanted to do the right thing, but they didn't understand me", best: { name: "Catalyst", score: 5, label: "5 of 5", note: "happy partnership" } },
       { key: "skeptic", strengths: 16, chips: 16, pattern: "Follow the rules and everything will be fine", best: { name: "Harmonizer", score: 5, label: "5 of 5", note: "deep acceptance" } },
+      { key: "harmonizer", strengths: 13, chips: 10, pattern: "It's all because of me, I'm not good enough", best: { name: "Skeptic", score: 5, label: "5 of 5", note: "perfect balance" } },
+      { key: "mediator", strengths: 8, chips: 12, pattern: "Why should I try so hard if no one notices?", best: { name: "Mediator", score: 5, label: "5 of 5", note: "perfect acceptance" } },
     ] as const;
     for (const c of cases) {
       const row = psytypeRows([{ key: c.key, label: c.key, value: 55, zone: "leading" }], en)[0];
@@ -119,9 +121,15 @@ describe("explanations", () => {
       const ru_ = psytypeRows([{ key: c.key, label: c.key, value: 55, zone: "leading" }], ru)[0];
       expect(ru_.details).toHaveLength(row.details.length);
     }
-    // the compatibility tables agree with each other: A's rating of B equals B's rating of A
-    const score = (a: string, b: string) => (en.types.profiles as Record<string, { full?: { compatibility: Record<string, { score: number }> } }>)[a].full!.compatibility[b].score;
-    for (const a of ["catalyst", "analyst", "organizer", "performer", "skeptic"]) for (const b of ["catalyst", "analyst", "organizer", "performer", "skeptic"]) expect(score(a, b)).toBe(score(b, a));
+    // Every loaded type rates all eight types on the 1–5 scale. The tables are AVOCO's as printed, and they
+    // are not always symmetric (the Harmonizer gives the Organizer 4, the Organizer gives the Harmonizer 3).
+    const loaded = Object.entries(en.types.profiles).filter(([, p]) => "full" in p).map(([k]) => k);
+    expect(loaded).toEqual(["organizer", "catalyst", "performer", "harmonizer", "analyst", "skeptic", "mediator"]);
+    for (const key of loaded) {
+      const table = (en.types.profiles as Record<string, { full?: { compatibility: Record<string, { score: number }> } }>)[key].full!.compatibility;
+      expect(Object.keys(table)).toEqual(["organizer", "driver", "catalyst", "performer", "harmonizer", "analyst", "skeptic", "mediator"]);
+      for (const { score } of Object.values(table)) expect(score).toBeGreaterThanOrEqual(1), expect(score).toBeLessThanOrEqual(5);
+    }
   });
 
   it("falls back to a short reading, and says so, for a type without its full report yet", () => {
