@@ -200,7 +200,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
       {!isLocked && (<>
       {profiled.some((type) => type.details.length > 0) && (
-        <Reveal as="section">
+        <Reveal as="section" id="profile" className="scroll-mt-24">
           <h2 className="font-display text-4xl font-medium sm:text-5xl">{r.profileTitle}</h2>
           <p className="mb-8 mt-3 max-w-2xl leading-relaxed text-ink-2">{profiled.length > 1 ? r.profileLeadTwo : r.profileLead}</p>
           <Profile rows={profiled.filter((type) => type.details.length > 0)} opening={t.types.ui.overview} />
@@ -211,7 +211,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         <Reveal as="section" className="card card-flow p-8 sm:p-12">
           <h2 className="font-display text-3xl font-medium sm:text-4xl">{r.psyTitle}</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{r.psyLead}</p>
-          <div className="mt-8"><Bars rows={psy} markers expandLabel={ui.expand} profiled={profiled.map((type) => type.key)} /></div>
+          <div className="mt-8"><Bars rows={psy} markers expandLabel={ui.expand} profiledLabel={ui.profiled} profiled={profiled.map((type) => type.key)} /></div>
           <p className="mt-6 text-xs text-muted">{r.zoneHelp}</p>
         </Reveal>
       )}

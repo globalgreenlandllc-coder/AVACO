@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** Fades its content up the first time it scrolls into view. Print and reduced motion show it at once (globals.css). */
-export function Reveal({ children, className = "", as: Tag = "div" }: { children: React.ReactNode; className?: string; as?: "div" | "section" }) {
+export function Reveal({ children, className = "", as: Tag = "div", id }: { children: React.ReactNode; className?: string; as?: "div" | "section"; id?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [seen, setSeen] = useState(false);
 
@@ -19,7 +19,7 @@ export function Reveal({ children, className = "", as: Tag = "div" }: { children
     return () => observer.disconnect();
   }, []);
 
-  return <Tag ref={ref} className={`reveal ${seen ? "in" : ""} ${className}`}>{children}</Tag>;
+  return <Tag ref={ref} id={id} className={`reveal ${seen ? "in" : ""} ${className}`}>{children}</Tag>;
 }
 
 /** Counts up to the value once, keeping its decimals. The real value is what a screen reader and print get. */

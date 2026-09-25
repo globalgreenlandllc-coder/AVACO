@@ -7,6 +7,7 @@
 export const deepEn = {
   ui: {
     expand: "Show explanation",
+    profiled: "Full report above",
     yourScore: "What your score means",
     strengths: "Strengths",
     watch: "Worth watching",

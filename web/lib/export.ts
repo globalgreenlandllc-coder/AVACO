@@ -32,6 +32,13 @@ const LIVE_SCRIPT = `
     });
   });
 
+  each(document.querySelectorAll("[data-row-profiled]"), function (link) {
+    link.addEventListener("click", function () {
+      var tab = document.querySelector('[data-type-tab="' + link.getAttribute("data-row-profiled") + '"]');
+      if (tab) tab.click();
+    });
+  });
+
   each(document.querySelectorAll("[data-bars]"), function (list) {
     var rows = list.querySelectorAll("[data-row]");
     var set = function (row, open) {

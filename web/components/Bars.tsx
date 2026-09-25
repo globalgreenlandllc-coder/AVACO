@@ -3,6 +3,9 @@
 import { useState } from "react";
 import type { DetailSection, ScaleRow, Zone } from "@/lib/report";
 
+/** Fired with a type key when a profiled bar row is clicked; the Profile switches to that type. */
+export const PROFILE_EVENT = "avoco:profile";
+
 const FILL: Record<Zone, string> = { leading: "var(--bar-leading)", active: "var(--bar-active)", background: "var(--bar-background)" };
 
 /** Titled blocks of report content: text, bullet lists, pills, a set-apart quote, compatibility ratings. */
@@ -54,15 +57,17 @@ export function Sections({ sections }: { sections: DetailSection[] }) {
  * The data attributes name the parts for the downloaded copy's script (lib/export.ts).
  * In print, leading and active types and every emotional scale are open; background types keep their
  * one-line description, as in AVOCO's original report, which profiles only the types that matter for the person.
- * Rows named in `profiled` have their explanation shown elsewhere (the Profile), so they don't open here.
+ * Rows named in `profiled` have their explanation shown elsewhere (the Profile, id "profile"), so they
+ * don't open here: they say so and link up to it, selecting that type's tab there.
  */
-export function Bars({ rows, markers = false, expandLabel, defaultOpen, profiled = [] }: { rows: ScaleRow[]; markers?: boolean; expandLabel: string; defaultOpen?: string; profiled?: string[] }) {
+export function Bars({ rows, markers = false, expandLabel, profiledLabel, defaultOpen, profiled = [] }: { rows: ScaleRow[]; markers?: boolean; expandLabel: string; profiledLabel?: string; defaultOpen?: string; profiled?: string[] }) {
   const [open, setOpen] = useState<string | null>(defaultOpen ?? null);
 
   return (
     <ul data-bars className="space-y-1">
       {rows.map((row, i) => {
-        const expandable = row.details.length > 0 && !profiled.includes(row.key);
+        const inProfile = profiled.includes(row.key) && row.details.length > 0;
+        const expandable = row.details.length > 0 && !inProfile;
         const isOpen = open === row.key;
         const head = (
           <>
@@ -70,6 +75,7 @@ export function Bars({ rows, markers = false, expandLabel, defaultOpen, profiled
               <span className="flex items-baseline gap-2 font-medium">
                 {row.name}
                 {expandable && <span data-row-chevron className={`no-print text-xs text-muted transition-transform ${isOpen ? "rotate-90" : ""}`} aria-hidden>›</span>}
+                {inProfile && profiledLabel && <span className="no-print text-xs font-normal text-accent-text">{profiledLabel} ↑</span>}
               </span>
               <span className="flex items-baseline gap-3">
                 {row.tag && <span className="text-xs text-muted">{row.tag}</span>}
@@ -88,7 +94,9 @@ export function Bars({ rows, markers = false, expandLabel, defaultOpen, profiled
           <li key={row.key} data-row className={`-mx-3 break-inside-avoid-page rounded-xl px-3 py-2.5 transition-colors ${isOpen ? "bg-track/50" : "hover:bg-track/40"}`}>
             {expandable
               ? <button type="button" data-row-toggle className="block w-full text-left" aria-expanded={isOpen} aria-label={`${row.name}: ${expandLabel}`} onClick={() => setOpen(isOpen ? null : row.key)}>{head}</button>
-              : <div>{head}</div>}
+              : inProfile
+                ? <a href="#profile" data-row-profiled={row.key} className="block w-full text-left" aria-label={`${row.name}: ${profiledLabel ?? ""}`.trim()} onClick={() => window.dispatchEvent(new CustomEvent(PROFILE_EVENT, { detail: row.key }))}>{head}</a>
+                : <div>{head}</div>}
 
             {expandable && (
               <div data-row-details className={`${isOpen ? "block" : "hidden"} space-y-4 pb-2 pt-4 ${row.zone === "background" ? "" : "print:block"}`}>

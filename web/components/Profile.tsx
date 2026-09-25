@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DetailSection, Rating, ScaleRow } from "@/lib/report";
+import { PROFILE_EVENT } from "./Bars";
 
 interface Chapter { title: string; sections: DetailSection[] }
 
@@ -105,6 +106,16 @@ export function Profile({ rows, opening }: { rows: ScaleRow[]; opening: string }
   const [typeKey, setTypeKey] = useState(rows[0]?.key);
   const [chapterIndex, setChapterIndex] = useState(0);
   const current = rows.find((row) => row.key === typeKey) ?? rows[0];
+
+  // A bar row below links up here; show the type it named.
+  useEffect(() => {
+    const onPick = (e: Event) => {
+      const key = (e as CustomEvent<string>).detail;
+      if (rows.some((row) => row.key === key)) { setTypeKey(key); setChapterIndex(0); }
+    };
+    window.addEventListener(PROFILE_EVENT, onPick);
+    return () => window.removeEventListener(PROFILE_EVENT, onPick);
+  }, [rows]);
   if (!current) return null;
 
   return (

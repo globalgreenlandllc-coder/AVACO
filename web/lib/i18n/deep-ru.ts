@@ -6,6 +6,7 @@ export type Deep = Widen<typeof deepEn>;
 export const deepRu: Deep = {
   ui: {
     expand: "Показать объяснение",
+    profiled: "Полный отчёт выше",
     yourScore: "Что означает ваш результат",
     strengths: "Сильные стороны",
     watch: "На что обратить внимание",
