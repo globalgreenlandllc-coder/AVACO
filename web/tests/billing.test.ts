@@ -5,6 +5,8 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+// Admin accounts never pay: the check itself is tested in admin.test.ts, here it is a stub.
+vi.mock("@/lib/admin", () => ({ isAdminUser: async (userId: string) => userId === "user_boss" }));
 
 import * as schema from "@/lib/db/schema";
 import { setDbForTests, type Db } from "@/lib/db";
@@ -177,4 +179,19 @@ describe("Stripe webhook signature", () => {
     ["a header without a timestamp", () => verifyStripeSignature(body, "v1=abc", secret, now)],
     ["an empty secret", () => verifyStripeSignature(body, sign(now, body, ""), "", now)],
   ])("rejects %s", (_n, run) => expect(run()).toBe(false));
+});
+
+describe("admin accounts", () => {
+  it("open every report in full, are never capped and unlock without spending, while others stay gated", async () => {
+    await on();
+    await B.noteSelfRecording("user_boss", A1);
+    await B.noteSelfRecording("user_dana", A2);
+    expect(await B.hasFullAccess("user_boss", A1)).toBe(true);
+    expect(await B.previewsLeft("user_boss")).toBe(Infinity);
+    await B.unlock("user_boss", A1);
+    expect(await B.balance(B.asUser("user_boss"))).toBe(0);
+    expect(await B.hasFullAccess("user_dana", A2)).toBe(false);
+    expect(await B.previewsLeft("user_dana")).toBeLessThan(Infinity);
+    await expect(B.unlock("user_dana", A2)).rejects.toThrow();
+  });
 });

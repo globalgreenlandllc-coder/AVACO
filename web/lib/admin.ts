@@ -45,11 +45,14 @@ const adminCheck = unstable_cache(async (userId: string): Promise<boolean> => {
   return primary?.verification?.status === "verified" ? isAdminEmail(primary.email_address) : false;
 }, ["is-admin-v2"], { revalidate: 300 });
 
+/** Is this person an admin? The cached answer above; a lookup failure must not break a page, but must not be silent either. */
+export async function isAdminUser(userId: string): Promise<boolean> {
+  return adminCheck(userId).catch((err) => { console.error("Admin check failed", err); return false; });
+}
+
 export async function showAdminLink(): Promise<boolean> {
   const { userId } = await auth();
-  if (!userId) return false;
-  // A failure here must not break every page, but it must not be silent either.
-  return adminCheck(userId).catch((err) => { console.error("Admin button check failed", err); return false; });
+  return userId ? isAdminUser(userId) : false;
 }
 
 const since = (days: number) => new Date(Date.now() - days * DAY);

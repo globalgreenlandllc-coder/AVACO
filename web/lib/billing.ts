@@ -6,6 +6,7 @@
  */
 import "server-only";
 import { and, count, eq, gte, sql, sum } from "drizzle-orm";
+import { isAdminUser } from "./admin";
 import { creditLedger, db, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
 export class NoCredits extends Error {}
@@ -157,25 +158,26 @@ export async function forgetReport(analysisId: string): Promise<void> {
   await db().delete(reportAccess).where(eq(reportAccess.analysisId, analysisId));
 }
 
-/** Full, or preview only? Reports made before billing was switched on (no recording row) stay open. */
+/** Full, or preview only? Admins always get the full report; reports made before billing was switched on (no recording row) stay open. */
 export async function hasFullAccess(userId: string, analysisId: string): Promise<boolean> {
-  if (!(await getSettings()).enabled) return true;
+  if (!(await getSettings()).enabled || (await isAdminUser(userId))) return true;
   const [recorded] = await db().select().from(selfRecordings).where(eq(selfRecordings.analysisId, analysisId));
   if (!recorded) return true;
   const [open] = await db().select().from(reportAccess).where(and(eq(reportAccess.analysisId, analysisId), eq(reportAccess.ownerId, userId)));
   return Boolean(open);
 }
 
-/** Spends one credit to open a report. Throws NoCredits when there is nothing to spend. */
+/** Spends one credit to open a report; admins open it for nothing. Throws NoCredits when there is nothing to spend. */
 export async function unlock(userId: string, analysisId: string): Promise<void> {
-  if (!(await charge(asUser(userId), analysisId))) throw new NoCredits("No credits");
-  await db().insert(reportAccess).values({ analysisId, ownerKind: "user", ownerId: userId, source: "credit" }).onConflictDoNothing();
+  const admin = await isAdminUser(userId);
+  if (!admin && !(await charge(asUser(userId), analysisId))) throw new NoCredits("No credits");
+  await db().insert(reportAccess).values({ analysisId, ownerKind: "user", ownerId: userId, source: admin ? "admin" : "credit" }).onConflictDoNothing();
 }
 
-/** May this person make another free preview? Counts recordings of the last 30 days that were never unlocked. */
+/** May this person make another free preview? Counts recordings of the last 30 days that were never unlocked; admins are never capped. */
 export async function previewsLeft(userId: string): Promise<number> {
   const cfg = await getSettings();
-  if (!cfg.enabled) return Infinity;
+  if (!cfg.enabled || (await isAdminUser(userId))) return Infinity;
   const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
   const [row] = await db().select({ n: count() }).from(selfRecordings)
     .leftJoin(reportAccess, eq(reportAccess.analysisId, selfRecordings.analysisId))
