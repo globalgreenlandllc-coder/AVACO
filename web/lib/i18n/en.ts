@@ -2,6 +2,7 @@ import { billingEn } from "./billing-en";
 import { orgEn } from "./org-en";
 import { typesEn } from "./types-en";
 import { deepEn } from "./deep-en";
+import { legalEn } from "./legal-en";
 export const en = {
   brand: "AVOCO",
   nav: { record: "New recording", reports: "My reports", signIn: "Sign in", start: "Get started", sample: "Sample report" },
@@ -59,6 +60,8 @@ export const en = {
     privacyEyebrow: "Privacy",
     privacyTitle: "Your voice stays yours",
     privacy: "A recording is analysed only with your consent. Reports are private to your account, and you can delete a report together with its audio at any time.",
+    privacyCta: "Read the privacy policy",
+    termsCta: "Terms of service",
     closingTitle: "Ready? It takes a minute.",
     closing: "Find a quiet spot, press record and talk about your day. Your report will be waiting.",
     disclaimer: "AVOCO voice analysis is not a medical, psychological or hiring assessment.",
@@ -92,6 +95,7 @@ export const en = {
     maxReached: "Maximum length reached",
     recorded: "Recording ready",
     consent: "I am the person speaking in this recording, and I agree to it being analysed by AVOCO and stored with my report.",
+    privacyLink: "How your recording is handled, and how to delete it",
     analyse: "Analyse my voice",
     preparing: "Preparing audio…",
     uploading: "Uploading…",
@@ -185,6 +189,28 @@ export const en = {
   types: typesEn,
   org: orgEn,
   billing: billingEn,
+  legal: legalEn,
+  contact: {
+    eyebrow: "Contact us",
+    title: "A person answers, not a bot",
+    lead: "Write to us about anything: your report, a company workspace, credits or your data. Pick a topic and the email opens with the right subject line.",
+    write: "Write to us",
+    copy: "Copy the address",
+    copied: "Copied",
+    reply: "We reply within one business day, in English or Russian.",
+    topicsLabel: "What is it about?",
+    subjectLabel: "Subject line",
+    firstStep: "Often the fastest way",
+    topics: [
+      { label: "My report", subject: "A question about my report", hint: "Tell us when you recorded and what looks wrong. A screenshot helps.", linkLabel: "Open my reports" },
+      { label: "For companies", subject: "AVOCO for my company", hint: "Tell us your industry and roughly how many people you would like to record, and we will set up a workspace with you.", linkLabel: "See the company API" },
+      { label: "Credits and payments", subject: "Credits and payments", hint: "Include the email of your account and the date of the purchase.", linkLabel: "My credits" },
+      { label: "My data", subject: "Privacy request", hint: "A copy of your data, a deletion or a question. Write from the email of your account so we can verify it is you.", linkLabel: "Read the privacy policy" },
+    ],
+    other: { label: "Something else", subject: "Hello AVOCO", hint: "Anything at all. Ideas and criticism are welcome." },
+    greeting: "Hello AVOCO,",
+    sentFrom: "Sent from {site} · language: {lang}",
+  },
 };
 
 type Widen<T> = T extends string ? string : T extends readonly (infer U)[] ? Widen<U>[] : { [K in keyof T]: Widen<T[K]> };

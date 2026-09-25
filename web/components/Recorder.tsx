@@ -224,6 +224,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={phase === "sending"} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
             <span>{consentText ?? t.consent}</span>
           </label>
+          <p className="-mt-3 pl-7 text-xs"><a href="/privacy" target="_blank" rel="noopener" className="text-accent-text hover:underline">{t.privacyLink}</a></p>
           {extraConsent && (
             <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-ink-2">
               <input type="checkbox" checked={extra} onChange={(e) => setExtra(e.target.checked)} disabled={phase === "sending"} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />

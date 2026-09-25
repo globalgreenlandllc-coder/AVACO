@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Bars } from "@/components/Bars";
+import { Contact } from "@/components/Contact";
 import { Reveal } from "@/components/Motion";
 import { Radar } from "@/components/Radar";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
+import { organizationJsonLd } from "@/lib/contact";
 import { getDict } from "@/lib/i18n";
+import { LEGAL } from "@/lib/legal";
 import { money, packViews } from "@/lib/money";
+import { baseUrl } from "@/lib/page";
 import { psytypeRows, zoneOf } from "@/lib/report";
 import { SAMPLE_PSY } from "@/lib/sample";
 
@@ -16,7 +20,8 @@ import { SAMPLE_PSY } from "@/lib/sample";
  * now" while charging is off and the real price once it is on).
  */
 export default async function Home() {
-  const [{ locale, t }, { userId }, billing] = await Promise.all([getDict(), auth(), getSettings().catch(() => DEFAULT_SETTINGS)]);
+  const [{ locale, t }, { userId }, billing, origin] = await Promise.all([getDict(), auth(), getSettings().catch(() => DEFAULT_SETTINGS), baseUrl()]);
+  const site = new URL(origin).host;
   const h = t.home;
   const start = userId ? "/record" : "/sign-up";
   const startLabel = userId ? h.cta : h.ctaSignedOut;
@@ -29,6 +34,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-24 pt-2 sm:pt-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJsonLd(origin, LEGAL.operator, LEGAL.support) }} />
       {/* Hero: the report's own cover, with the sample profile's voice signature. */}
       <section className="cover px-7 py-12 sm:px-12 sm:py-16">
         <span className="cover-capsule drift" style={{ top: -90, right: "5%", width: 120, height: 320, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
@@ -160,8 +166,17 @@ export default async function Home() {
           <p className="eyebrow">{h.privacyEyebrow}</p>
           <h2 className="mt-3 font-display text-3xl font-medium">{h.privacyTitle}</h2>
           <p className="mt-3 leading-relaxed text-ink-2">{h.privacy}</p>
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+            <Link href="/privacy" className="text-accent-text">{h.privacyCta} →</Link>
+            <Link href="/terms" className="text-ink-2 hover:text-ink">{h.termsCta}</Link>
+          </div>
         </Reveal>
       </div>
+
+      {/* Contact */}
+      <Reveal as="section" id="contact" className="card p-8 sm:p-12">
+        <Contact t={t.contact} email={LEGAL.support} site={site} locale={locale} signedIn={!!userId} />
+      </Reveal>
 
       {/* Closing call */}
       <Reveal as="section" className="text-center">

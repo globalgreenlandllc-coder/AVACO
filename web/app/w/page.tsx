@@ -52,6 +52,7 @@ export default async function WorkspacesPage() {
           </div>
         </fieldset>
         <button type="submit" className="btn w-full">{o.list.create}</button>
+        <p className="text-xs leading-relaxed text-muted">{t.legal.workspaceNotice} <Link href="/terms#companies" className="text-accent-text hover:underline">{t.legal.workspaceNoticeLink}</Link></p>
       </form>
     </div>
   );

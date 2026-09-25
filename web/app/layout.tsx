@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, ruRU } from "@clerk/localizations";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { getDict } from "@/lib/i18n";
+import { LEGAL } from "@/lib/legal";
 import "./globals.css";
 
 // Both families ship Cyrillic, so English and Russian look the same.
@@ -23,7 +25,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <body className="flex flex-col">
           <Header locale={locale} t={t} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>
-          <footer className="no-print border-t border-line px-5 py-8 text-center text-xs text-muted">{t.footer}</footer>
+          <footer className="no-print border-t border-line px-5 py-8 text-xs text-muted">
+            <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
+              <p>© {new Date().getFullYear()} {LEGAL.operator}. {t.footer}</p>
+              <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1">
+                <Link href="/privacy" className="hover:text-ink">{t.legal.nav.privacy}</Link>
+                <Link href="/terms" className="hover:text-ink">{t.legal.nav.terms}</Link>
+                <Link href="/docs/api" className="hover:text-ink">{t.legal.nav.api}</Link>
+                <a href={`mailto:${LEGAL.support}`} className="hover:text-ink">{LEGAL.support}</a>
+              </nav>
+            </div>
+          </footer>
         </body>
       </html>
     </ClerkProvider>
