@@ -1,7 +1,10 @@
+import { CopyField } from "@/components/CopyField";
+import { StripeConnect } from "@/components/StripeConnect";
 import { listAdmins, listPromoCodes, requireAdmin } from "@/lib/admin";
 import { getSettings } from "@/lib/billing";
-import { stripeReady } from "@/lib/stripe";
-import { addAdminAction, createPromoAction, removeAdminAction, saveSettingsAction, togglePromoAction } from "../actions";
+import { baseUrl } from "@/lib/page";
+import { stripeStatus } from "@/lib/stripe";
+import { addAdminAction, createPromoAction, disconnectStripeAction, removeAdminAction, saveSettingsAction, togglePromoAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,18 +12,54 @@ const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm";
 const NAMES: Record<string, string> = { one: "Single report", three: "Three reports", ten: "Ten reports", team25: "Team 25", team100: "Team 100", team500: "Team 500" };
 
 export default async function AdminSettings() {
-  const [me, cfg, promos, adminList] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins()]);
+  const [me, cfg, promos, adminList, stripe, origin] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl()]);
   const envAdmins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const webhookUrl = `${origin}/api/stripe/webhook`;
 
   return (
     <div className="space-y-10">
+      <section className="card space-y-5 p-7 sm:p-9">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-3xl font-medium">Card payments (Stripe)</h2>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${stripe.connected ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{stripe.connected ? `Connected · ${stripe.mode} mode` : "Not connected"}</span>
+        </div>
+        {stripe.connected ? (
+          <>
+            <p className="text-sm leading-relaxed text-ink-2">
+              Account <span className="font-semibold text-ink">{stripe.account ?? "from the server environment"}</span> · key ends in <span className="font-mono">{stripe.keyHint}</span>
+              {stripe.mode === "test" ? " · test mode: no real money moves; connect a live key to charge real cards" : " · live mode: real cards are charged"}
+              {stripe.source === "portal" && stripe.savedAt ? ` · added by ${stripe.savedBy} on ${stripe.savedAt.slice(0, 10)}` : stripe.source === "environment" ? " · set in the server environment" : ""}.
+            </p>
+            <div className="text-sm">
+              <p className="text-ink-2">Stripe must send payments to this webhook (Developers → Webhooks), event <span className="font-mono">checkout.session.completed</span>:</p>
+              <div className="mt-2"><CopyField value={webhookUrl} copy="Copy" copied="Copied" /></div>
+            </div>
+            {stripe.source === "portal" && (
+              <form action={disconnectStripeAction}><button type="submit" className="btn btn-quiet btn-danger">Disconnect Stripe</button></form>
+            )}
+          </>
+        ) : (
+          <>
+            <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ink-2">
+              <li>In Stripe, open <span className="font-semibold text-ink">Developers → API keys</span> and copy the <span className="font-semibold text-ink">Secret key</span> (starts with <span className="font-mono">sk_live_</span>; a <span className="font-mono">sk_test_</span> key lets you try everything without real money).</li>
+              <li>In <span className="font-semibold text-ink">Developers → Webhooks → Add endpoint</span>, use this URL and the event <span className="font-mono">checkout.session.completed</span>, then copy the endpoint's <span className="font-semibold text-ink">Signing secret</span> (<span className="font-mono">whsec_…</span>):
+                <div className="mt-2"><CopyField value={webhookUrl} copy="Copy" copied="Copied" /></div>
+              </li>
+              <li>Paste both below. The key is checked with Stripe, stored encrypted, and never shown again.</li>
+            </ol>
+            {!stripe.canStore && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">The server has no SETTINGS_SECRET yet, so pasted keys can't be stored safely. Ask your developer to set it.</p>}
+            <StripeConnect canStore={stripe.canStore} />
+          </>
+        )}
+      </section>
+
       <form action={saveSettingsAction} className="card space-y-6 p-7 sm:p-9">
         <h2 className="font-display text-3xl font-medium">Pricing</h2>
         <label className="flex cursor-pointer items-start gap-3">
           <input type="checkbox" name="enabled" defaultChecked={cfg.enabled} className="mt-1 h-4 w-4 accent-[var(--accent)]" />
           <span><span className="font-medium">Charge for reports</span><span className="block text-sm leading-relaxed text-ink-2">Off: every report is free. On: a person's new recording is a free preview and one credit opens the full report; every recording made for a company uses one of its credits. Reports made before you switch this on stay open.</span></span>
         </label>
-        {!stripeReady() && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">Stripe is not connected (STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are missing). If you switch charging on now, people can only get credits from promo codes and from grants you make here.</p>}
+        {!stripe.connected && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">Stripe is not connected: connect it in the Card payments section above. If you switch charging on now, people can only get credits from promo codes and from grants you make here.</p>}
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[34rem] text-left text-sm">

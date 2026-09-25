@@ -3,11 +3,12 @@
  * body before anything is parsed. Crediting is idempotent: Stripe retries, and a retry changes nothing.
  */
 import { completePurchase } from "@/lib/billing";
-import { verifyStripeSignature } from "@/lib/stripe";
+import { stripeKeys, verifyStripeSignature } from "@/lib/stripe";
 
 export async function POST(req: Request) {
   const raw = await req.text();
-  if (!verifyStripeSignature(raw, req.headers.get("stripe-signature"), process.env.STRIPE_WEBHOOK_SECRET ?? "")) {
+  const secret = (await stripeKeys())?.webhookSecret ?? "";
+  if (!verifyStripeSignature(raw, req.headers.get("stripe-signature"), secret)) {
     return Response.json({ error: "unauthorized", message: "Bad signature" }, { status: 401 });
   }
 

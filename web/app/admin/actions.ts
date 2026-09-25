@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { asUser, asWorkspace, getSettings, grant, saveSettings, type Pack } from "@/lib/billing";
 import { admins, db, promoCodes } from "@/lib/db";
+import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
 
 export async function grantAction(form: FormData) {
   const admin = await requireAdmin();
@@ -59,4 +60,20 @@ export async function removeAdminAction(form: FormData) {
   const email = String(form.get("email") ?? "");
   if (email !== admin.email) await db().delete(admins).where(eq(admins.email, email)); // you can't remove yourself by accident
   revalidatePath("/admin/settings");
+}
+
+export interface StripeActionState { ok: boolean | null; message: string }
+
+/** Connects Stripe from the portal: checks the key with Stripe, stores both secrets sealed. */
+export async function connectStripeAction(_prev: StripeActionState, form: FormData): Promise<StripeActionState> {
+  const admin = await requireAdmin();
+  const result = await saveStripeKeys({ secretKey: String(form.get("secretKey") ?? ""), webhookSecret: String(form.get("webhookSecret") ?? "") }, admin.email);
+  revalidatePath("/admin", "layout");
+  return result.ok ? { ok: true, message: `Connected to ${result.account}.` } : { ok: false, message: result.reason };
+}
+
+export async function disconnectStripeAction() {
+  await requireAdmin();
+  await clearStripeKeys();
+  revalidatePath("/admin", "layout");
 }

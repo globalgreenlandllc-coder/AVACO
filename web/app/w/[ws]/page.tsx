@@ -66,7 +66,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ ws: 
           </div>
           {credits < 1 ? <p role="status" className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">{t.billing.workspace.none}</p>
             : credits <= 5 ? <p role="status" className="rounded-xl border border-line px-4 py-3 text-sm text-ink-2">{t.billing.workspace.low.replace("{n}", String(credits))}</p> : null}
-          {isAdmin && <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "workspace"), cfg.currency, locale)} canPay={stripeReady()} t={t.billing} workspaceId={ws.id} />}
+          {isAdmin && <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "workspace"), cfg.currency, locale)} canPay={await stripeReady()} t={t.billing} workspaceId={ws.id} />}
         </section>
       )}
 

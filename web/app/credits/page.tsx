@@ -27,7 +27,7 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
 
       <section>
         <h2 className="mb-6 font-display text-3xl font-medium">{b.buy}</h2>
-        <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "user"), cfg.currency, locale)} canPay={stripeReady()} t={b} unlock={unlock} />
+        <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "user"), cfg.currency, locale)} canPay={await stripeReady()} t={b} unlock={unlock} />
       </section>
 
       <section>
