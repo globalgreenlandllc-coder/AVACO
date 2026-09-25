@@ -65,6 +65,16 @@ workspace (`REPORTS_PER_MONTH_LIMIT`, default 200) guards open links and is the 
 Extra environment variable: `DATABASE_URL` (the same Neon database as the gateway). Run `npm run db:migrate` after
 pulling new migrations.
 
+## Partner page
+
+`https://avoco-partners.vercel.app` is a free Vercel host attached to the same project. On that host, `/` is the
+partner page (`app/partners`): record or upload, wait about a minute, read the full report. No account, no
+credits, no billing. Analyses are filed in the gateway under the owner `partners`; a report is reachable by its
+id at `/partners/r/<id>` and is remembered in the browser's local storage. On any other host (the main domain
+included) the partner paths redirect to the partner host, so the page never appears on `avocousa.us`
+(`proxy.ts`). `PARTNER_DAILY_LIMIT` (default 100 recordings a day across everyone) caps the AVOCO usage an open
+page can cause; `PARTNER_HOST` changes the host. Logic in `lib/partners.ts`.
+
 ## Where things are
 
 ```

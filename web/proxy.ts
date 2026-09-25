@@ -1,11 +1,21 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 // Recording, reports and the API need a signed-in user. The landing page and sign-in are public.
 // Participant links (/r, /s), their APIs and the company API carry their own credentials, so they stay public.
 const PROTECTED = ["/record", "/reports", "/w", "/join", "/credits", "/admin", "/api/upload-token", "/api/analyses", "/api/w", "/api/billing", "/api/admin"];
 
+// The partner page lives on its own free Vercel host (see lib/partners.ts). There, "/" is the partner page;
+// anywhere else, the partner paths send the visitor to that host, so the main domain never shows them.
+const PARTNER_HOST = process.env.PARTNER_HOST || "avoco-partners.vercel.app";
+const isPartnerPath = (p: string) => p === "/partners" || p.startsWith("/partners/") || p.startsWith("/api/partners/");
+
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
+  const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").toLowerCase();
+  const onPartnerHost = host === PARTNER_HOST || host.startsWith("localhost");
+  if (onPartnerHost && pathname === "/") return NextResponse.rewrite(new URL("/partners", req.url));
+  if (!onPartnerHost && isPartnerPath(pathname)) return NextResponse.redirect(`https://${PARTNER_HOST}${pathname === "/partners" ? "/" : pathname}`, 308);
   if (PROTECTED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) await auth.protect();
 });
 
