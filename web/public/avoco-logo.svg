@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="232" height="56" viewBox="0 0 232 56" role="img" aria-label="AVOCO">
+  <!-- The mark: a voice signature in AVOCO gold on the report cover's dark ground. Shown above Clerk's sign-in card. -->
+  <rect width="56" height="56" rx="16" fill="#1a1510"/>
+  <g fill="#e2a647">
+    <rect x="11" y="24" width="4" height="8" rx="2"/>
+    <rect x="18" y="17" width="4" height="22" rx="2"/>
+    <rect x="25" y="10" width="4" height="36" rx="2"/>
+    <rect x="32" y="15" width="4" height="26" rx="2"/>
+    <rect x="39" y="22" width="4" height="12" rx="2"/>
+  </g>
+  <text x="72" y="39" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="6" fill="#2a1c05">AVOCO</text>
+</svg>

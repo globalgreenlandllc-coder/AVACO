@@ -191,6 +191,12 @@ export const ru: Dict = {
   types: typesRu,
   org: orgRu,
   billing: billingRu,
+  auth: {
+    signInTitle: "Вход в AVOCO",
+    signInSubtitle: "С возвращением. Ваши отчёты ждут.",
+    signUpTitle: "Создайте аккаунт AVOCO",
+    signUpSubtitle: "Тридцать секунд голоса, отчёт примерно через минуту.",
+  },
   legal: legalRu,
   contact: {
     eyebrow: "Свяжитесь с нами",

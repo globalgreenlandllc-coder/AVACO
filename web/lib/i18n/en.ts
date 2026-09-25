@@ -189,6 +189,12 @@ export const en = {
   types: typesEn,
   org: orgEn,
   billing: billingEn,
+  auth: {
+    signInTitle: "Sign in to AVOCO",
+    signInSubtitle: "Welcome back. Your reports are waiting.",
+    signUpTitle: "Create your AVOCO account",
+    signUpSubtitle: "Thirty seconds of your voice, a report in about a minute.",
+  },
   legal: legalEn,
   contact: {
     eyebrow: "Contact us",
