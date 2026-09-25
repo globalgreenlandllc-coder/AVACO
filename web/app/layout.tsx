@@ -20,7 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { locale, t } = await getDict();
   return (
-    <ClerkProvider localization={locale === "ru" ? ruRU : enUS} appearance={{ variables: { colorPrimary: "#b4730f", borderRadius: "12px" } }}>
+    <ClerkProvider localization={locale === "ru" ? ruRU : enUS} appearance={{
+      variables: { colorPrimary: "#b4730f", borderRadius: "12px" },
+      // Email and password only for now: the production instance has no Google OAuth credentials.
+      elements: { socialButtons: { display: "none" }, dividerRow: { display: "none" } },
+    }}>
       <html lang={locale} className={`${body.variable} ${display.variable}`}>
         <body className="flex flex-col">
           <Header locale={locale} t={t} />
