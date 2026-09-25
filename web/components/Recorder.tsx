@@ -206,10 +206,14 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         </p>
 
         {phase === "idle" && (
-          <label className="mt-6 cursor-pointer text-sm text-ink-2 underline decoration-line underline-offset-4 hover:text-ink">
-            {t.upload} <span className="text-muted">({t.uploadHint})</span>
-            <input type="file" accept="audio/*,video/*,.opus,.m4a,.mov,.mp4,.webm" className="sr-only" onChange={(e) => chooseFile(e.target.files?.[0])} />
-          </label>
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <label className="btn btn-quiet cursor-pointer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4m0 0-4 4m4-4 4 4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" /></svg>
+              {t.upload}
+              <input type="file" accept="audio/*,video/*,.opus,.m4a,.mov,.mp4,.webm" className="sr-only" onChange={(e) => chooseFile(e.target.files?.[0])} />
+            </label>
+            <p className="text-xs text-muted">{t.uploadHint}</p>
+          </div>
         )}
       </div>
 

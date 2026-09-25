@@ -6,6 +6,8 @@ import { requireAdmin } from "@/lib/admin";
 import { asUser, asWorkspace, getSettings, grant, saveSettings, type Pack } from "@/lib/billing";
 import { admins, db, promoCodes } from "@/lib/db";
 import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
+import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
+import { TRANSLATABLE } from "@/lib/i18n/languages";
 
 export async function grantAction(form: FormData) {
   const admin = await requireAdmin();
@@ -75,5 +77,36 @@ export async function connectStripeAction(_prev: StripeActionState, form: FormDa
 export async function disconnectStripeAction() {
   await requireAdmin();
   await clearStripeKeys();
+  revalidatePath("/admin", "layout");
+}
+
+export async function connectDeeplAction(_prev: StripeActionState, form: FormData): Promise<StripeActionState> {
+  const admin = await requireAdmin();
+  const result = await saveDeeplKey(String(form.get("key") ?? ""), admin.email);
+  revalidatePath("/admin", "layout");
+  return result.ok ? { ok: true, message: `Connected. ${result.usage.used.toLocaleString("en-US")} of ${result.usage.limit.toLocaleString("en-US")} characters used this period.` } : { ok: false, message: result.reason };
+}
+
+export async function disconnectDeeplAction() {
+  await requireAdmin();
+  await clearDeeplKey();
+  revalidatePath("/admin", "layout");
+}
+
+/** One step of building a language: translates the next batch of strings. The portal calls it until done. */
+export async function buildLanguageAction(lang: string): Promise<LanguageProgress & { error?: string }> {
+  const admin = await requireAdmin();
+  if (!TRANSLATABLE.some((l) => l.code === lang)) return { total: 0, done: 0, error: "Unknown language" };
+  try {
+    return await buildLanguage(lang, admin.email);
+  } catch (err) {
+    return { total: 0, done: 0, error: err instanceof Error ? err.message : "Translation failed" };
+  }
+}
+
+export async function removeLanguageAction(form: FormData) {
+  await requireAdmin();
+  const lang = String(form.get("lang") ?? "");
+  if (TRANSLATABLE.some((l) => l.code === lang)) await removeLanguage(lang);
   revalidatePath("/admin", "layout");
 }

@@ -74,7 +74,7 @@ export const en = {
   },
   record: {
     title: "New recording",
-    lead: "Find a quiet place and speak in your normal voice. What you say doesn't matter, only how you sound.",
+    lead: "Find a quiet place and speak in your normal voice, in any language. What you say doesn't matter, only how you sound.",
     promptsTitle: "Not sure what to say?",
     prompts: [
       "Describe how your day has gone so far.",
@@ -85,8 +85,8 @@ export const en = {
     start: "Start recording",
     stop: "Stop",
     again: "Record again",
-    upload: "Or upload an audio or video file",
-    uploadHint: "wav, mp3, m4a, ogg, opus, or a video: mp4, mov, webm",
+    upload: "Upload a recording",
+    uploadHint: "Already have one? Audio (wav, mp3, m4a, ogg, opus) or video (mp4, mov, webm), 30 seconds to 5 minutes, in any language.",
     minimum: "Keep going: at least 30 seconds",
     ready: "Long enough. Stop whenever you like",
     maxReached: "Maximum length reached",

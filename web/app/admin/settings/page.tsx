@@ -1,10 +1,14 @@
 import { CopyField } from "@/components/CopyField";
+import { KeyConnect } from "@/components/KeyConnect";
+import { LanguageBuilder } from "@/components/LanguageBuilder";
 import { StripeConnect } from "@/components/StripeConnect";
 import { listAdmins, listPromoCodes, requireAdmin } from "@/lib/admin";
 import { getSettings } from "@/lib/billing";
+import { TRANSLATABLE } from "@/lib/i18n/languages";
 import { baseUrl } from "@/lib/page";
 import { stripeStatus } from "@/lib/stripe";
-import { addAdminAction, createPromoAction, disconnectStripeAction, removeAdminAction, saveSettingsAction, togglePromoAction } from "../actions";
+import { allProgress, deeplStatus, dictionaryCharacters } from "@/lib/translate";
+import { addAdminAction, connectDeeplAction, createPromoAction, disconnectDeeplAction, disconnectStripeAction, removeAdminAction, removeLanguageAction, saveSettingsAction, togglePromoAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +16,11 @@ const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm";
 const NAMES: Record<string, string> = { one: "Single report", three: "Three reports", ten: "Ten reports", team25: "Team 25", team100: "Team 100", team500: "Team 500" };
 
 export default async function AdminSettings() {
-  const [me, cfg, promos, adminList, stripe, origin] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl()]);
+  const [me, cfg, promos, adminList, stripe, origin, deepl, progress] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress()]);
   const envAdmins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   const webhookUrl = `${origin}/api/stripe/webhook`;
+  const languageSize = Math.round(dictionaryCharacters() / 1000) * 1000;
+  const fmt = (n: number) => n.toLocaleString("en-US");
 
   return (
     <div className="space-y-10">
@@ -86,6 +92,48 @@ export default async function AdminSettings() {
         <p className="text-xs leading-relaxed text-muted">Each free preview costs you one AVOCO analysis, so the preview limit is your protection against people who record and never pay.</p>
         <button type="submit" className="btn">Save pricing</button>
       </form>
+
+      <section className="card space-y-5 p-7 sm:p-9">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-3xl font-medium">Languages</h2>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${deepl.connected ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{deepl.connected ? "DeepL connected" : "English + Russian"}</span>
+        </div>
+        <p className="text-sm leading-relaxed text-ink-2">
+          English is the original and Russian is translated by hand; both are always on. Any other language is made from the English by DeepL:
+          connect a DeepL API key (a free account at deepl.com/pro-api gives 500,000 characters a month; one language is about {fmt(languageSize)} characters),
+          then add languages below. Each is translated once and kept; when the English changes, only the changed strings are redone.
+          Voice recordings can be in any language regardless.
+        </p>
+        {deepl.connected ? (
+          <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-ink-2">
+            <p>
+              Key <span className="font-mono">{deepl.keyHint}</span>
+              {deepl.usage ? ` · ${fmt(deepl.usage.used)} of ${fmt(deepl.usage.limit)} characters used this period` : ""}
+              {deepl.source === "portal" && deepl.savedAt ? ` · added by ${deepl.savedBy} on ${deepl.savedAt.slice(0, 10)}` : deepl.source === "environment" ? " · set in the server environment" : ""}.
+            </p>
+            {deepl.source === "portal" && <form action={disconnectDeeplAction}><button type="submit" className="rounded-md border border-line px-3 py-1 text-xs hover:border-ink-2">Disconnect DeepL</button></form>}
+          </div>
+        ) : (
+          <>
+            {!deepl.canStore && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">The server has no SETTINGS_SECRET yet, so a pasted key can't be stored safely.</p>}
+            <KeyConnect action={connectDeeplAction} name="key" label="DeepL API key (deepl.com → Account → API keys)" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" button="Connect DeepL" canStore={deepl.canStore} />
+          </>
+        )}
+        <ul className="grid gap-x-8 divide-y divide-line text-sm sm:grid-cols-2 sm:divide-y-0">
+          {TRANSLATABLE.map((l) => {
+            const p = progress.get(l.code) ?? { total: 0, done: 0 };
+            return (
+              <li key={l.code} className="flex items-center justify-between gap-3 border-b border-line py-2.5">
+                <span><span lang={l.code} className="font-medium text-ink">{l.name}</span> <span className="text-xs uppercase text-muted">{l.code}</span></span>
+                <span className="flex items-center gap-3">
+                  {deepl.connected ? <LanguageBuilder lang={l.code} done={p.done} total={p.total || languageSize} /> : <span className="text-xs text-muted">{p.done > 0 && p.done >= p.total ? "Ready" : "—"}</span>}
+                  {p.done > 0 && <form action={removeLanguageAction}><input type="hidden" name="lang" value={l.code} /><button type="submit" className="rounded-md border border-line px-3 py-1 text-xs hover:border-ink-2">Remove</button></form>}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <section className="card space-y-6 p-7 sm:p-9">
         <h2 className="font-display text-3xl font-medium">Promo codes</h2>

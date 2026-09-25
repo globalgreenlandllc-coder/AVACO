@@ -173,5 +173,22 @@ export const reportStats = pgTable("report_stats", {
 
 export const settings = pgTable("settings", { key: text("key").primaryKey(), value: jsonb("value").notNull(), updatedAt: ts("updated_at").notNull().defaultNow() });
 
+/**
+ * Machine translations of the English dictionary for languages added in the admin portal: one row per string,
+ * keyed by its path in the dictionary, with a hash of the English it was made from, so a changed source is
+ * translated again and the rest is kept.
+ */
+export const translations = pgTable(
+  "translations",
+  {
+    lang: text("lang").notNull(),
+    path: text("path").notNull(),
+    sourceHash: text("source_hash").notNull(),
+    text: text("text").notNull(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.lang, t.path] })],
+);
+
 /** Platform admins, by email. ADMIN_EMAILS in the environment always counts too, so nobody can lock themselves out. */
 export const admins = pgTable("admins", { email: text("email").primaryKey(), addedBy: text("added_by"), createdAt: ts("created_at").notNull().defaultNow() });
