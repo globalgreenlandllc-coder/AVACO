@@ -37,8 +37,8 @@ export default async function AdminSettings() {
               {stripe.source === "portal" && stripe.savedAt ? ` · added by ${stripe.savedBy} on ${stripe.savedAt.slice(0, 10)}` : stripe.source === "environment" ? " · set in the server environment" : ""}.
             </p>
             <div className="text-sm">
-              <p className="text-ink-2">Stripe must send payments to this webhook (Developers → Webhooks), event <span className="font-mono">checkout.session.completed</span>:</p>
-              <div className="mt-2"><CopyField value={webhookUrl} copy="Copy" copied="Copied" /></div>
+              <p className="text-ink-2">{stripe.webhookUrl ? "Payment webhook registered in Stripe for you, event " : "Stripe must send payments to this webhook (Developers → Webhooks), event "}<span className="font-mono">checkout.session.completed</span>:</p>
+              <div className="mt-2"><CopyField value={stripe.webhookUrl ?? webhookUrl} copy="Copy" copied="Copied" /></div>
             </div>
             {stripe.source === "portal" && (
               <form action={disconnectStripeAction}><button type="submit" className="btn btn-quiet btn-danger">Disconnect Stripe</button></form>
@@ -47,11 +47,9 @@ export default async function AdminSettings() {
         ) : (
           <>
             <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ink-2">
-              <li>In Stripe, open <span className="font-semibold text-ink">Developers → API keys</span> and copy the <span className="font-semibold text-ink">Secret key</span> (starts with <span className="font-mono">sk_live_</span>; a <span className="font-mono">sk_test_</span> key lets you try everything without real money).</li>
-              <li>In <span className="font-semibold text-ink">Developers → Webhooks → Add endpoint</span>, use this URL and the event <span className="font-mono">checkout.session.completed</span>, then copy the endpoint's <span className="font-semibold text-ink">Signing secret</span> (<span className="font-mono">whsec_…</span>):
-                <div className="mt-2"><CopyField value={webhookUrl} copy="Copy" copied="Copied" /></div>
-              </li>
-              <li>Paste both below. The key is checked with Stripe, stored encrypted, and never shown again.</li>
+              <li>In Stripe, open <span className="font-semibold text-ink">Developers → API keys</span> and copy the <span className="font-semibold text-ink">Secret key</span> (starts with <span className="font-mono">sk_live_</span>; a <span className="font-mono">sk_test_</span> key lets you try everything without real money). The publishable key (<span className="font-mono">pk_…</span>) is not needed.</li>
+              <li>Paste it below and connect. The key is checked with Stripe, stored encrypted and never shown again, and the payment webhook is registered in your Stripe account for you at <span className="font-mono">{webhookUrl}</span>.</li>
+              <li>Only if you prefer to create the webhook yourself (<span className="font-semibold text-ink">Developers → Webhooks → Add endpoint</span>, that URL, event <span className="font-mono">checkout.session.completed</span>): paste its signing secret (<span className="font-mono">whsec_…</span>) in the second field.</li>
             </ol>
             {!stripe.canStore && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">The server has no SETTINGS_SECRET yet, so pasted keys can't be stored safely. Ask your developer to set it.</p>}
             <StripeConnect canStore={stripe.canStore} />

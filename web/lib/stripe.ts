@@ -13,7 +13,7 @@ import { open, seal, secretsReady } from "./secrets";
 export interface StripeKeys { secretKey: string; webhookSecret: string }
 
 /** What the settings row holds. The two secrets are sealed; the rest is for the admin page. */
-interface StoredStripe { secretKey: string; webhookSecret: string; account: string; mode: "live" | "test"; keyHint: string; savedBy: string; savedAt: string }
+interface StoredStripe { secretKey: string; webhookSecret: string; account: string; mode: "live" | "test"; keyHint: string; savedBy: string; savedAt: string; /** The endpoint the app registered itself, if it did. */ webhookId?: string; webhookUrl?: string }
 
 async function storedStripe(): Promise<StoredStripe | null> {
   const [row] = await db().select().from(settings).where(eq(settings.key, "stripe"));
@@ -47,6 +47,8 @@ export interface StripeStatus {
   account: string | null;
   savedBy: string | null;
   savedAt: string | null;
+  /** The webhook the app registered in Stripe by itself, when it did. */
+  webhookUrl: string | null;
   /** False when the server has no SETTINGS_SECRET, so pasted keys couldn't be stored safely. */
   canStore: boolean;
 }
@@ -56,12 +58,12 @@ const hintOf = (secretKey: string) => `…${secretKey.slice(-4)}`;
 
 /** For the admin page: is Stripe connected, from where, and which account. Never returns a key. */
 export async function stripeStatus(): Promise<StripeStatus> {
-  const none: StripeStatus = { connected: false, source: null, mode: null, keyHint: null, account: null, savedBy: null, savedAt: null, canStore: secretsReady() };
+  const none: StripeStatus = { connected: false, source: null, mode: null, keyHint: null, account: null, savedBy: null, savedAt: null, webhookUrl: null, canStore: secretsReady() };
   const stored = await storedStripe();
   if (stored && secretsReady()) {
     try {
       open(stored.secretKey); // proves the stored keys still open under this SETTINGS_SECRET
-      return { ...none, connected: true, source: "portal", mode: stored.mode, keyHint: stored.keyHint, account: stored.account, savedBy: stored.savedBy, savedAt: stored.savedAt };
+      return { ...none, connected: true, source: "portal", mode: stored.mode, keyHint: stored.keyHint, account: stored.account, savedBy: stored.savedBy, savedAt: stored.savedAt, webhookUrl: stored.webhookUrl ?? null };
     } catch { /* fall through to the environment */ }
   }
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -79,20 +81,69 @@ export async function checkStripeKey(secretKey: string): Promise<{ ok: true; acc
   return { ok: true, account: String(name ?? "your Stripe account") };
 }
 
-/** Stores the keys an admin pasted, after checking the secret key with Stripe. */
-export async function saveStripeKeys(input: { secretKey: string; webhookSecret: string }, by: string): Promise<{ ok: true; account: string } | { ok: false; reason: string }> {
-  const secretKey = input.secretKey.trim(), webhookSecret = input.webhookSecret.trim();
+const STRIPE = "https://api.stripe.com/v1";
+const WEBHOOK_EVENTS = ["checkout.session.completed"];
+
+/**
+ * Registers our webhook in Stripe with the secret key, so nobody has to do it by hand. Stripe reveals an
+ * endpoint's signing secret only when it is created, so an earlier endpoint for the same URL is replaced.
+ */
+export async function registerWebhook(secretKey: string, url: string): Promise<{ ok: true; id: string; secret: string } | { ok: false; reason: string }> {
+  const auth = { Authorization: `Bearer ${secretKey}` };
+  const manual = "Or create it yourself in Stripe → Developers → Webhooks (event checkout.session.completed) and paste its signing secret here.";
+  try {
+    const existing = await fetch(`${STRIPE}/webhook_endpoints?limit=100`, { headers: auth, signal: AbortSignal.timeout(20_000) }).then((r) => r.json()).catch(() => null);
+    for (const ep of (existing?.data ?? []) as Array<{ id: string; url: string }>) {
+      if (ep.url === url) await fetch(`${STRIPE}/webhook_endpoints/${ep.id}`, { method: "DELETE", headers: auth, signal: AbortSignal.timeout(20_000) }).catch(() => null);
+    }
+    const form = new URLSearchParams({ url, description: "AVOCO: credits bought through Checkout" });
+    WEBHOOK_EVENTS.forEach((e, i) => form.set(`enabled_events[${i}]`, e));
+    const res = await fetch(`${STRIPE}/webhook_endpoints`, { method: "POST", headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" }, body: form, signal: AbortSignal.timeout(20_000) });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || typeof body.secret !== "string" || typeof body.id !== "string") return { ok: false, reason: `Stripe would not register the webhook (${body?.error?.message ?? `status ${res.status}`}). ${manual}` };
+    return { ok: true, id: body.id, secret: body.secret };
+  } catch {
+    return { ok: false, reason: `Stripe could not be reached to register the webhook. ${manual}` };
+  }
+}
+
+/**
+ * Stores the keys an admin pasted, after checking the secret key with Stripe. Without a webhook secret,
+ * the webhook is registered in Stripe at `webhookUrl` and the secret Stripe returns is stored.
+ */
+export async function saveStripeKeys(input: { secretKey: string; webhookSecret?: string; webhookUrl?: string }, by: string): Promise<{ ok: true; account: string; registered: boolean } | { ok: false; reason: string }> {
+  const secretKey = input.secretKey.trim();
+  let webhookSecret = (input.webhookSecret ?? "").trim();
   if (!/^(sk|rk)_(live|test)_[A-Za-z0-9]{8,}$/.test(secretKey)) return { ok: false, reason: "The secret key should start with sk_live_ or sk_test_ (Stripe → Developers → API keys)." };
-  if (!/^whsec_[A-Za-z0-9]{8,}$/.test(webhookSecret)) return { ok: false, reason: "The webhook signing secret should start with whsec_ (Stripe → Developers → Webhooks → your endpoint)." };
+  if (webhookSecret && !/^whsec_[A-Za-z0-9]{8,}$/.test(webhookSecret)) return { ok: false, reason: "The webhook signing secret should start with whsec_ (Stripe → Developers → Webhooks → your endpoint). Leave it empty and the webhook is registered for you." };
   if (!secretsReady()) return { ok: false, reason: "The server has no SETTINGS_SECRET, so keys can't be stored safely. Ask your developer to set it." };
   const check = await checkStripeKey(secretKey);
   if (!check.ok) return check;
-  const value: StoredStripe = { secretKey: seal(secretKey), webhookSecret: seal(webhookSecret), account: check.account, mode: modeOf(secretKey), keyHint: hintOf(secretKey), savedBy: by, savedAt: new Date().toISOString() };
+
+  let webhookId: string | undefined, webhookUrl: string | undefined;
+  if (!webhookSecret) {
+    if (!input.webhookUrl) return { ok: false, reason: "No webhook secret was given and the webhook URL is unknown." };
+    const hook = await registerWebhook(secretKey, input.webhookUrl);
+    if (!hook.ok) return hook;
+    webhookSecret = hook.secret;
+    webhookId = hook.id;
+    webhookUrl = input.webhookUrl;
+  }
+  const value: StoredStripe = { secretKey: seal(secretKey), webhookSecret: seal(webhookSecret), account: check.account, mode: modeOf(secretKey), keyHint: hintOf(secretKey), savedBy: by, savedAt: new Date().toISOString(), webhookId, webhookUrl };
   await db().insert(settings).values({ key: "stripe", value }).onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
-  return { ok: true, account: check.account };
+  return { ok: true, account: check.account, registered: Boolean(webhookId) };
 }
 
+/** Forgets the keys; a webhook the app registered itself is removed from Stripe too, best effort. */
 export async function clearStripeKeys(): Promise<void> {
+  const stored = await storedStripe();
+  if (stored?.webhookId && secretsReady()) {
+    try {
+      await fetch(`${STRIPE}/webhook_endpoints/${stored.webhookId}`, { method: "DELETE", headers: { Authorization: `Bearer ${open(stored.secretKey)}` }, signal: AbortSignal.timeout(20_000) });
+    } catch (err) {
+      console.error("Could not remove the Stripe webhook", err);
+    }
+  }
   await db().delete(settings).where(eq(settings.key, "stripe"));
 }
 

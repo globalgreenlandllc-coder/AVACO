@@ -12,7 +12,7 @@ export function StripeConnect({ canStore }: { canStore: boolean }) {
     <form action={action} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm"><span className="text-ink-2">Secret key</span><input name="secretKey" type="password" required autoComplete="off" spellCheck={false} placeholder="sk_live_…" className={`${input} mt-1.5 w-full`} /></label>
-        <label className="text-sm"><span className="text-ink-2">Webhook signing secret</span><input name="webhookSecret" type="password" required autoComplete="off" spellCheck={false} placeholder="whsec_…" className={`${input} mt-1.5 w-full`} /></label>
+        <label className="text-sm"><span className="text-ink-2">Webhook signing secret <span className="text-muted">(optional: leave empty and it is set up for you)</span></span><input name="webhookSecret" type="password" autoComplete="off" spellCheck={false} placeholder="whsec_… or empty" className={`${input} mt-1.5 w-full`} /></label>
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <button type="submit" className="btn" disabled={pending || !canStore}>{pending ? "Checking with Stripe…" : "Connect Stripe"}</button>

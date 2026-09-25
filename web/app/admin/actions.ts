@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { asUser, asWorkspace, getSettings, grant, saveSettings, type Pack } from "@/lib/billing";
 import { admins, db, promoCodes } from "@/lib/db";
+import { baseUrl } from "@/lib/page";
 import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
 import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
@@ -69,9 +70,9 @@ export interface StripeActionState { ok: boolean | null; message: string }
 /** Connects Stripe from the portal: checks the key with Stripe, stores both secrets sealed. */
 export async function connectStripeAction(_prev: StripeActionState, form: FormData): Promise<StripeActionState> {
   const admin = await requireAdmin();
-  const result = await saveStripeKeys({ secretKey: String(form.get("secretKey") ?? ""), webhookSecret: String(form.get("webhookSecret") ?? "") }, admin.email);
+  const result = await saveStripeKeys({ secretKey: String(form.get("secretKey") ?? ""), webhookSecret: String(form.get("webhookSecret") ?? ""), webhookUrl: `${await baseUrl()}/api/stripe/webhook` }, admin.email);
   revalidatePath("/admin", "layout");
-  return result.ok ? { ok: true, message: `Connected to ${result.account}.` } : { ok: false, message: result.reason };
+  return result.ok ? { ok: true, message: `Connected to ${result.account}.${result.registered ? " The webhook was registered in Stripe for you." : ""}` } : { ok: false, message: result.reason };
 }
 
 export async function disconnectStripeAction() {
