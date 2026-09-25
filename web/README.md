@@ -95,9 +95,9 @@ the API and no endpoint that serves one (checked 2026-09-21). The report's conte
 | `lib/fit.ts` | "Where you can do your best work": a 0 to 100 fit score for eleven fields of work. Each field is tied to the types whose AVOCO descriptions name that kind of work, with weights; the score is the weighted average of the person's type scores | Calculated by this app. AVOCO's API has no such score. The weights are a judgement and are the place to tune it |
 | `lib/report.ts` | Picks the content for each score and assembles the panel behind every row | |
 
-**Seven types have their full official reports; only the Driver is still missing.** The Driver shows AVOCO's
-official description plus the short reading, with a note saying the full report isn't added yet. To add one, give the
-type a `full` object in `types-en.ts` and `types-ru.ts`, in the same shape as `catalyst.full`. Nothing else
-needs to change: the page and the PDF pick it up.
+**All eight types have their full official reports** (the `full` object on each profile in `types-en.ts`, with the
+Russian translation in `types-ru.ts`). When AVOCO sends a corrected text, edit it there; nothing else needs to
+change, the page and the PDF pick it up. A type whose `full` is missing falls back to the short reading with a note
+saying the full report isn't added yet.
 
 AVOCO does not say which voice features produced an individual score, so the report never claims to.

@@ -250,6 +250,200 @@ export const typesEn = {
     },
     driver: {
       overview: "The Driver possesses a strong nervous system, stable work capacity, high mental tone, and energetic potential. This is a passionate personality type who loves to take responsibility, make important decisions, and be on the front line. They are self-confident, not afraid to take risks, and always strive for high results. Drivers are oriented toward victory and the successful achievement of goals; they often inspire those around them with their energy and drive for leadership. In communication, Drivers prefer confidence and concreteness; they excel at building advantageous relationships and alliances, and are charismatic. They tend to become fixated on a single supremely important idea that they wish to bring to life. They live by grand meanings and super-goals or super-tasks. They want to influence large systems, social processes, and the like. They are very \"contagious,\" able to suggest what they want, lead people, and attract attention. They are possessive of their ideas. They like and know how to handle power; they are maximally goal-oriented. They easily create advantageous connections and enjoy authority.",
+      full: {
+        "mindset": "They are not easily suggestible or persuadable; they think many things through in advance, and are prone to distorting concepts and manipulation. Pragmatism, orientation toward profit, calculation, idealism, striving for power, achiever mentality. They switch slowly from solving one task to another, and from one interlocutor to another.",
+        "team": {
+          "intro": "The Driver is a leader of global change, a strategist, and an inspirer. They see perspectives and paths to achieve them, uniting the team around ambitious goals, turning ideas into reality. They possess a strong nervous system, which ensures stable work capacity, high mental tone, and energetic potential. Their tendency to \"get stuck\" allows them to concentrate on a goal for a long time and achieve it, no matter the cost. Despite their outward confidence and resilience, their inner emotional life is filled with anxiety that their goals may be threatened, creating strong active nervous tension directed toward achieving what they desire.",
+          "roles": "Strategic management, development of innovative entrepreneurship, and implementation of long-term projects are key areas of activity. Suitable professions and roles include politician, organizational leader, public leader, top manager, project leader, opinion leader, curator. Drivers successfully realize themselves in fields requiring outstanding results: from big sports and the stage to conquering ambitious heights unattainable for most. Their activities inspire and unite like-minded people, followers, and admirers around them. This personality type rarely occupies subordinate positions, preferring roles with a wide degree of freedom in action and a significant level of responsibility.",
+          "socialRole": "Persistent introduction of ideas into mass consciousness and implementation of concepts capable of transforming society. These people are driven by the desire to work for higher purposes and epochal changes. They challenge established norms, boldly breaking familiar patterns to create a new and progressive order.",
+          "strengths": [
+            "Ability to see the big picture and formulate long-term goals, building clear strategies to achieve them.",
+            "Persistence that allows them to overcome difficulties on the path to their dream.",
+            "Self-confidence, supported by inner strength and a clear understanding of their capabilities.",
+            "Inexhaustible work capacity combined with high energetic potential.",
+            "Perseverance in overcoming obstacles, making the impossible achievable.",
+            "Leadership based on an objective need for assistants, whom they attract to realize large-scale plans.",
+            "Goal-orientation that inspires others to follow them.",
+            "Ability to act effectively in conditions of uncertainty, finding unconventional solutions.",
+            "Ability to achieve outstanding results, which they take pride in and use to motivate others.",
+            "Ambition aimed at conquering heights and realizing global ideas.",
+            "Charisma that attracts people and can amplify their influence.",
+            "The art of persuasion and leading, skillfully managing audience attention.",
+            "Ability to evoke sympathy and favor, especially from those who can advance their goals.",
+            "The gift of \"infecting\" others with their ideas, awakening in people the desire to join a great mission.",
+            "High degree of influence over others, which allows them to realize the most ambitious projects.",
+            "Willingness to follow a dream, inspired by global ideas and missions.",
+            "Strategic thinking, enabling them to form a vision of the future and bring it to life."
+          ],
+          "risks": [
+            "Tendency toward excessive harshness in communication, ignoring details that do not align with their \"great idea.\"",
+            "Neglect of personal, human relationships in favor of profit.",
+            "Difficulty accepting alternative points of view, especially when something contradicts their beliefs.",
+            "Demonstration of inflexibility, preferring proven methods and solutions even in situations requiring adaptation.",
+            "Difficulties in building sincere emotional connections (\"heart-to-heart talks\"), as well as in showing sympathy and empathy.",
+            "Ability to quickly adapt and use manipulative techniques if necessary to achieve goals."
+          ],
+          "authority": "Drivers recognize authority only when it aligns with their own vision and goals. They tend to question authoritative figures if they consider them insufficiently strong or obstructive to achieving ambitious tasks. Their drive for power often prompts them to compete, and if open leadership is impossible, they prefer to act from the shadows, becoming gray cardinals or informal leaders.",
+          "subordination": "Being adherents of strict discipline, Drivers demand it from others. However, if circumstances require breaking the rules to achieve strategic goals, they are prepared to do so. Such individuals often form alliances, using them as a tool to strengthen their own influence and advance their ideas.",
+          "environment": "Drivers harmoniously combine working alone, where they can focus on self-improvement, with collective activity. They find inspiration in teams that share their views and support their approaches. They vitally need the energy of like-minded people and followers, whom they motivate and unite around their ideas. They like to secure public commitments, which stimulates them even more. Such people often initiate large-scale social projects, create super-ideas, and give them cult status, filling them with deep meaning and inspiring those around them."
+        },
+        "motivation": {
+          "motive": "Striving for social reform or personal achievement.",
+          "needs": "Drivers experience a strong need for outstanding results and recognition of their contribution, responsibility, and influence. It is extremely important for them to feel that their actions have large-scale significance and serve a great purpose. Their mission and striving for super-achievements become the foundation of their life path. The opportunity to fulfill their purpose and serve something greater motivates them more than anything else.",
+          "management": "Set clear goals and specific deadlines. Challenge them, raise the bar higher, demand more. Motivate through career growth, power, money, expansion of authority and responsibility. Hint at exclusive information, exclusivity, \"closeness to those in power.\" Involve them in management decisions. Instill faith in their capabilities.",
+          "money": "Money is a way to achieve freedom and power, and an opportunity to bring ideas to life."
+        },
+        "resources": {
+          "time": "They view time as a strategic resource. They can be patient if necessary to achieve a goal, but are intolerant of its wasteful use. Everything is URGENT!",
+          "money": "Money is a means to implement large-scale ideas. They tend to invest in promising projects and expect high returns from every investment. They can calmly risk other people's money in the name of a goal.",
+          "people": "They value those who share their vision and are ready to work for results; they easily part with the rest. They maintain advantageous connections. They can be demanding, especially with those who are insufficiently motivated. They easily use others to achieve personal goals."
+        },
+        "communication": {
+          "interaction": [
+            "Offer concrete opportunities to implement their ideas. Drivers seek new paths in every contact to advance their goals. Speak about profitable deals, useful connections, and prospects for collaboration.",
+            "Show that you share their goals. Demonstrate understanding of their vision and talk about the future that will become possible thanks to their ideas.",
+            "Discuss perspectives and long-term advantages.",
+            "Avoid straightforward flattery. Flattery and excessive compliments irritate Drivers. Instead, focus on concrete facts and their achievements.",
+            "Reference recognized authorities. Use examples, quotes, or achievements of great individuals that may be significant to the Driver. This will strengthen your message.",
+            "Do not try to directly persuade them. If a Driver is set on a particular decision, it is practically impossible to persuade them. Instead, choose arguments that support their goals but offer new approaches.",
+            "Promote ideas through strategic vision. To influence a Driver's goals, discuss higher levels of management or larger perspectives that align with their mission.",
+            "Become an ally. Show yourself as a partner ready to work toward shared results. By helping the Driver, you become part of their success.",
+            "Be honest and avoid manipulation. Drivers sense attempts to manipulate them well. Build communication on openness and respect to earn their trust."
+          ],
+          "channel": "Directive (command – understood – executed). The democratic style should be avoided.",
+          "decisions": "Makes decisions quickly if they sense an advantage. Does not waste time if there is no obvious and immediate benefit. Acquires only what emphasizes their elitism, chosenness, power, or directly contributes to achieving goals. Sometimes makes decisions based on manipulative schemes, which they skillfully construct in relationships with people.",
+          "speech": "Filtered and controlled. Adapts to the situation. Oriented toward quick results, closing deals. Immediately gets down to specifics. Intonation is whatever the context requires at the moment, aimed at the goal and result. Knows how to persuade and defend their opinion. Says what is advantageous at a given moment. Emphasizes positives and achievements.",
+          "wantToHear": [
+            "You inspire me",
+            "That is truly a leader's decision",
+            "You are the best at this",
+            "You are moving in the right direction",
+            "Your vision is impressive",
+            "That is admirable"
+          ],
+          "vocabulary": [
+            "Success",
+            "Opportunities",
+            "Future",
+            "Perspective",
+            "Leadership",
+            "Control",
+            "Scale",
+            "Risk",
+            "Idea",
+            "Energy",
+            "Power",
+            "Result",
+            "Goal",
+            "Ambition",
+            "Resources",
+            "Strategy",
+            "Large-scale changes",
+            "Breakthrough",
+            "Efficiency",
+            "Freedom"
+          ]
+        },
+        "stress": {
+          "emotion": "Contempt. Arrogance.",
+          "mask": [
+            "Impassive and harsh facial expression, \"poker face\" — a mask hiding any emotions.",
+            "Cold gaze, piercing and manipulative.",
+            "Breaking boundaries: \"Are you sure?\", \"You've definitely decided that?\", \"What if?\""
+          ],
+          "triggers": [
+            "A course of events that does not align with their will.",
+            "Encroachment on their authority or power.",
+            "Violation of their global vision and misalignment with set goals.",
+            "Delays or stagnation on the path to achieving goals.",
+            "Distraction from important tasks for the sake of secondary ones.",
+            "Delays due to unnecessary emotions and sentiment."
+          ],
+          "stage1": [
+            "Demonstration of poker face, a mask of complete control over the situation.",
+            "\"I don't want to know about this, that's not my problem.\"",
+            "Does not support others; expects them to be strong and cope on their own.",
+            "Attempts to instantly correct others' actions through short directives."
+          ],
+          "stage2": [
+            "Manipulation of team members, provoking conflicts and confrontations between them.",
+            "Breaks rules, interprets them to their advantage.",
+            "Use of ultimatums and threats to maintain their position.",
+            "Issues challenges.",
+            "Rigid energetic dominance, emphasis on power tools."
+          ],
+          "pattern2": "I'm in charge here, and you need to measure up",
+          "extreme": [
+            "Abandons others: \"I'll get rid of you before you get rid of me.\"",
+            "Sets others up.",
+            "Drastic decisions driven by a desire to maintain control.",
+            "Disdain for others: \"They are all nobodies, I'm special!\""
+          ],
+          "patternExtreme": "Whoever is not with me is against me. Less baggage makes the journey easier",
+          "bottom": [
+            "Striving for negative arousal and taking everything to extremes: \"Let it all burn!\"",
+            "Feeling of powerlessness, insignificance as the flip side of omnipotence.",
+            "In the worst case, becoming stuck in a state of helplessness/worthlessness and depression."
+          ],
+          "exit": "To recover, it is important for the Driver to regain confidence in their role and strategic significance. Support their authority, demonstrate respect for their ideas and capabilities. Inspire them with a new super-goal or task. Voice faith in their abilities, strength, and uniqueness.",
+          "negative": [
+            "Harshness and an \"ends justify the means\" approach.",
+            "Stubbornness and refusal to consider others' ideas.",
+            "Inattention to individual problems of people.",
+            "Inflated importance of their own ideas and overconfidence.",
+            "Inflexibility in approaches.",
+            "Lack of emotional warmth."
+          ]
+        },
+        "relationships": {
+          "business": "A dominant position in the partnership, readiness to solve complex problems, negotiate with high-ranking or important people, speak to large audiences, take responsibility for the most important decisions and results, but not waste time on routine, administrative functions, or communicating with line staff. Remain in the position of strategist and ideologist. A partner who shares the Driver's main idea and does not question their capabilities and concept is important.",
+          "businessProblem": "Personal gain at any cost, risk of neglecting human relationships when it comes to achieving what they want by any means necessary.",
+          "love": "Recognition and support. Drivers value when their ideas and goals receive resonance and approval. It is important for them to feel significant, and support for their vision becomes an expression of love. Compliments, praise for achievements, and participation in their projects strengthen emotional connection. Acknowledge their achievements, status, and influence. Encourage courage and readiness to take responsibility.",
+          "loveProblem": "Drivers may become demanding and intolerant of a partner who does not share their aspirations or show active support. They tend to consider their own ideas paramount, which can lead to ignoring the partner's feelings and needs. Sometimes they may create an atmosphere of control in the relationship, issuing ultimatums to the partner or demanding complete submission to their goals. If the partner shows weakness or incompetence, the Driver may begin to ignore them or withdraw. Conflicts often arise from an inability to divide attention between their global tasks and the everyday aspects of life.",
+          "style": [
+            "Prefer a partner who understands their ambitions and supports their goals.",
+            "Emotional closeness is important, but with preservation of personal freedom.",
+            "Value it when their beliefs and independence are respected.",
+            "Their relationships often feel like a shared project or mission.",
+            "Tend to build relationships focused on mutual support and high goals.",
+            "They need a partner who shares their global plans and values, rather than fixating on everyday issues."
+          ]
+        },
+        "compatibility": {
+          "organizer": {
+            "score": 3,
+            "note": "good match"
+          },
+          "driver": {
+            "score": 5,
+            "note": "common goal"
+          },
+          "catalyst": {
+            "score": 4,
+            "note": "energy match"
+          },
+          "performer": {
+            "score": 3,
+            "note": "inspire each other"
+          },
+          "harmonizer": {
+            "score": 3,
+            "note": "emotional support"
+          },
+          "analyst": {
+            "score": 2,
+            "note": "misunderstanding"
+          },
+          "skeptic": {
+            "score": 4,
+            "note": "accept pragmatism"
+          },
+          "mediator": {
+            "score": 4,
+            "note": "complementarity"
+          }
+        }
+      },
     },
     catalyst: {
       overview: "The Catalyst possesses a strong nervous system. They are characterized by stable work capacity, high mental tone, and energetic potential. Their psyche quickly switches from solving one task to another. They are easygoing, energetic people, excellent communicators who can easily create useful connections and quickly adapt to a new environment. They strive for the broadest possible communication and a kaleidoscopic sequence of life events. Optimistic, cheerful, and swift, they find a way out of any situation and are skillful in business. They are oriented toward profitable, sharp, and clear decisions. They think quickly and act quickly. High discernment and the ability to verify any information through acquaintances give them the ability to make instant decisions. They sense an advantage. These are people who value speed. Life is a game to them, and humor is their main weapon. Their primary need is to receive positive emotions, so they prefer to always be surrounded by people, most often in high spirits. This is periodically replaced by brief depressive episodes.",
