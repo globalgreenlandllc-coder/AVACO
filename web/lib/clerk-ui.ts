@@ -20,12 +20,11 @@ export function clerkLocalization(locale: string, t: Dict): typeof enUS {
 
 /**
  * How Clerk's cards look: AVOCO gold, the application logo above the card, links to the legal pages.
- * Social buttons stay hidden until Google has production credentials in the Clerk dashboard: the production
- * instance lists Google without a client id, and Clerk's shared Google keys only work on development instances.
+ * The Google button shows; it works once the production instance carries its own Google OAuth client
+ * (Clerk dashboard → SSO connections → Google → custom credentials). Clerk's shared keys are development-only.
  */
 export const clerkAppearance = {
   variables: { colorPrimary: "#b4730f", borderRadius: "12px" },
   // The logo itself is set on the Clerk application (dashboard: Customization → Branding); public/avoco-logo.* are the files used there.
   layout: { logoPlacement: "outside" as const, logoLinkUrl: "/", termsPageUrl: "/terms", privacyPageUrl: "/privacy" },
-  elements: { socialButtons: { display: "none" }, dividerRow: { display: "none" } },
 };
