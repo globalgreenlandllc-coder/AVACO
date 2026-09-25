@@ -6,6 +6,7 @@ import { en } from "@/lib/i18n/en";
 import { ru } from "@/lib/i18n/ru";
 import { fieldFits, FIELDS, SECTORS, STATE_SHARE } from "@/lib/fit";
 import { bandOf, emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines, zoneOf } from "@/lib/report";
+import { sampleReport } from "@/lib/sample";
 import { encodeWav } from "@/lib/wav";
 
 describe("report rows", () => {
@@ -296,7 +297,8 @@ describe("translations", () => {
   it("leaves nothing untranslated", () => {
     const flat = (v: unknown): string[] => (typeof v === "string" ? [v] : Object.values(v as object).flatMap(flat));
     const english = new Set(flat(en));
-    expect(flat(ru).filter((s) => english.has(s))).toEqual(["AVOCO"]);
+    // The brand and bare figures ("8", "14") are the same in both languages; anything else shared is a missed translation.
+    expect(flat(ru).filter((s) => english.has(s) && !/^\d+$/.test(s))).toEqual(["AVOCO"]);
   });
 });
 
@@ -332,5 +334,18 @@ describe("encodeWav", () => {
 
   it("keeps five minutes under the gateway's 10 MB limit", () => {
     expect(44 + 300 * 16_000 * 2).toBeLessThan(10 * 1024 * 1024);
+  });
+});
+
+describe("sample report", () => {
+  it("is a complete leading-Analyst report, the one the landing page advertises", () => {
+    const report = sampleReport();
+    expect(report.status).toBe("completed");
+    expect(report.psytype).toHaveLength(8);
+    expect(report.emostate).toHaveLength(14);
+    const rows = psytypeRows(report.psytype!, en);
+    expect(leadingTypes(rows).map((r) => r.key)).toEqual(["analyst"]);
+    expect(rows.map((r) => r.zone)).toEqual(["leading", "active", "active", "active", "background", "background", "background", "background"]);
+    expect(rows[0].details.some((d) => d.group === "Compatibility")).toBe(true); // the full official report opens
   });
 });

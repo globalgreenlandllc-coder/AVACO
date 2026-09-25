@@ -17,6 +17,7 @@ export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
           <Link href="/credits" className="hidden text-ink-2 hover:text-ink sm:inline">{t.billing.nav}</Link>
           {admin && <Link href="/admin" className="rounded-full bg-accent px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-ink hover:opacity-90">Admin</Link>}
         </Show>
+        <Show when="signed-out"><Link href="/sample" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.sample}</Link></Show>
         <LanguageSwitch locale={locale} label={t.language} />
         <Show when="signed-in"><UserButton /></Show>
         <Show when="signed-out"><Link href="/sign-in" className="font-semibold text-accent-text">{t.nav.signIn}</Link></Show>
