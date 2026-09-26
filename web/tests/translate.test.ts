@@ -99,7 +99,9 @@ describe("adding a language", () => {
     let p = await buildLanguage("es", "dima", 500);
     expect(p.total).toBeGreaterThan(1500);
     expect(p.done).toBe(500);
-    expect((await availableLanguages()).some((l) => l.code === "es")).toBe(false); // not until complete
+    expect((await availableLanguages()).some((l) => l.code === "es")).toBe(false); // a quarter built: not offered
+    while (p.done < p.total - 50) p = await buildLanguage("es", "dima", Math.min(500, p.total - 50 - p.done));
+    expect((await availableLanguages()).some((l) => l.code === "es")).toBe(true); // nearly complete: offered, the rest falls back to English
     while (p.done < p.total) p = await buildLanguage("es", "dima", 500);
     expect(p.done).toBe(p.total);
     expect(await languageProgress("es")).toEqual(p);

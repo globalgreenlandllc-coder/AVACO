@@ -188,11 +188,18 @@ async function languageVersions(): Promise<Map<string, string>> {
   return value;
 }
 
-/** The languages the menu offers: the two written by hand, and every added language that is complete. */
+/**
+ * A language stays in the menu while at least this share of the English strings has a translation. Strings
+ * without one fall back to English (see unflatten), so a language built once must not vanish every time a
+ * deploy adds a few English strings; an admin or `npm run languages:build` tops it up.
+ */
+export const AVAILABLE_SHARE = 0.9;
+
+/** The languages the menu offers: the two written by hand, and every added language that is (nearly) complete. */
 export async function availableLanguages(): Promise<Language[]> {
-  const total = source().length;
+  const needed = Math.ceil(source().length * AVAILABLE_SHARE);
   const built = await languageVersions().catch(() => new Map<string, string>());
-  return [...BUILT_IN, ...TRANSLATABLE.filter((l) => Number(built.get(l.code)?.split(":")[0]) >= total)];
+  return [...BUILT_IN, ...TRANSLATABLE.filter((l) => Number(built.get(l.code)?.split(":")[0]) >= needed)];
 }
 
 const dicts = new Map<string, { version: string; dict: Dict }>();
