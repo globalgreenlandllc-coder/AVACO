@@ -1,12 +1,13 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
+import { visitorId } from "./visitor";
 import { notFound } from "next/navigation";
 import { isPreset, type PresetKey } from "./presets";
 import { Forbidden, NotFound } from "./workspaces";
 
 export async function currentUserId(): Promise<string> {
-  const { userId } = await auth();
+  const userId = await visitorId();
   if (!userId) notFound();
   return userId;
 }

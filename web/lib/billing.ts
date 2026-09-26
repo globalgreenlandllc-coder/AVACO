@@ -7,6 +7,7 @@
 import "server-only";
 import { and, count, eq, gte, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
+import { isOpenVisitor } from "./visitor";
 import { retrieveCheckout } from "./stripe";
 import { creditLedger, db, industryAccess, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
@@ -182,7 +183,7 @@ export async function forgetReport(analysisId: string): Promise<void> {
 
 /** Full, or preview only? Admins always get the full report; reports made before billing was switched on (no recording row) stay open. */
 export async function hasFullAccess(userId: string, analysisId: string): Promise<boolean> {
-  if (!(await getSettings()).enabled || (await isAdminUser(userId))) return true;
+  if (isOpenVisitor(userId) || !(await getSettings()).enabled || (await isAdminUser(userId))) return true;
   const [recorded] = await db().select().from(selfRecordings).where(eq(selfRecordings.analysisId, analysisId));
   if (!recorded) return true;
   const [open] = await db().select().from(reportAccess).where(and(eq(reportAccess.analysisId, analysisId), eq(reportAccess.ownerId, userId)));
@@ -201,6 +202,7 @@ export async function unlock(userId: string, analysisId: string): Promise<void> 
 
 /** May this person make another free preview? Counts recordings of the last 30 days that were never unlocked; admins are never capped. */
 export async function previewsLeft(userId: string): Promise<number> {
+  if (isOpenVisitor(userId)) return Infinity;
   const cfg = await getSettings();
   if (!cfg.enabled || (await isAdminUser(userId))) return Infinity;
   const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
@@ -244,7 +246,7 @@ export async function openIndustries(analysisId: string): Promise<string[]> {
  * with the same button, which unlockIndustry() makes free for them. That is how the paid flow gets tested.
  */
 export async function hasIndustryAccess(userId: string, analysisId: string, industry: string): Promise<boolean> {
-  if (!(await getSettings()).enabled) return true;
+  if (isOpenVisitor(userId) || !(await getSettings()).enabled) return true;
   const [row] = await db().select({ industry: industryAccess.industry }).from(industryAccess)
     .where(and(eq(industryAccess.analysisId, analysisId), eq(industryAccess.industry, industry), eq(industryAccess.ownerId, userId)));
   return Boolean(row);

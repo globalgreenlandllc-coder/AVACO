@@ -4,16 +4,22 @@ import { showAdminLink } from "@/lib/admin";
 import type { Dict, Locale } from "@/lib/i18n";
 import { isPartnerHost } from "@/lib/partners";
 import { availableLanguages } from "@/lib/translate";
+import { isOpenHost } from "@/lib/visitor";
 import { LanguageSwitch } from "./LanguageSwitch";
 
 export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
-  const [admin, languages, partner] = await Promise.all([showAdminLink(), availableLanguages(), isPartnerHost()]);
+  const [languages, partner, open] = await Promise.all([availableLanguages(), isPartnerHost(), isOpenHost()]);
+  const admin = partner || open ? false : await showAdminLink();
   return (
     <header className="no-print mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-6 sm:px-8">
       <Link href="/" className="font-display text-2xl font-semibold tracking-[0.14em]">{t.brand}</Link>
       <nav className="flex items-center gap-3 text-sm sm:gap-6">
-        {/* The partner host has no accounts: just the language menu. */}
-        {partner ? <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} /> : <>
+        {/* The partner host has no accounts: just the language menu. The open host has the original links, no sign-in. */}
+        {partner ? <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} /> : open ? <>
+          <Link href="/record" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.record}</Link>
+          <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}</Link>
+          <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} />
+        </> : <>
         <Show when="signed-in">
           <Link href="/record" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.record}</Link>
           <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}</Link>

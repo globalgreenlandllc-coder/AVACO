@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
 import { Trends } from "@/components/Trends";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { leadingTypes, psytypeRows } from "@/lib/report";
+import { visitorId } from "@/lib/visitor";
 
 export default async function ReportsPage() {
-  const [{ userId }, { locale, t }] = await Promise.all([auth(), getDict()]);
+  const [userId, { locale, t }] = await Promise.all([visitorId(), getDict()]);
   const { data } = userId ? await gateway.listAnalyses(userId) : { data: [] };
 
   return (

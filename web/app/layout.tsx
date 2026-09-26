@@ -8,6 +8,7 @@ import { clerkAppearance, clerkLocalization } from "@/lib/clerk-ui";
 import { getDict } from "@/lib/i18n";
 import { directionOf } from "@/lib/i18n/languages";
 import { LEGAL } from "@/lib/legal";
+import { isOpenHost } from "@/lib/visitor";
 import { availableLanguages } from "@/lib/translate";
 import "./globals.css";
 
@@ -21,9 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [{ locale, t }, languages] = await Promise.all([getDict(), availableLanguages()]);
-  return (
-    <ClerkProvider localization={clerkLocalization(locale, t)} appearance={clerkAppearance}>
+  const [{ locale, t }, languages, open] = await Promise.all([getDict(), availableLanguages(), isOpenHost()]);
+  const page = (
       <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
         <body className="flex flex-col">
           <Header locale={locale} t={t} />
@@ -42,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </footer>
         </body>
       </html>
-    </ClerkProvider>
   );
+  // The open host runs without Clerk at all (lib/visitor.ts); no Clerk component is rendered there.
+  return open ? page : <ClerkProvider localization={clerkLocalization(locale, t)} appearance={clerkAppearance}>{page}</ClerkProvider>;
 }

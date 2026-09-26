@@ -76,6 +76,15 @@ included) the partner paths redirect to the partner host, so the page never appe
 (`proxy.ts`). `PARTNER_DAILY_LIMIT` (default 100 recordings a day across everyone) caps the AVOCO usage an open
 page can cause; `PARTNER_HOSTS` (comma-separated) changes the hosts; the first is where other hosts redirect to. Logic in `lib/partners.ts`.
 
+## Open host: the original site, no accounts, no payments
+
+`https://avaco-web.vercel.app` (the project's default Vercel domain) is kept as a comparison copy of the original
+site: the landing page, the recorder, "My reports" and the report, with sign-in and charging removed. There is no
+Clerk on that host at all: `proxy.ts` sets an anonymous cookie, `lib/visitor.ts` turns it into the owner id
+`open:<uuid>` wherever the site would otherwise ask Clerk for the user, and billing treats such an owner as free
+(`hasFullAccess`, `previewsLeft`, `hasIndustryAccess`). The account and billing pages redirect to `/` there.
+`OPEN_HOSTS` (comma-separated) changes the hosts. The main domain is unaffected.
+
 ## Industry chapter (paid add-on)
 
 "Narrow it to your industry" at the end of a full report: the person picks one of 24 industries and gets that

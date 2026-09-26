@@ -5,6 +5,7 @@ import { Contact } from "@/components/Contact";
 import { Reveal } from "@/components/Motion";
 import { Radar } from "@/components/Radar";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
+import { isOpenHost } from "@/lib/visitor";
 import { organizationJsonLd } from "@/lib/contact";
 import { getDict } from "@/lib/i18n";
 import { LEGAL } from "@/lib/legal";
@@ -20,11 +21,12 @@ import { SAMPLE_PSY } from "@/lib/sample";
  * now" while charging is off and the real price once it is on).
  */
 export default async function Home() {
-  const [{ locale, t }, { userId }, billing, origin] = await Promise.all([getDict(), auth(), getSettings().catch(() => DEFAULT_SETTINGS), baseUrl()]);
+  const [{ locale, t }, { userId }, billing, origin, open] = await Promise.all([getDict(), auth(), getSettings().catch(() => DEFAULT_SETTINGS), baseUrl(), isOpenHost()]);
   const site = new URL(origin).host;
   const h = t.home;
-  const start = userId ? "/record" : "/sign-up";
-  const startLabel = userId ? h.cta : h.ctaSignedOut;
+  // On an open host (lib/visitor.ts) there is no account and no price: straight to the recorder.
+  const start = userId || open ? "/record" : "/sign-up";
+  const startLabel = userId || open ? h.cta : h.ctaSignedOut;
 
   const rows = psytypeRows(SAMPLE_PSY.map(([key, value]) => ({ key, label: key, value, zone: zoneOf(value) })), t);
   const leader = rows[0];
@@ -137,8 +139,8 @@ export default async function Home() {
         <Link href={start} className="btn mt-8">{h.typesCta}</Link>
       </Reveal>
 
-      {/* Price */}
-      <Reveal as="section" className="gold-panel p-8 sm:p-12">
+      {/* Price (not on an open host, where everything is free) */}
+      {!open && <Reveal as="section" className="gold-panel p-8 sm:p-12">
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-80">{h.priceEyebrow}</p>
@@ -152,7 +154,7 @@ export default async function Home() {
           </div>
           <Link href={start} className="btn" style={{ background: "var(--cover-bg)", color: "var(--cover-gold)" }}>{startLabel}</Link>
         </div>
-      </Reveal>
+      </Reveal>}
 
       {/* Companies + privacy */}
       <div className="grid gap-6 lg:grid-cols-2">

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
@@ -12,12 +11,13 @@ import { fieldFits } from "@/lib/fit";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { money } from "@/lib/money";
+import { isOpenVisitor, visitorId } from "@/lib/visitor";
 
 /** `paid`, `session` and `industry` are what Stripe Checkout sends the buyer back with (see api/billing/checkout). */
 type Query = { paid?: string; session?: string; industry?: string };
 
 export default async function ReportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Query> }) {
-  const [{ id }, { userId }, { locale, t }, query] = await Promise.all([params, auth(), getDict(), searchParams]);
+  const [{ id }, userId, { locale, t }, query] = await Promise.all([params, visitorId(), getDict(), searchParams]);
   if (!userId) notFound();
 
   const analysis = await gateway.getAnalysisFor(userId, id);
@@ -58,9 +58,10 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     const [cfg, admin, unlocked, credits] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId))]);
     // Admins get the same closed chapter and the same button as a client, but opening it costs them nothing.
     const cheapest = cfg.packs.filter((p) => p.audience === "user").map((p) => Math.round(p.amountCents / p.credits)).sort((a, b) => a - b)[0];
-    const price = cfg.enabled && !admin ? `${t.industry.lock.oneCredit}${cheapest ? ` · ${money(cheapest, cfg.currency, locale)}` : ""}` : null;
+    const open = isOpenVisitor(userId); // the open host: no payments, every chapter free
+    const price = cfg.enabled && !admin && !open ? `${t.industry.lock.oneCredit}${cheapest ? ` · ${money(cheapest, cfg.currency, locale)}` : ""}` : null;
     industry = {
-      industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled ? "/api/billing/unlock-industry" : undefined,
+      industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled && !open ? "/api/billing/unlock-industry" : undefined,
       unlocked, credits, freeUnlock: admin, price, teaser: industryTeaser("it", analysis.psytype ?? [], locale),
       initialIndustry: wantedIndustry, paid,
     };

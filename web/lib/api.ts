@@ -1,14 +1,14 @@
 import "server-only";
-import { auth } from "@clerk/nextjs/server";
+import { visitorId } from "./visitor";
 import { GatewayError, type Analysis } from "./gateway";
 import { BadCode, NoCredits } from "./billing";
 import { Forbidden, Invalid, LimitReached, NotFound } from "./workspaces";
 
 export const json = (body: unknown, status = 200) => Response.json(body, { status });
 
-/** The signed-in user's id, or a 401 response. */
+/** The signed-in user's id (or the cookie visitor on an open host, see lib/visitor.ts), or a 401 response. */
 export async function requireUser(): Promise<{ userId: string } | { denied: Response }> {
-  const { userId } = await auth();
+  const userId = await visitorId();
   return userId ? { userId } : { denied: json({ error: "unauthorized", message: "Sign in first" }, 401) };
 }
 

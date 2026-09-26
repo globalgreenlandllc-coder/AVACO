@@ -47,6 +47,7 @@ const adminCheck = unstable_cache(async (userId: string): Promise<boolean> => {
 
 /** Is this person an admin? The cached answer above; a lookup failure must not break a page, but must not be silent either. */
 export async function isAdminUser(userId: string): Promise<boolean> {
+  if (!userId.startsWith("user_")) return false; // an open-host visitor (lib/visitor.ts), not a Clerk user
   return adminCheck(userId).catch((err) => { console.error("Admin check failed", err); return false; });
 }
 
