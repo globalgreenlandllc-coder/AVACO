@@ -92,16 +92,36 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   }
 
   /** Saves the report as it looks here: one HTML file, with its design, fonts and working chapters. */
-  async function download() {
-    if (!article.current) return;
+  /** One file per piece, or everything: the type report alone, the opened industry chapters alone, or the whole page. */
+  async function download(what: "type" | "industry" | "all") {
+    const root = article.current;
+    if (!root) return;
     setSaving(true);
+    const day = report.created_at.slice(0, 10);
     try {
-      const file = await buildReportFile(article.current, `${t.brand} · ${t.report.title} · ${recordedOn}`);
-      saveFile(file, `avoco-report-${report.created_at.slice(0, 10)}.html`);
+      if (what === "industry") {
+        const slot = root.querySelector<HTMLElement>("[data-export-show]");
+        if (!slot) return;
+        saveFile(await buildReportFile(slot, `${t.brand} · ${t.industry.title} · ${recordedOn}`, { heading: t.industry.title }), `avoco-industry-${day}.html`);
+      } else {
+        const title = `${t.brand} · ${t.report.title} · ${recordedOn}`;
+        const exclude = what === "type" ? ["[data-export-show]", "[data-industry]", "[data-match]"] : [];
+        saveFile(await buildReportFile(root, title, { exclude }), `avoco-${what === "type" ? "type-report" : "report-all"}-${day}.html`);
+      }
     } finally {
       setSaving(false);
     }
   }
+  // How many industry chapters are open (they are copied into the print slot), so the industry download can say so.
+  const [openChapters, setOpenChapters] = useState(0);
+  useEffect(() => {
+    if (!slot) return;
+    const update = () => setOpenChapters(slot.querySelectorAll("[data-industry-chapter-print]").length);
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(slot, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [slot]);
 
   const heading = (
     <div className="flex flex-wrap items-end justify-between gap-4">
@@ -332,11 +352,25 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
       <div data-no-export className="no-print">
         <div className="flex flex-wrap gap-3">
-          {!isLocked && <button type="button" className="btn" onClick={download} disabled={saving}>{saving ? r.downloading : r.download}</button>}
+          {!isLocked && <button type="button" className="btn" onClick={() => download("all")} disabled={saving}>{saving ? r.downloading : r.download}</button>}
           {!isLocked && <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>}
           {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
         </div>
-        {!isLocked && <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadHelp}</p>}
+        {!isLocked && (
+          <div className="card mt-6 p-6">
+            <p className="eyebrow">{r.downloads}</p>
+            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadsHelp}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" className="pill pill-off" onClick={() => download("type")} disabled={saving}>↓ {r.downloadType}</button>
+              <button type="button" className="pill pill-off" onClick={() => download("industry")} disabled={saving || openChapters === 0} title={openChapters === 0 ? r.downloadIndustryNone : undefined}>↓ {r.downloadIndustry.replace("{n}", String(openChapters))}</button>
+              {match?.existing.filter((m) => m.status === "ready").map((m) => (
+                <Link key={m.id} href={`/match/${m.id}?download=1`} className="pill pill-off">↓ {r.downloadCouple.replace("{names}", m.partnerName)}</Link>
+              ))}
+              <button type="button" className="pill pill-on" onClick={() => download("all")} disabled={saving}>↓ {r.downloadAll}</button>
+            </div>
+            {openChapters === 0 && <p className="mt-2 text-xs text-muted">{r.downloadIndustryNone}</p>}
+          </div>
+        )}
       </div>
     </article>
   );

@@ -144,9 +144,26 @@ async function pageCss(): Promise<string> {
   return parts.join("\n").replace(/<\/style/gi, "<\\/style");
 }
 
-/** The report as one self-contained HTML document. `report` is the report's element on the page. */
-export async function buildReportFile(report: HTMLElement, title: string): Promise<Blob> {
+export interface ExportOptions {
+  /** Leave these out (CSS selectors), e.g. the industry chapters when only the type report is wanted. */
+  exclude?: string[];
+  /** A heading written above a partial export, so the file says what it is. */
+  heading?: string;
+}
+
+/**
+ * The report as one self-contained HTML document. `report` is the element to export: the whole report, or one
+ * part of it (the industry chapters, the couple's report) when a person downloads pieces separately.
+ */
+export async function buildReportFile(report: HTMLElement, title: string, options: ExportOptions = {}): Promise<Blob> {
   const copy = report.cloneNode(true) as HTMLElement;
+  for (const selector of options.exclude ?? []) copy.querySelectorAll(selector).forEach((node) => node.remove());
+  if (options.heading) {
+    const h = document.createElement("header");
+    h.className = "mb-10";
+    h.innerHTML = `<p class="eyebrow">AVOCO</p><h1 class="mt-2 font-display text-4xl font-medium">${escapeHtml(options.heading)}</h1>`;
+    copy.prepend(h);
+  }
   copy.querySelectorAll("[data-no-export]").forEach((node) => node.remove());
   copy.querySelectorAll("[data-export-show]").forEach((node) => node.classList.remove("hidden")); // kept for the file (and print) only
   copy.querySelectorAll(".reveal").forEach((node) => node.classList.remove("in")); // the file's own script reveals them again

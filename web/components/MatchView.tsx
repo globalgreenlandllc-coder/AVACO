@@ -12,6 +12,13 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
   const [state, setState] = useState(initial);
   const [saving, setSaving] = useState(false);
   const article = useRef<HTMLElement>(null);
+  // Coming from the report's downloads box: save the file as soon as the report is on the page.
+  useEffect(() => {
+    if (state.status !== "ready" || !state.report || !new URLSearchParams(window.location.search).has("download")) return;
+    void download();
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [state.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (state.status === "ready") return;
     const timer = setInterval(async () => {
@@ -20,6 +27,13 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
     }, 5000);
     return () => clearInterval(timer);
   }, [pollUrl, state.status]);
+
+  async function download() {
+    const rep = state.report;
+    if (!article.current || !rep) return;
+    setSaving(true);
+    try { saveFile(await buildReportFile(article.current, `AVOCO · ${t.matchTitle.replace("{a}", rep.names.a).replace("{b}", rep.names.b)}`), `avoco-match-${rep.names.a}-${rep.names.b}.html`.toLowerCase()); } finally { setSaving(false); }
+  }
 
   if (state.status === "waiting") return <>{waiting}</>;
   if (state.status === "processing" || !state.report) {
@@ -31,11 +45,6 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
     );
   }
   const r = state.report;
-  async function download() {
-    if (!article.current) return;
-    setSaving(true);
-    try { saveFile(await buildReportFile(article.current, `AVOCO · ${t.matchTitle.replace("{a}", r.names.a).replace("{b}", r.names.b)}`), `avoco-match-${r.names.a}-${r.names.b}.html`.toLowerCase()); } finally { setSaving(false); }
-  }
   return (
     <article ref={article} className="space-y-10" data-match>
       <section className="cover relative overflow-hidden px-7 py-12 sm:px-12 sm:py-14">
