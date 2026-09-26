@@ -69,6 +69,7 @@ export default async function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={start} className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link>
               <Link href="/sample" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>{h.sampleCta}</Link>
+              {!open && <a href="#gift" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>🎁 {t.gift.landing.cta}</a>}
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm" style={{ color: "var(--cover-muted)" }}>
               {h.facts.map((fact) => <li key={fact} className="flex items-center gap-2"><span aria-hidden style={{ color: "var(--cover-gold)" }}>✓</span>{fact}</li>)}
@@ -81,6 +82,29 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* A gift, right under the hero: the builder itself, in a card with the report cover's own dark-gold header. */}
+      {!open && (
+      <Reveal as="section" id="gift" className="card scroll-mt-24 overflow-hidden p-0">
+        <div className="cover relative overflow-hidden rounded-none px-7 py-9 sm:px-12 sm:py-11">
+          <span className="cover-capsule" style={{ top: -90, right: "6%", width: 110, height: 300, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
+          <div className="relative grid gap-8 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+            <GiftRibbon size={96} />
+            <div>
+              <p className="cover-eyebrow">{t.gift.landing.eyebrow}</p>
+              <h2 className="gold-text mt-3 pb-1 font-display text-4xl font-semibold leading-[1.02] sm:text-5xl">{t.gift.landing.title}</h2>
+              <p className="mt-4 max-w-2xl leading-relaxed" style={{ color: "var(--cover-muted)" }}>{t.gift.landing.text}</p>
+            </div>
+            <ul className="space-y-2 text-sm lg:max-w-xs" style={{ color: "var(--cover-ink)" }}>
+              {t.gift.landing.points.map((x) => <li key={x} className="flex gap-3"><span aria-hidden style={{ color: "var(--cover-gold)" }}>✓</span><span>{x}</span></li>)}
+            </ul>
+          </div>
+        </div>
+        <div className="p-8 sm:p-12">
+          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} />
+        </div>
+      </Reveal>
+      )}
 
       {/* How it works */}
       <Reveal as="section">
@@ -202,26 +226,6 @@ export default async function Home() {
           <Link href={start} className="btn" style={{ background: "var(--cover-bg)", color: "var(--cover-gold)" }}>{startLabel}</Link>
         </div>
       </Reveal>}
-
-      {/* A gift: the builder itself, here on the landing page. A visitor who isn't signed in keeps their draft through sign-in. */}
-      {!open && (
-      <Reveal as="section" id="gift" className="card scroll-mt-24 p-8 sm:p-12">
-        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-start">
-          <GiftRibbon size={96} />
-          <div>
-            <p className="eyebrow">{t.gift.landing.eyebrow}</p>
-            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{t.gift.landing.title}</h2>
-            <p className="mt-4 max-w-2xl leading-relaxed text-ink-2">{t.gift.landing.text}</p>
-            <ul className="mt-5 space-y-2 text-sm text-ink-2">
-              {t.gift.landing.points.map((x) => <li key={x} className="flex gap-3"><span aria-hidden className="text-accent-text">✓</span><span>{x}</span></li>)}
-            </ul>
-          </div>
-        </div>
-        <div className="mt-10">
-          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} />
-        </div>
-      </Reveal>
-      )}
 
       {/* Companies + privacy */}
       <div className="grid gap-6 lg:grid-cols-2">
