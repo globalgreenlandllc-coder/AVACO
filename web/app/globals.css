@@ -174,3 +174,5 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .addon-btn { background: var(--addon) !important; color: var(--addon-ink) !important; }
 .addon-card { border-color: color-mix(in oklab, var(--addon) 45%, transparent) !important; }
 .addon-tag { display: inline-block; margin-right: 0.4rem; border-radius: 999px; background: var(--addon); color: var(--addon-ink); padding: 0.05rem 0.5rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
+.addon-select { border-color: var(--addon); background: var(--surface); color: var(--ink); }
+.addon-select:focus-visible { outline-color: var(--addon); }

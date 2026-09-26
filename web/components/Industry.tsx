@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { buildReportFile, saveFile } from "@/lib/export";
 import type { Dict } from "@/lib/i18n";
 import type { IndustryChapter, IndustryTeaser } from "@/lib/industry-chapter";
 import { RefreshWhile } from "./RefreshWhile";
 
 export interface IndustryProps {
-  /** The picker, in the visitor's language. */
+  /** The selection bar, in the visitor's language. */
   industries: Array<{ key: string; name: string }>;
   /** Where a chapter comes from; {key} is the industry. 402 means it must be opened first. */
   chapterUrl: string;
@@ -23,24 +24,28 @@ export interface IndustryProps {
   freeUnlock?: boolean;
   /** The price of one industry as words ("1 credit · $9"), or null where chapters are free. */
   price?: string | null;
-  /** A live example from the person's own scores, for the pitch. */
+  /** A live example from the person's own scores, shown until an industry is chosen. */
   teaser?: IndustryTeaser | null;
   /** The industry to show first: the one the buyer was opening when they went to pay. */
   initialIndustry?: string | null;
   /** Just back from Stripe: the payment is confirmed, or still being confirmed (the page then refreshes by itself). */
   paid?: "confirmed" | "pending" | null;
+  /** Where opened chapters are copied for print and the downloaded file: the very end of the report. */
+  printSlot?: HTMLElement | null;
   t: Dict["industry"];
 }
 
 type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kind: "error" } | { kind: "chapter"; chapter: IndustryChapter };
 
 /**
- * "Narrow it to your industry": the picker, the paywall when an industry is still closed, and the chapter.
- * Chapters already fetched stay in the page, so print and the downloaded file carry every opened industry.
+ * The industry add-on, sold and shown in one teal card above the report: a selection bar with the industries, the
+ * price and the button that opens or buys, and the chapter itself once it is open. Nothing of it sits inside the
+ * report. For print and the downloaded file, every opened chapter is copied to `printSlot`, at the very end.
  */
-export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, initialIndustry = null, paid = null, t }: IndustryProps) {
+export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, printSlot = null, t }: IndustryProps) {
   const [open, setOpen] = useState<string[]>(unlocked);
   const [picked, setPicked] = useState<string | null>(initialIndustry);
+  const [shown, setShown] = useState(true); // the opened chapter can be folded away without closing it
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState<State>({ kind: "idle" });
   const [chapters, setChapters] = useState<Record<string, IndustryChapter>>({});
@@ -58,22 +63,10 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
     setState({ kind: "chapter", chapter });
   }
 
-  useEffect(() => { if (picked) void load(picked); }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (picked) void load(picked); else setState({ kind: "idle" }); }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
   // A refresh can bring the news that the picked industry was opened meanwhile (the payment landed): fetch it then.
   const unlockedKey = unlocked.join(",");
   useEffect(() => { if (picked && state.kind === "locked" && unlocked.includes(picked)) void load(picked); }, [unlockedKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** One industry chapter as a file of its own; the full report download at the bottom carries every opened chapter too. */
-  async function downloadChapter(chapter: IndustryChapter) {
-    const node = document.querySelector<HTMLElement>(`[data-industry-chapter="${chapter.industry}"]`);
-    if (!node) return;
-    setSaving(true);
-    try {
-      saveFile(await buildReportFile(node, `${chapter.name} · AVOCO`), `avoco-${chapter.industry}-chapter.html`);
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function unlock() {
     if (!picked || !unlockUrl) return;
@@ -85,72 +78,86 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
     else setState({ kind: "error" });
   }
 
-  const pickedName = industries.find((i) => i.key === picked)?.name ?? "";
+  /** One industry chapter as a file of its own; the full report download carries every opened chapter at its end. */
+  async function downloadChapter(chapter: IndustryChapter) {
+    const node = document.querySelector<HTMLElement>(`[data-industry-chapter="${chapter.industry}"]`);
+    if (!node) return;
+    setSaving(true);
+    try {
+      saveFile(await buildReportFile(node, `${chapter.name} · AVOCO`), `avoco-${chapter.industry}-chapter.html`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const a = t.addon;
   // "Pending" only while the chapter really is still closed; once it is open the payment has plainly landed.
   const paidState = paid === "pending" && initialIndustry && open.includes(initialIndustry) ? "confirmed" : paid;
   const paidName = industries.find((i) => i.key === initialIndustry)?.name ?? "";
+  const priceLabel = price ? a.price.replace("{price}", price) : freeUnlock ? t.promo.freeAdmin : t.promo.free;
+  const example = !picked && teaser && teaser.roles[0]
+    ? a.example.replace("{industry}", teaser.name).replace("{role}", teaser.roles[0].name).replace("{score}", String(teaser.roles[0].score))
+    : null;
 
   return (
-    <section className="card card-flow addon-card overflow-hidden" data-industry>
-      <div className="p-8 sm:p-12">
-      {/* Marked as an add-on in its own colour, so a paid chapter is never taken for part of the report above. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="addon-badge">{t.addon.badge}</p>
-        <span className="addon-pill">{price ? t.addon.price.replace("{price}", price) : freeUnlock ? t.promo.freeAdmin : t.promo.free}</span>
-      </div>
-      <h3 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{t.title}</h3>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{t.lead}</p>
-      <p className="mt-2 text-xs text-muted">{t.addon.sectionNote}</p>
-
-      {paidState && (
-        <p role="status" className="no-print mt-8 rounded-xl border border-accent px-5 py-4 text-sm" data-no-export>
-          {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
-        </p>
-      )}
-      {paidState === "pending" && <RefreshWhile />}
-
-      <div className="no-print mt-8 scroll-mt-24" id="industry-pick">
-        <p className="eyebrow">{t.pick}</p>
-        <div className="mt-3 flex flex-wrap gap-2" role="listbox" aria-label={t.pick}>
-          {industries.map((i) => (
-            <button key={i.key} type="button" role="option" aria-selected={picked === i.key} className={`pill ${picked === i.key ? "pill-on" : "pill-off"}`} onClick={() => setPicked(i.key)}>
-              {i.name}{open.includes(i.key) && picked !== i.key ? <span className="ml-2 text-xs opacity-70">✓</span> : null}
-            </button>
-          ))}
+    <>
+      <aside data-no-export className="no-print addon-strip" aria-label={a.badge} data-industry>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="addon-badge">{a.badge}</p>
+          <span className="addon-pill">{priceLabel}</span>
         </div>
-      </div>
+        <p className="mt-1 font-display text-2xl font-medium leading-tight">{a.title}</p>
+        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-ink-2">{a.text}</p>
 
-      {state.kind === "loading" && <p className="mt-8 text-sm text-ink-2" aria-live="polite">{t.loading}</p>}
-      {state.kind === "error" && <p className="mt-8 text-sm text-danger" aria-live="polite">{t.error}</p>}
+        {paidState && (
+          <p role="status" className="mt-3 rounded-xl border px-4 py-3 text-sm" style={{ borderColor: "var(--addon)" }}>
+            {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
+          </p>
+        )}
+        {paidState === "pending" && <RefreshWhile />}
 
-      {state.kind === "locked" && picked && (
-        <div className="soft-panel mt-8 p-7 sm:p-9">
-          <h3 className="font-display text-3xl font-medium">{t.lock.title.replace("{industry}", pickedName)}</h3>
-          <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{t.lock.text}</p>
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            {freeUnlock || credits > 0
-              ? <button type="button" className="btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
-              : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn">{t.lock.getCredits}</Link>}
-            <p className="text-sm text-ink-2">{freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
+        {/* The selection bar, and next to it whatever the chosen industry needs: open, buy, hide, download. */}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="sr-only" htmlFor="industry-select">{t.pick}</label>
+          <select id="industry-select" value={picked ?? ""} onChange={(e) => { setPicked(e.target.value || null); setShown(true); }} className="addon-select min-w-64 flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold sm:flex-none">
+            <option value="">{a.select}</option>
+            {industries.map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
+          </select>
+          {state.kind === "locked" && picked && (freeUnlock || credits > 0
+            ? <button type="button" className="btn addon-btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
+            : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn addon-btn">{t.lock.getCredits}</Link>)}
+          {state.kind === "chapter" && (
+            <>
+              <button type="button" className="btn btn-quiet" onClick={() => setShown((v) => !v)}>{shown ? a.hide : a.show}</button>
+              <button type="button" className="btn btn-quiet" onClick={() => downloadChapter(state.chapter)} disabled={saving}>{saving ? t.downloading : t.download}</button>
+            </>
+          )}
+        </div>
+
+        {example && <p className="mt-3 text-xs text-muted"><span className="addon-tag">{a.exampleTag}</span>{example}</p>}
+        {state.kind === "loading" && <p className="mt-3 text-sm text-ink-2" aria-live="polite">{t.loading}</p>}
+        {state.kind === "error" && <p className="mt-3 text-sm text-danger" aria-live="polite">{t.error}</p>}
+        {state.kind === "locked" && picked && (
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-2">{t.lock.text} {freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
+        )}
+
+        {/* The opened chapter lives inside the card; only the chosen one is on screen. */}
+        {state.kind === "chapter" && shown && (
+          <div data-industry-chapter={state.chapter.industry} className="rise">
+            <Chapter chapter={state.chapter} onPick={(key) => { setPicked(key); setShown(true); }} />
           </div>
-        </div>
-      )}
+        )}
+      </aside>
 
-      {state.kind === "chapter" && (
-        <div className="no-print mt-8 flex flex-wrap items-center gap-3" data-no-export>
-          <button type="button" className="btn btn-quiet" onClick={() => downloadChapter(state.chapter)} disabled={saving}>{saving ? t.downloading : t.download}</button>
-          <span className="text-xs text-muted">{t.downloadNote}</span>
-        </div>
+      {/* Print and the downloaded file: every opened chapter, at the very end of the report. */}
+      {printSlot && Object.keys(chapters).length > 0 && createPortal(
+        <section className="space-y-10">
+          <p className="addon-badge">{a.badge}</p>
+          {Object.values(chapters).map((chapter) => <div key={chapter.industry} data-industry-chapter-print={chapter.industry}><Chapter chapter={chapter} /></div>)}
+        </section>,
+        printSlot,
       )}
-
-      {/* Every opened chapter stays rendered; only the picked one is visible on screen, all of them in print. */}
-      {Object.values(chapters).map((chapter) => (
-        <div key={chapter.industry} data-industry-chapter={chapter.industry} className={`rise ${state.kind === "chapter" && state.chapter.industry === chapter.industry ? "" : "hidden print:block"}`}>
-          <Chapter chapter={chapter} onPick={setPicked} />
-        </div>
-      ))}
-      </div>
-    </section>
+    </>
   );
 }
 

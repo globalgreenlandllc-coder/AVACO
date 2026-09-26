@@ -148,6 +148,7 @@ async function pageCss(): Promise<string> {
 export async function buildReportFile(report: HTMLElement, title: string): Promise<Blob> {
   const copy = report.cloneNode(true) as HTMLElement;
   copy.querySelectorAll("[data-no-export]").forEach((node) => node.remove());
+  copy.querySelectorAll("[data-export-show]").forEach((node) => node.classList.remove("hidden")); // kept for the file (and print) only
   copy.querySelectorAll(".reveal").forEach((node) => node.classList.remove("in")); // the file's own script reveals them again
   copy.querySelectorAll<HTMLElement>("[data-countup]").forEach((node) => { node.textContent = node.dataset.countup ?? node.textContent; });
 

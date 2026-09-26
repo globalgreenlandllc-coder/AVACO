@@ -55,6 +55,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
   const article = useRef<HTMLElement>(null);
   const r = t.report;
   const poll = pollUrl ?? `/api/analyses/${initial.id}`;
@@ -152,25 +153,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     <article ref={article} className="space-y-10">
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
-      {/* The paid industry chapter, announced once at the top in a colour of its own and sold at the bottom: never mistaken for the report. */}
-      {industry && psy.length === 8 && !isLocked && (
-        <aside data-no-export className="no-print addon-strip" aria-label={t.industry.addon.badge}>
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <div className="min-w-0 flex-1">
-              <p className="addon-badge">{t.industry.addon.badge}</p>
-              <p className="mt-1 font-display text-2xl font-medium leading-tight">{t.industry.addon.title}</p>
-              <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.industry.addon.text}</p>
-              {industry.teaser && industry.teaser.roles[0] && (
-                <p className="mt-2 text-xs text-muted"><span className="addon-tag">{t.industry.addon.exampleTag}</span>{t.industry.addon.example.replace("{industry}", industry.teaser.name).replace("{role}", industry.teaser.roles[0].name).replace("{score}", String(industry.teaser.roles[0].score))}</p>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="addon-pill">{industry.price ? t.industry.addon.price.replace("{price}", industry.price) : industry.freeUnlock ? t.industry.promo.freeAdmin : t.industry.promo.free}</span>
-              <a href="#industry" className="btn addon-btn">{t.industry.addon.cta} ↓</a>
-            </div>
-          </div>
-        </aside>
-      )}
+      {/* The industry add-on: sold and shown in this one card above the report, never inside it. */}
+      {industry && psy.length === 8 && !isLocked && <Industry {...industry} analysisId={report.id} t={t.industry} printSlot={slot} />}
 
       {top && (
         <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">
@@ -335,12 +319,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </div>
       </Reveal>
 
-      {/* The industry add-on comes last, after the report proper, marked in its own colour: see the strip at the top. */}
-      {industry && psy.length === 8 && (
-        <Reveal as="section" id="industry" className="scroll-mt-24">
-          <Industry {...industry} analysisId={report.id} t={t.industry} />
-        </Reveal>
-      )}
+      {/* Opened industry chapters, for print and the downloaded file only: the add-on's card copies them here. */}
+      {industry && psy.length === 8 && !isLocked && <div ref={setSlot} data-export-show className="hidden print:block" />}
 
       </>)}
 

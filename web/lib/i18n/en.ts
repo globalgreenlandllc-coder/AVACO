@@ -256,6 +256,10 @@ export const en = {
     watchTitle: "Worth watching here",
     scoreHelp: "Each role's score is the average of your scores on the types AVOCO's descriptions link to that role, so the ranking follows your whole profile, not just your leading type. It is this platform's reading, not part of AVOCO's result.",
     addon: {
+      select: "Choose your industry…",
+      openedTag: "opened",
+      hide: "Hide chapter",
+      show: "Show chapter",
       badge: "Add-on · paid chapter",
       title: "Your industry, on top of this report",
       text: "A separate chapter, not part of the report below: pick one of 37 industries and every role in it is ranked for your voice, with your path in.",
