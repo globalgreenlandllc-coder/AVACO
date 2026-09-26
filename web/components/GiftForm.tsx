@@ -50,19 +50,17 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
   const counter = (label: string, help: string, key: "reports" | "industries" | "matches", min: number, max: number, unit: number) => {
     const value = draft[key];
     return (
-      <div className="card p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-semibold">{label}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted">{help}</p>
-          </div>
+      <div className="card flex flex-col p-5">
+        <p className="font-semibold">{label}</p>
+        <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{help}</p>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          {free ? <span /> : <span className="text-sm text-ink-2">{value} × {fmt(unit)}</span>}
           <div className="flex shrink-0 items-center gap-2">
             <button type="button" aria-label="−" className="btn btn-quiet !h-9 !w-9 !p-0" onClick={() => update({ [key]: Math.max(min, value - 1) })} disabled={value <= min}>−</button>
             <span className="w-8 text-center text-lg font-semibold tabular-nums">{value}</span>
             <button type="button" aria-label="+" className="btn btn-quiet !h-9 !w-9 !p-0" onClick={() => update({ [key]: Math.min(max, value + 1) })} disabled={value >= max}>+</button>
           </div>
         </div>
-        {!free && <p className="mt-3 text-right text-sm text-ink-2">{value} × {fmt(unit)}</p>}
       </div>
     );
   };
@@ -77,7 +75,7 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
       </div>
       <label className="block text-sm"><span className="text-ink-2">{t.message}</span><textarea value={draft.message} onChange={(e) => update({ message: e.target.value })} maxLength={300} rows={3} placeholder={t.messagePlaceholder} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /></label>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {counter(t.reports, t.reportsHelp, "reports", 1, maxReports, reportCents)}
         {counter(t.industries, t.industriesHelp, "industries", 0, maxIndustries, industryCents)}
         {counter(t.matches, t.matchesHelp, "matches", 0, maxMatches, matchCents)}
