@@ -3,9 +3,12 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Link from "next/link";
 import { Header } from "@/components/Header";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk-ui";
 import { getDict } from "@/lib/i18n";
+import { directionOf } from "@/lib/i18n/languages";
 import { LEGAL } from "@/lib/legal";
+import { availableLanguages } from "@/lib/translate";
 import "./globals.css";
 
 // Both families ship Cyrillic, so English and Russian look the same.
@@ -18,10 +21,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { locale, t } = await getDict();
+  const [{ locale, t }, languages] = await Promise.all([getDict(), availableLanguages()]);
   return (
     <ClerkProvider localization={clerkLocalization(locale, t)} appearance={clerkAppearance}>
-      <html lang={locale} className={`${body.variable} ${display.variable}`}>
+      <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
         <body className="flex flex-col">
           <Header locale={locale} t={t} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>
@@ -34,6 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/docs/api" className="hover:text-ink">{t.legal.nav.api}</Link>
                 <a href={`mailto:${LEGAL.support}`} className="hover:text-ink">{LEGAL.support}</a>
               </nav>
+              <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} openUp />
             </div>
           </footer>
         </body>

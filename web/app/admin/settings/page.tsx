@@ -1,6 +1,7 @@
 import { CopyField } from "@/components/CopyField";
 import { KeyConnect } from "@/components/KeyConnect";
 import { LanguageBuilder } from "@/components/LanguageBuilder";
+import { LanguageBuilderAll } from "@/components/LanguageBuilderAll";
 import { StripeConnect } from "@/components/StripeConnect";
 import { listAdmins, listPromoCodes, requireAdmin } from "@/lib/admin";
 import { getSettings } from "@/lib/billing";
@@ -117,6 +118,7 @@ export default async function AdminSettings() {
             <KeyConnect action={connectDeeplAction} name="key" label="DeepL API key (deepl.com → Account → API keys)" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" button="Connect DeepL" canStore={deepl.canStore} />
           </>
         )}
+        {deepl.connected && <LanguageBuilderAll languages={TRANSLATABLE.filter((l) => { const p = progress.get(l.code); return !p || p.done < p.total; }).map(({ code, name }) => ({ code, name }))} />}
         <ul className="grid gap-x-8 divide-y divide-line text-sm sm:grid-cols-2 sm:divide-y-0">
           {TRANSLATABLE.map((l) => {
             const p = progress.get(l.code) ?? { total: 0, done: 0 };

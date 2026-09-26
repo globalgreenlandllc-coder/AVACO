@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "languages:status": "node --env-file=.env.local --conditions=react-server --import tsx scripts/language-status.mts",
+    "languages:build": "node --env-file=.env.local --conditions=react-server --import tsx scripts/build-languages.mts"
   },
   "dependencies": {
     "@clerk/localizations": "^4.17.1",

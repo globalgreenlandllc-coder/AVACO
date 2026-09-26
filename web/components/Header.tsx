@@ -13,7 +13,7 @@ export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
       <Link href="/" className="font-display text-2xl font-semibold tracking-[0.14em]">{t.brand}</Link>
       <nav className="flex items-center gap-3 text-sm sm:gap-6">
         {/* The partner host has no accounts: just the language menu. */}
-        {partner ? <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name }) => ({ code, name }))} /> : <>
+        {partner ? <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} /> : <>
         <Show when="signed-in">
           <Link href="/record" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.record}</Link>
           <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}</Link>
@@ -22,7 +22,7 @@ export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
           {admin && <Link href="/admin" className="rounded-full bg-accent px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-ink hover:opacity-90">Admin</Link>}
         </Show>
         <Show when="signed-out"><Link href="/sample" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.sample}</Link></Show>
-        <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name }) => ({ code, name }))} />
+        <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} />
         <Show when="signed-in"><UserButton /></Show>
         <Show when="signed-out"><Link href="/sign-in" className="font-semibold text-accent-text">{t.nav.signIn}</Link></Show>
         </>}
