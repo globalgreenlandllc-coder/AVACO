@@ -4,8 +4,8 @@ export interface GiftText {
   landing: { eyebrow: string; title: string; text: string; points: string[]; cta: string; from: string };
   form: {
     title: string; lead: string; yourName: string; recipientName: string; recipientHelp: string; message: string; messagePlaceholder: string;
-    reports: string; reportsHelp: string; industries: string; industriesHelp: string; total: string; pay: string; create: string; creating: string;
-    freeNote: string; secure: string; given: string; none: string;
+    reports: string; reportsHelp: string; industries: string; industriesHelp: string; matches: string; matchesHelp: string; total: string; pay: string; create: string; creating: string;
+    signIn: string; signInFree: string; freeNote: string; secure: string; given: string; none: string;
   };
   status: { pending: string; paid: string; opened: string; claimed: string; recorded: string };
   giver: {
@@ -14,7 +14,7 @@ export interface GiftText {
     contents: string; back: string; another: string;
   };
   recipient: {
-    eyebrow: string; title: string; titleNamed: string; message: string; contentsTitle: string; reportItem: string; reportsItem: string; industryItem: string; industriesItem: string;
+    eyebrow: string; title: string; titleNamed: string; message: string; contentsTitle: string; reportItem: string; reportsItem: string; industryItem: string; industriesItem: string; matchItem: string; matchesItem: string;
     noPay: string; stepsTitle: string; steps: string[]; claim: string; claimSignedIn: string; claimNote: string; claimedByYou: string; goRecord: string; myReports: string;
     claimedByOther: string; notReady: string; giverPreview: string; given: string; footer: string;
   };
@@ -43,10 +43,14 @@ export const giftEn: GiftText = {
     reportsHelp: "One is usually enough; more lets them record again on another day and compare.",
     industries: "Industry chapters",
     industriesHelp: "Each opens one industry of their choice on top of a report: the roles ranked for them, and their path in.",
+    matches: "Relationship matches",
+    matchesHelp: "Each lets them invite their partner with a private link: the partner records too, and both get a couple's report on how the two of them fit.",
     total: "Total",
     pay: "Pay {price} and create the link",
     create: "Create the link",
     creating: "Creating your gift…",
+    signIn: "Sign in to pay {price} and get the link",
+    signInFree: "Sign in to create the link",
     freeNote: "Charging is off, so this gift costs nothing today.",
     secure: "Secure payment by Stripe. You come straight back to your gift link.",
     given: "Gifts you have given",
@@ -78,7 +82,7 @@ export const giftEn: GiftText = {
       "They record thirty seconds. The report opens by itself; no card, no credits, nothing to do.",
       "You see here when the link was opened, claimed and recorded. The link never expires.",
     ],
-    contents: "Inside: {reports} voice report(s){industries}",
+    contents: "Inside: {reports} voice report(s){industries}{matches}",
     back: "My reports",
     another: "Gift another",
   },
@@ -92,6 +96,8 @@ export const giftEn: GiftText = {
     reportsItem: "{n} full voice reports: your personality type with its complete portrait, your emotional state today, and the fields where you would do your best work. Record again on another day and compare",
     industryItem: "1 industry chapter: pick any industry, and its roles are ranked for your voice, with your path in",
     industriesItem: "{n} industry chapters: pick any industries, and their roles are ranked for your voice, with your path in",
+    matchItem: "1 relationship match: invite your partner with a private link; they record too, and you both get a couple's report on how the two of you fit",
+    matchesItem: "{n} relationship matches: invite a partner with a private link; they record too, and you both get a couple's report on how the two of you fit",
     noPay: "Everything is paid for. You will never be asked for a card.",
     stepsTitle: "How it works",
     steps: [

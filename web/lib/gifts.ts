@@ -6,7 +6,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
-import { asUser, creditGift, getSettings, unlock, type BillingSettings } from "./billing";
+import { asUser, creditGift, getSettings, MATCH_CREDITS, unlock, type BillingSettings } from "./billing";
 import { db, gifts, purchases } from "./db";
 import { industryPriceCents } from "./industry-billing";
 import { Invalid } from "./workspaces";
@@ -15,6 +15,7 @@ export type Gift = typeof gifts.$inferSelect;
 export const GIFT_PACK = "gift";
 export const MAX_REPORTS = 5;
 export const MAX_INDUSTRIES = 5;
+export const MAX_MATCHES = 2;
 
 const clean = (v: unknown, max: number, what: string, required: boolean) => {
   const s = typeof v === "string" ? v.trim() : "";
@@ -28,16 +29,20 @@ const count = (v: unknown, min: number, max: number, what: string) => {
   return n;
 };
 
-/** What a gift costs: each report at the single-report price, each industry chapter at the add-on's own price. */
-export async function giftPrice(reports: number, industries: number, cfg?: BillingSettings): Promise<{ amountCents: number; currency: string; reportCents: number; industryCents: number }> {
+/** The credits a gift carries: one per report, one per industry chapter, MATCH_CREDITS per relationship match. */
+export const giftCredits = (g: { reports: number; industries: number; matches: number }) => g.reports + g.industries + g.matches * MATCH_CREDITS;
+
+/** What a gift costs: each report at the single-report price, each industry chapter at the add-on's own price, each match at MATCH_CREDITS reports. */
+export async function giftPrice(reports: number, industries: number, matches = 0, cfg?: BillingSettings): Promise<{ amountCents: number; currency: string; reportCents: number; industryCents: number; matchCents: number }> {
   const settings = cfg ?? (await getSettings());
   const people = settings.packs.filter((p) => p.audience === "user");
   const reportCents = people.find((p) => p.credits === 1)?.amountCents ?? (people.length ? Math.min(...people.map((p) => Math.round(p.amountCents / p.credits))) : 900);
   const industryCents = await industryPriceCents();
-  return { amountCents: reports * reportCents + industries * industryCents, currency: settings.currency, reportCents, industryCents };
+  const matchCents = MATCH_CREDITS * reportCents;
+  return { amountCents: reports * reportCents + industries * industryCents + matches * matchCents, currency: settings.currency, reportCents, industryCents, matchCents };
 }
 
-export interface GiftInput { giverName: unknown; recipientName?: unknown; message?: unknown; reports: unknown; industries?: unknown }
+export interface GiftInput { giverName: unknown; recipientName?: unknown; message?: unknown; reports: unknown; industries?: unknown; matches?: unknown }
 
 /** A new gift, unpaid unless `free` (billing off, or an admin): then it is ready to send at once. */
 export async function createGift(userId: string, input: GiftInput, free = false): Promise<Gift> {
@@ -46,10 +51,11 @@ export async function createGift(userId: string, input: GiftInput, free = false)
   const message = clean(input.message, 300, "Message", false);
   const reports = count(input.reports, 1, MAX_REPORTS, "Reports");
   const industries = count(input.industries ?? 0, 0, MAX_INDUSTRIES, "Industry chapters");
-  const price = await giftPrice(reports, industries);
+  const matches = count(input.matches ?? 0, 0, MAX_MATCHES, "Relationship matches");
+  const price = await giftPrice(reports, industries, matches);
   const [gift] = await db().insert(gifts).values({
     id: crypto.randomUUID(), token: randomBytes(24).toString("base64url"), giverId: userId, giverName,
-    recipientName: recipientName || null, message: message || null, reports, industries,
+    recipientName: recipientName || null, message: message || null, reports, industries, matches,
     amountCents: free ? 0 : price.amountCents, currency: price.currency, status: free ? "paid" : "pending", paidAt: free ? new Date() : null,
   }).returning();
   return gift;
@@ -58,7 +64,7 @@ export async function createGift(userId: string, input: GiftInput, free = false)
 /** The purchase behind a gift, for Stripe Checkout. Its credits go to the gift, not to the buyer (see completePurchase). */
 export async function startGiftPurchase(gift: Gift) {
   const [row] = await db().insert(purchases).values({
-    id: crypto.randomUUID(), ownerKind: "user", ownerId: gift.giverId, pack: GIFT_PACK, credits: gift.reports + gift.industries,
+    id: crypto.randomUUID(), ownerKind: "user", ownerId: gift.giverId, pack: GIFT_PACK, credits: giftCredits(gift),
     amountCents: gift.amountCents, currency: gift.currency, giftId: gift.id,
   }).returning();
   return row;
@@ -93,7 +99,7 @@ export async function noteGiftOpened(gift: Gift): Promise<void> {
 export async function claimGift(gift: Gift, userId: string): Promise<Gift> {
   if (gift.status === "pending") throw new Invalid("This gift has not been paid for yet");
   if (gift.claimedBy && gift.claimedBy !== userId) throw new Invalid("This gift has already been claimed");
-  await creditGift(asUser(userId), gift.reports + gift.industries, gift.id, gift.giverName);
+  await creditGift(asUser(userId), giftCredits(gift), gift.id, gift.giverName);
   const [row] = await db().update(gifts).set({ status: "claimed", claimedBy: userId, claimedAt: gift.claimedAt ?? new Date(), openedAt: gift.openedAt ?? new Date() }).where(eq(gifts.id, gift.id)).returning();
   return row;
 }

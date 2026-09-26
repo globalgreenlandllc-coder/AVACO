@@ -26,7 +26,7 @@ export default async function GiftGiverPage({ params, searchParams }: { params: 
   const name = gift.recipientName ?? g.someone;
   const link = `${origin}/g/${gift.token}`;
   const when = (d: Date | null) => (d ? formatDate(d.toISOString(), locale) : null);
-  const contents = g.contents.replace("{reports}", String(gift.reports)).replace("{industries}", gift.industries ? ` + ${gift.industries} × ${t.gift.form.industries}` : "");
+  const contents = g.contents.replace("{reports}", String(gift.reports)).replace("{industries}", gift.industries ? ` + ${gift.industries} × ${t.gift.form.industries}` : "").replace("{matches}", gift.matches ? ` + ${gift.matches} × ${t.gift.form.matches}` : "");
   const status = gift.reportsUsed > 0 ? t.gift.status.recorded : gift.status === "claimed" ? t.gift.status.claimed.replace("{name}", name) : gift.status === "paid" ? (gift.openedAt ? t.gift.status.opened : t.gift.status.paid) : t.gift.status.pending;
 
   return (

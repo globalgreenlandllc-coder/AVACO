@@ -29,7 +29,7 @@ export default async function ReportsPage() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="font-display text-5xl font-medium">{t.reports.title}</h1>
-        <div className="flex flex-wrap gap-3"><Link href="/gift" className="btn btn-quiet">{t.gift.nav}</Link><Link href="/record" className="btn">{t.nav.record}</Link></div>
+        <Link href="/record" className="btn">{t.nav.record}</Link>
       </div>
 
       {data.length === 0 ? (

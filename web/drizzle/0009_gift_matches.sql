@@ -1,0 +1,1 @@
+ALTER TABLE "gifts" ADD COLUMN "matches" integer DEFAULT 0 NOT NULL;

@@ -34,6 +34,7 @@ describe("gifts", () => {
   it("cost the single-report price per report plus the add-on price per industry chapter", async () => {
     expect((await giftPrice(1, 0)).amountCents).toBe(900);
     expect((await giftPrice(2, 3)).amountCents).toBe(2 * 900 + 3 * 490);
+    expect((await giftPrice(1, 0, 1)).amountCents).toBe(900 + 2 * 900); // a match is MATCH_CREDITS reports
   });
 
   it("refuse nonsense", async () => {
@@ -43,8 +44,8 @@ describe("gifts", () => {
   });
 
   it("wait for the payment, then are claimed once into the recipient's account, and open their recordings by themselves", async () => {
-    const gift = await createGift("user_dana", { giverName: "Dana", recipientName: "Lena", message: "For you", reports: 1, industries: 1 });
-    expect(gift).toMatchObject({ status: "pending", amountCents: 1390, reports: 1, industries: 1 });
+    const gift = await createGift("user_dana", { giverName: "Dana", recipientName: "Lena", message: "For you", reports: 1, industries: 1, matches: 1 });
+    expect(gift).toMatchObject({ status: "pending", amountCents: 1390 + 1800, reports: 1, industries: 1, matches: 1 });
     expect((await giftByToken(gift.token))?.id).toBe(gift.id);
 
     // Not claimable before it is paid.
@@ -52,25 +53,25 @@ describe("gifts", () => {
 
     // Stripe pays: the giver's balance stays 0, the gift becomes ready to send.
     const purchase = await startGiftPurchase(gift);
-    expect(await B.completePurchase(purchase.id, { amountCents: 1390, currency: "usd" })).toBe("credited");
+    expect(await B.completePurchase(purchase.id, { amountCents: 3190, currency: "usd" })).toBe("credited");
     expect(await B.balance(B.asUser("user_dana"))).toBe(0);
     const paid = (await giftByToken(gift.token))!;
     expect(paid.status).toBe("paid");
 
-    // Lena claims: two credits land in her account, once, however often the page reloads.
+    // Lena claims: one report, one chapter and a match (two credits) land in her account, once, however often the page reloads.
     const claimed = await claimGift(paid, "user_lena");
     expect(claimed).toMatchObject({ status: "claimed", claimedBy: "user_lena" });
     await claimGift(claimed, "user_lena");
-    expect(await B.balance(B.asUser("user_lena"))).toBe(2);
+    expect(await B.balance(B.asUser("user_lena"))).toBe(4);
     await expect(claimGift(claimed, "user_someone_else")).rejects.toThrow("already been claimed");
 
-    // Her recording is opened with the gift's credit at once; the chapter credit stays for an industry of her choice.
+    // Her recording is opened with the gift's credit at once; the rest stays for a chapter and for inviting her partner.
     await B.noteSelfRecording("user_lena", A1);
     expect(await B.hasFullAccess("user_lena", A1)).toBe(false);
     const covered = await coverWithGift("user_lena", A1);
     expect(covered?.reportsUsed).toBe(1);
     expect(await B.hasFullAccess("user_lena", A1)).toBe(true);
-    expect(await B.balance(B.asUser("user_lena"))).toBe(1);
+    expect(await B.balance(B.asUser("user_lena"))).toBe(3);
 
     // The gift had one report: a second recording is not covered (the remaining credit is hers to spend as she likes).
     await B.noteSelfRecording("user_lena", A2);

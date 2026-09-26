@@ -2,10 +2,13 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Bars } from "@/components/Bars";
 import { Contact } from "@/components/Contact";
+import { GiftForm } from "@/components/GiftForm";
 import { GiftRibbon } from "@/components/GiftRibbon";
 import { Reveal } from "@/components/Motion";
 import { Radar } from "@/components/Radar";
+import { isAdminUser } from "@/lib/admin";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
+import { giftPrice, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
 import { isOpenHost } from "@/lib/visitor";
 import { industryTeaser } from "@/lib/industry-chapter";
 import { matchFit } from "@/lib/match";
@@ -28,6 +31,8 @@ import { SAMPLE_PSY } from "@/lib/sample";
 export default async function Home() {
   const [{ locale, t }, { userId }, billing, origin, open] = await Promise.all([getDict(), auth(), getSettings().catch(() => DEFAULT_SETTINGS), baseUrl(), isOpenHost()]);
   const site = new URL(origin).host;
+  // The gift builder's unit prices, and whether this person gives for free (charging off, or an admin).
+  const [giftUnits, giftFree] = await Promise.all([giftPrice(1, 0, 0, billing), userId ? isAdminUser(userId) : Promise.resolve(false)]);
   const h = t.home;
   // On an open host (lib/visitor.ts) there is no account and no price: straight to the recorder.
   const start = userId || open ? "/record" : "/sign-up";
@@ -198,10 +203,10 @@ export default async function Home() {
         </div>
       </Reveal>}
 
-      {/* A gift: someone pays, someone they care about records and gets the report with the giver's name on it. */}
+      {/* A gift: the builder itself, here on the landing page. A visitor who isn't signed in keeps their draft through sign-in. */}
       {!open && (
-      <Reveal as="section" className="card overflow-hidden p-0">
-        <div className="grid gap-8 p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+      <Reveal as="section" id="gift" className="card scroll-mt-24 p-8 sm:p-12">
+        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-start">
           <GiftRibbon size={96} />
           <div>
             <p className="eyebrow">{t.gift.landing.eyebrow}</p>
@@ -211,10 +216,9 @@ export default async function Home() {
               {t.gift.landing.points.map((x) => <li key={x} className="flex gap-3"><span aria-hidden className="text-accent-text">✓</span><span>{x}</span></li>)}
             </ul>
           </div>
-          <div className="flex flex-col items-start gap-3 lg:items-end">
-            <span className="rounded-full border border-accent px-4 py-1.5 text-sm font-bold text-accent-text">{t.gift.landing.from.replace("{price}", money(billing.packs.find((p) => p.audience === "user" && p.credits === 1)?.amountCents ?? 900, billing.currency, locale))}</span>
-            <Link href={userId ? "/gift" : "/sign-up?redirect_url=%2Fgift"} className="btn">{t.gift.landing.cta}</Link>
-          </div>
+        </div>
+        <div className="mt-10">
+          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} />
         </div>
       </Reveal>
       )}
