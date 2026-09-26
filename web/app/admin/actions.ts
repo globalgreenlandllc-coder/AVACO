@@ -7,6 +7,7 @@ import { asUser, asWorkspace, getSettings, grant, saveSettings, type Pack } from
 import { admins, db, promoCodes } from "@/lib/db";
 import { baseUrl } from "@/lib/page";
 import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
+import { saveIndustryPrice } from "@/lib/industry-billing";
 import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
 
@@ -31,6 +32,8 @@ export async function saveSettingsAction(form: FormData) {
     freePreviewsPer30Days: Number(form.get("freePreviews")),
     workspaceTrialCredits: Number(form.get("trialCredits")),
   });
+  const addon = Number(form.get("industryPrice"));
+  if (addon > 0) await saveIndustryPrice(Math.round(addon * 100));
   revalidatePath("/admin", "layout");
 }
 

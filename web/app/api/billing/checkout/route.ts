@@ -5,6 +5,9 @@
 import { errorResponse, json, requireUser } from "@/lib/api";
 import { asUser, asWorkspace, attachStripeSession, getSettings, startPurchase } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
+import { getDict } from "@/lib/i18n";
+import { industryNames } from "@/lib/industry-chapter";
+import { INDUSTRY_PACK, startIndustryPurchase } from "@/lib/industry-billing";
 import { isIndustry } from "@/lib/industries";
 import { baseUrl } from "@/lib/page";
 import { createCheckout, stripeReady } from "@/lib/stripe";
@@ -22,14 +25,19 @@ export async function POST(req: Request) {
     const unlockId = !workspaceId && typeof body?.unlock === "string" && (await gateway.getAnalysisFor(user.userId, body.unlock)) ? body.unlock : null;
     // The chapter the buyer was about to open, so the payment opens it: a credit that has to be spent by hand is a credit that gets forgotten.
     const industry = unlockId && isIndustry(body?.industry) ? body.industry : null;
-    const purchase = await startPurchase(workspaceId ? asWorkspace(workspaceId) : asUser(user.userId), String(body?.pack ?? ""), unlockId, industry);
+    // The industry add-on is bought on its own, at its own price, straight from the card on the report; every other pack is credits.
+    const addon = body?.pack === INDUSTRY_PACK;
+    if (addon && (!unlockId || !industry)) return json({ error: "bad_request", message: "Choose an industry on a report first" }, 400);
+    const purchase = addon
+      ? await startIndustryPurchase(asUser(user.userId), unlockId!, industry!)
+      : await startPurchase(workspaceId ? asWorkspace(workspaceId) : asUser(user.userId), String(body?.pack ?? ""), unlockId, industry);
 
     const origin = await baseUrl();
     const back = workspaceId ? `/w/${workspaceId}` : unlockId ? `/reports/${unlockId}` : "/credits";
     const withIndustry = industry ? `&industry=${industry}` : "";
     const session = await createCheckout({
       purchaseId: purchase.id,
-      name: `AVOCO voice reports × ${purchase.credits}`,
+      name: addon ? `AVOCO industry chapter · ${industryNames((await getDict()).locale).find((i) => i.key === industry)?.name ?? industry}` : `AVOCO voice reports × ${purchase.credits}`,
       amountCents: purchase.amountCents,
       currency: (await getSettings()).currency,
       // Stripe fills in {CHECKOUT_SESSION_ID}; the page the buyer lands on confirms the payment itself instead of waiting for the webhook.

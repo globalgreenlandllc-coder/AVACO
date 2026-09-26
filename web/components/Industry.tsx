@@ -30,6 +30,10 @@ export interface IndustryProps {
   initialIndustry?: string | null;
   /** Just back from Stripe: the payment is confirmed, or still being confirmed (the page then refreshes by itself). */
   paid?: "confirmed" | "pending" | null;
+  /** Where to buy this one chapter at its own price (Stripe Checkout, straight from the card). Absent when not for sale here. */
+  payUrl?: string;
+  /** The pay button's words, e.g. "Pay $4.90". */
+  payLabel?: string;
   /** Where opened chapters are copied for print and the downloaded file: the very end of the report. */
   printSlot?: HTMLElement | null;
   t: Dict["industry"];
@@ -42,7 +46,7 @@ type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kin
  * price and the button that opens or buys, and the chapter itself once it is open. Nothing of it sits inside the
  * report. For print and the downloaded file, every opened chapter is copied to `printSlot`, at the very end.
  */
-export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, printSlot = null, t }: IndustryProps) {
+export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, payUrl, payLabel, printSlot = null, t }: IndustryProps) {
   const [open, setOpen] = useState<string[]>(unlocked);
   const [picked, setPicked] = useState<string | null>(initialIndustry);
   const [shown, setShown] = useState(true); // the opened chapter can be folded away without closing it
@@ -76,6 +80,17 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
     if (res?.ok) await load(picked);
     else if (res?.status === 402) window.location.href = `${creditsHref}?unlock=${analysisId}&industry=${picked}`;
     else setState({ kind: "error" });
+  }
+
+  /** Buys this one chapter at the add-on price; the payment page brings the buyer back here with the chapter open. */
+  async function pay() {
+    if (!picked || !payUrl) return;
+    setBusy(true);
+    const res = await fetch(payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack: "industry", unlock: analysisId, industry: picked }) }).catch(() => null);
+    const body = await res?.json().catch(() => null);
+    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    setBusy(false);
+    setState({ kind: "error" });
   }
 
   /** One industry chapter as a file of its own; the full report download carries every opened chapter at its end. */
@@ -123,9 +138,16 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
             <option value="">{a.select}</option>
             {industries.map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
           </select>
-          {state.kind === "locked" && picked && (freeUnlock || credits > 0
-            ? <button type="button" className="btn addon-btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
-            : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn addon-btn">{t.lock.getCredits}</Link>)}
+          {state.kind === "locked" && picked && (
+            freeUnlock || credits > 0
+              ? <button type="button" className="btn addon-btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
+              : payUrl && payLabel
+                ? <button type="button" className="btn addon-btn" onClick={pay} disabled={busy}>{busy ? t.lock.unlocking : payLabel}</button>
+                : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn addon-btn">{t.lock.getCredits}</Link>
+          )}
+          {state.kind === "locked" && picked && !freeUnlock && credits > 0 && payUrl && payLabel && (
+            <button type="button" className="btn btn-quiet" onClick={pay} disabled={busy}>{payLabel}</button>
+          )}
           {state.kind === "chapter" && (
             <>
               <button type="button" className="btn btn-quiet" onClick={() => setShown((v) => !v)}>{shown ? a.hide : a.show}</button>
