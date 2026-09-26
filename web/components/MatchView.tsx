@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { buildReportFile, saveFile } from "@/lib/export";
 import type { Dict } from "@/lib/i18n";
 import type { MatchReport } from "@/lib/match-report";
 
@@ -9,6 +10,8 @@ export interface MatchState { status: "waiting" | "processing" | "ready"; partne
 /** The couple's report. Polls while the partner's recording is being analysed; `waiting` is what the page shows until then. */
 export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchState; pollUrl: string; waiting: React.ReactNode; t: Dict["match"] }) {
   const [state, setState] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const article = useRef<HTMLElement>(null);
   useEffect(() => {
     if (state.status === "ready") return;
     const timer = setInterval(async () => {
@@ -28,8 +31,13 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
     );
   }
   const r = state.report;
+  async function download() {
+    if (!article.current) return;
+    setSaving(true);
+    try { saveFile(await buildReportFile(article.current, `AVOCO · ${t.matchTitle.replace("{a}", r.names.a).replace("{b}", r.names.b)}`), `avoco-match-${r.names.a}-${r.names.b}.html`.toLowerCase()); } finally { setSaving(false); }
+  }
   return (
-    <article className="space-y-10" data-match>
+    <article ref={article} className="space-y-10" data-match>
       <section className="cover relative overflow-hidden px-7 py-12 sm:px-12 sm:py-14">
         <span className="cover-capsule" style={{ top: -90, right: "6%", width: 110, height: 300, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
         <p className="cover-eyebrow relative">{t.eyebrow}</p>
@@ -97,6 +105,10 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
       </div>
 
       <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.method}</p>
+      <div data-no-export className="no-print flex flex-wrap gap-3">
+        <button type="button" className="btn" onClick={download} disabled={saving}>{t.download}</button>
+        <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{t.print}</button>
+      </div>
     </article>
   );
 }

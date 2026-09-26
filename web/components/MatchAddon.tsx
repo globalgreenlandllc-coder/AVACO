@@ -23,17 +23,19 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
   const [ownerName, setOwnerName] = useState("");
   const [partnerName, setPartnerName] = useState("");
   const [withFamily, setWithFamily] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"upload" | "invite" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const ready = ownerName.trim() && partnerName.trim();
+  const who = partnerName.trim() || "…";
 
-  async function order(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true); setError(null);
+  /** Both ways in create (and pay for) the match; the match page then opens on the chosen way. */
+  async function order(mode: "upload" | "invite") {
+    setBusy(mode); setError(null);
     const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily }) }).catch(() => null);
-    if (res?.status === 201) { const { id } = await res.json(); router.push(`/match/${id}`); return; }
+    if (res?.status === 201) { const { id } = await res.json(); router.push(`/match/${id}?mode=${mode}`); return; }
     if (res?.status === 402) { window.location.href = `${creditsHref}?unlock=${analysisId}`; return; }
     setError((await res?.json().catch(() => null))?.message ?? "Error");
-    setBusy(false);
+    setBusy(null);
   }
 
   return (
@@ -58,15 +60,26 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
             </div>
           )}
         </div>
-        <form onSubmit={order} className="card space-y-3 p-5">
+        <form onSubmit={(e) => e.preventDefault()} className="card space-y-3 p-5">
           <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
           <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
           <label className="flex items-center gap-2 text-sm text-ink-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--addon)]" />{t.withFamily}</label>
-          {canOrder
-            ? <button type="submit" className="btn addon-btn w-full" disabled={busy || !ownerName.trim() || !partnerName.trim()}>{busy ? t.ordering : `${t.order}${price ? ` · ${price}` : ""}`}</button>
-            : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn addon-btn w-full">{t.getCredits} · {t.needCredits.replace("{n}", "2")}</Link>}
+          {canOrder ? (
+            <div className="grid gap-3 pt-1 sm:grid-cols-2">
+              <div className="rounded-xl border border-line p-3">
+                <p className="text-sm font-semibold">{t.haveRecording}</p>
+                <p className="mt-1 min-h-16 text-xs leading-relaxed text-ink-2">{t.haveRecordingText.replace("{name}", who)}</p>
+                <button type="button" className="btn addon-btn mt-3 w-full" disabled={Boolean(busy) || !ready} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
+              </div>
+              <div className="rounded-xl border border-line p-3">
+                <p className="text-sm font-semibold">{t.noRecording}</p>
+                <p className="mt-1 min-h-16 text-xs leading-relaxed text-ink-2">{t.noRecordingText.replace("{name}", who)}</p>
+                <button type="button" className="btn btn-quiet mt-3 w-full" disabled={Boolean(busy) || !ready} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta}</button>
+              </div>
+            </div>
+          ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn addon-btn w-full">{t.getCredits} · {t.needCredits.replace("{n}", "2")}</Link>}
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-          {canOrder && credits > 0 && price && <p className="text-xs text-muted">{t.needCredits.replace("{n}", "2")}</p>}
+          {canOrder && price && <p className="text-xs text-muted">{t.needCredits.replace("{n}", "2")} {price}</p>}
         </form>
       </div>
     </section>
