@@ -27,5 +27,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
     const dates = ["2026-09-14", "2026-09-18", created].map((d, i) => ({ id: String(i), date: formatDate(d, locale).split(/,| at | в /)[0], current: i === 2 }));
     return <ReportView key={`${locale}-locked`} initial={preview} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} previewTakes={takes ? { n: 3, band: "medium", pct: 67, dates } : undefined} locked={<PayWall analysisId="preview" credits={0} fromPrice="$9.00" t={t.billing} />} />;
   }
-  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} />;
+  // The relationship-match add-on, with one couple's report under way and one finished.
+  const match = { price: "$14.90 · or 2 credits", freeLabel: t.match.free, credits: 0, needed: 2, canOrder: true, existing: [{ id: "preview-1", partnerName: "Daniel", stage: "invited" as const }, { id: "preview-2", partnerName: "Anna", stage: "ready" as const }] };
+  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} match={match} />;
 }

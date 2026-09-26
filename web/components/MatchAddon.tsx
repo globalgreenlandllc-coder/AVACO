@@ -46,11 +46,14 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
   }
 
   return (
-    <section className="addon-strip" data-no-export>
+    <section className="addon-strip theme-match" data-no-export>
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
         <div>
-          <p className="addon-badge">{t.eyebrow}</p>
-          <h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">{t.title}</h2>
+          <div className="addon-head">
+            <span className="addon-icon" aria-hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z" /></svg></span>
+            <p className="addon-badge">{t.eyebrow}</p>
+          </div>
+          <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{t.title}</h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-2">{t.lead}</p>
           <p className="mt-4"><span className="addon-pill">{price ?? freeLabel}</span></p>
           {existing.some((m) => m.stage !== "ready") && (

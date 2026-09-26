@@ -33,7 +33,7 @@ export default async function ReportsPage() {
     <div>
       {/* Paid couple's reports still waiting for the partner come first: nothing paid for should look lost. */}
       {matchRows.some((r) => r.unfinished) && (
-        <section className="addon-strip mb-10" aria-label={t.match.unfinishedTitle}>
+        <section className="addon-strip theme-match mb-10" aria-label={t.match.unfinishedTitle}>
           <p className="addon-badge">{t.match.unfinishedTitle}</p>
           <ul className="mt-3 space-y-3">
             {matchRows.filter((r) => r.unfinished).map((r) => (

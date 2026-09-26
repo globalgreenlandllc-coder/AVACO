@@ -116,13 +116,16 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
 
   return (
     <>
-      <aside data-no-export className="no-print addon-strip" aria-label={a.badge} data-industry>
+      <aside data-no-export className="no-print addon-strip theme-industry" aria-label={a.badge} data-industry>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="addon-badge">{a.badge}</p>
+          <div className="addon-head">
+            <span className="addon-icon" aria-hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5" /><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18M11 12.5v1.5h2v-1.5" /></svg></span>
+            <p className="addon-badge">{a.badge}</p>
+          </div>
           <span className="addon-pill">{priceLabel}</span>
         </div>
-        <p className="mt-1 font-display text-2xl font-medium leading-tight">{a.title}</p>
-        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-ink-2">{a.text}</p>
+        <p className="mt-4 font-display text-3xl font-medium leading-tight">{a.title}</p>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-2">{a.text}</p>
 
         {paidState && (
           <p role="status" className="mt-3 rounded-xl border px-4 py-3 text-sm" style={{ borderColor: "var(--addon)" }}>
@@ -173,7 +176,7 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
 
       {/* Print and the downloaded file: every opened chapter, at the very end of the report. */}
       {printSlot && Object.keys(chapters).length > 0 && createPortal(
-        <section className="space-y-10">
+        <section className="theme-industry space-y-10">
           <p className="addon-badge">{a.badge}</p>
           {Object.values(chapters).map((chapter) => <div key={chapter.industry} data-industry-chapter-print={chapter.industry}><Chapter chapter={chapter} /></div>)}
         </section>,
@@ -186,7 +189,7 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
 function Chapter({ chapter: c, onPick }: { chapter: IndustryChapter; onPick?: (key: string) => void }) {
   const top = c.roles.slice(0, 3);
   return (
-    <div className="mt-10 space-y-10 break-before-auto">
+    <div className="theme-industry mt-10 space-y-10 break-before-auto">
       <div className="gold-panel p-7 sm:p-9">
         <p className="text-xs font-extrabold uppercase tracking-[0.12em]">{c.fitTitle}</p>
         <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">

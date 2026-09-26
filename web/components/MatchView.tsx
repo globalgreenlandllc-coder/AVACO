@@ -75,10 +75,10 @@ export function MatchView({ initial, pollUrl, waiting, side, t }: { initial: Mat
   }
 
   const progress = <Progress state={state} side={side} t={t} />;
-  if (state.status === "waiting") return <div className="space-y-8">{progress}{waiting}</div>;
+  if (state.status === "waiting") return <div className="theme-match space-y-8">{progress}{waiting}</div>;
   if (state.status === "processing" || !state.report) {
     return (
-      <div className="space-y-8">
+      <div className="theme-match space-y-8">
         {progress}
         <div className="card flex flex-col items-center px-7 py-16 text-center" aria-live="polite">
           <div className="relative grid h-20 w-20 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
@@ -89,9 +89,9 @@ export function MatchView({ initial, pollUrl, waiting, side, t }: { initial: Mat
   }
   const r = state.report;
   return (
-    <div className="space-y-8">
+    <div className="theme-match space-y-8">
     {progress}
-    <article ref={article} className="space-y-10" data-match>
+    <article ref={article} className="theme-match space-y-10" data-match>
       <section className="cover relative overflow-hidden px-7 py-12 sm:px-12 sm:py-14">
         <span className="cover-capsule" style={{ top: -90, right: "6%", width: 110, height: 300, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
         <p className="cover-eyebrow relative">{t.eyebrow}</p>

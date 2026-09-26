@@ -23,11 +23,12 @@
   --cover-ink: #fbf1dc;
   --cover-muted: #cdbd98;
   --cover-gold: #ecb657;
-  /* The industry add-on has a colour of its own (teal), so a paid chapter is never taken for part of the report. */
-  --addon: #0f6b62;
-  --addon-text: #0c5a52;
-  --addon-soft: #e6f4f1;
-  --addon-ink: #f4fbf9;
+  /* The add-ons have colours of their own, so an extra is never taken for part of the report: the relationship
+     match is rose (the default add-on colour), the industry chapter copper (see .theme-industry). Both warm. */
+  --addon: #b9466a;
+  --addon-text: #9c3558;
+  --addon-soft: #fbe8ee;
+  --addon-ink: #fff5f8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -49,10 +50,10 @@
     --danger: #e0786c;
     --cover-bg: #221909;
     --cover-bg-2: #3d2b0e;
-    --addon: #4fc3b4;
-    --addon-text: #7fd8cb;
-    --addon-soft: #10302c;
-    --addon-ink: #08211e;
+    --addon: #e8839f;
+    --addon-text: #f2a3b9;
+    --addon-soft: #301720;
+    --addon-ink: #2a0d17;
   }
 }
 
@@ -176,10 +177,53 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
-/* The industry add-on, in its own colour: the strip at the top of a report, the badge, the price pill, the section's border. */
-.addon-strip { border-radius: 20px; border: 1px solid color-mix(in oklab, var(--addon) 45%, transparent); background: var(--addon-soft); padding: 1rem 1.25rem; }
+/* The add-ons, each in its own warm colour: the gold personality report, the copper industry chapter, the rose
+   relationship match. A theme re-defines the accent tokens for everything inside it, so the buttons, tabs, panels,
+   links and the cover of an add-on's own report all switch together. Text colours keep 4.5:1 on the surface. */
+.theme-industry {
+  --accent: #b3542a; --accent-ink: #fff6ef; --accent-text: #9a4420; --accent-soft: #f9e9df; --theme-deep: #7a3413;
+  --cover-bg: #24130a; --cover-bg-2: #4a2412; --cover-gold: #f0a878; --cover-muted: #e2c4b0;
+  --bar-leading: #8a3a15; --bar-active: #c0602e; --bar-background: #e6a27c;
+}
+.theme-match {
+  --accent: #b9466a; --accent-ink: #fff5f8; --accent-text: #9c3558; --accent-soft: #fbe8ee; --theme-deep: #7c2141;
+  --cover-bg: #230d16; --cover-bg-2: #4a1a2e; --cover-gold: #f2a3b9; --cover-muted: #e3c1cc;
+  --bar-leading: #8f2a4c; --bar-active: #c04a71; --bar-background: #e391ab;
+}
+@media (prefers-color-scheme: dark) {
+  .theme-industry { --accent: #e08a5c; --accent-ink: #2a1206; --accent-text: #f0a57e; --accent-soft: #2e1a10; --theme-deep: #cc7244;
+                    --bar-leading: #f0a57e; --bar-active: #c0703f; --bar-background: #74391c; }
+  .theme-match { --accent: #e8839f; --accent-ink: #2a0d17; --accent-text: #f2a3b9; --accent-soft: #301720; --theme-deep: #d4688a;
+                 --bar-leading: #f2a3b9; --bar-active: #c25a7c; --bar-background: #7a2e48; }
+}
+.theme-industry, .theme-match { --addon: var(--accent); --addon-text: var(--accent-text); --addon-soft: var(--accent-soft); --addon-ink: var(--accent-ink); }
+.theme-industry .gold-panel, .theme-match .gold-panel { background: linear-gradient(160deg, var(--accent), var(--theme-deep)); color: var(--accent-ink); }
+.theme-industry .gold-text { background-image: linear-gradient(100deg, #fcd9c2, var(--cover-gold) 45%, #d9784a); }
+.theme-match .gold-text { background-image: linear-gradient(100deg, #fdd6e1, var(--cover-gold) 45%, #d65f84); }
+@media print {
+  .theme-industry { --accent: #b3542a; --accent-ink: #fff6ef; --accent-text: #9a4420; --accent-soft: #f9e9df; --theme-deep: #7a3413;
+                    --bar-leading: #8a3a15; --bar-active: #c0602e; --bar-background: #e6a27c;
+                    --cover-bg: #f9e9df; --cover-bg-2: #fdf4ee; --cover-ink: #2a1206; --cover-muted: #5a4638; --cover-gold: #9a4420; }
+  .theme-match { --accent: #b9466a; --accent-ink: #fff5f8; --accent-text: #9c3558; --accent-soft: #fbe8ee; --theme-deep: #7c2141;
+                 --bar-leading: #8f2a4c; --bar-active: #c04a71; --bar-background: #e391ab;
+                 --cover-bg: #fbe8ee; --cover-bg-2: #fdf3f6; --cover-ink: #2a0d17; --cover-muted: #5a3f49; --cover-gold: #9c3558; }
+  .theme-industry .gold-text, .theme-match .gold-text { background: none; color: var(--cover-gold); }
+}
+
+/* The card that offers an add-on inside a report: a tinted panel with the colour on its edge and a soft glow. */
+.addon-strip {
+  position: relative; overflow: hidden; border-radius: 24px; padding: 1.5rem 1.4rem 1.6rem;
+  border: 1px solid color-mix(in oklab, var(--addon) 28%, transparent);
+  background: linear-gradient(135deg, var(--addon-soft), color-mix(in oklab, var(--addon-soft) 40%, var(--surface)) 75%);
+  box-shadow: inset 5px 0 0 var(--addon), 0 18px 40px -28px color-mix(in oklab, var(--addon) 55%, transparent);
+}
+.addon-strip::after { content: ""; position: absolute; right: -70px; top: -70px; width: 240px; height: 240px; border-radius: 999px; background: radial-gradient(circle, color-mix(in oklab, var(--addon) 18%, transparent), transparent 70%); pointer-events: none; }
+.addon-strip > * { position: relative; z-index: 1; }
+@media (min-width: 640px) { .addon-strip { padding: 2rem 2.25rem 2.1rem 2.5rem; } }
+.addon-head { display: flex; align-items: center; gap: 0.75rem; }
+.addon-icon { display: inline-grid; flex-shrink: 0; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 999px; background: var(--addon); color: var(--addon-ink); box-shadow: 0 6px 16px -8px var(--addon); }
 .addon-badge { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: var(--addon-text); }
-.addon-pill { border-radius: 999px; border: 1px solid var(--addon); color: var(--addon-text); padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.addon-pill { border-radius: 999px; background: var(--addon); color: var(--addon-ink); padding: 0.45rem 1rem; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
 .addon-btn { background: var(--addon) !important; color: var(--addon-ink) !important; }
 .addon-card { border-color: color-mix(in oklab, var(--addon) 45%, transparent) !important; }
 .addon-tag { display: inline-block; margin-right: 0.4rem; border-radius: 999px; background: var(--addon); color: var(--addon-ink); padding: 0.05rem 0.5rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
