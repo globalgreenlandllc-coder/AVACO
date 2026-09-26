@@ -21,7 +21,7 @@ export interface MatchState {
 /** The three steps both sides see: the orderer's voice, the partner's voice, the couple's report. */
 function Progress({ state, side, t }: { state: MatchState; side: "owner" | "partner"; t: Dict["match"] }) {
   const done = (x: Side) => (x.leading ? t.stepDone.replace("{type}", x.leading.name).replace("{value}", String(x.leading.value)) : x.recordedAt ? t.stepRecorded.replace("{when}", x.recordedAt) : t.stepPending);
-  const partnerLine = state.stage === "ready" ? done(state.partner) : t.stages[state.stage].replace("{when}", state.partner.recordedAt ?? state.partner.openedAt ?? "").replace("{type}", state.partner.leading?.name ?? "").replace("{value}", String(state.partner.leading?.value ?? ""));
+  const partnerLine = state.stage === "ready" ? done(state.partner) : side === "partner" && (state.stage === "invited" || state.stage === "opened") ? t.stageYourTurn : t.stages[state.stage].replace("{when}", state.partner.recordedAt ?? state.partner.openedAt ?? "").replace("{type}", state.partner.leading?.name ?? "").replace("{value}", String(state.partner.leading?.value ?? ""));
   const steps = [
     { label: side === "owner" ? t.stepYou : t.stepPartner.replace("{name}", state.owner.name), text: done(state.owner), state: state.owner.leading ? "done" : "wait" },
     { label: side === "partner" ? t.stepYou : t.stepPartner.replace("{name}", state.partner.name), text: partnerLine, state: state.stage === "ready" ? "done" : state.stage === "invited" ? "wait" : "now" },

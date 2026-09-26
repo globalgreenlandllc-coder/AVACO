@@ -263,6 +263,7 @@ export const en = {
     coupleReady: "Ready ✓",
     partnerIntro: "{a}'s voice is already recorded and analysed. Now yours: a minute of speech, and you both get the couple's report.",
     partnerYourTurn: "Your turn",
+    stageYourTurn: "Your turn · record below, about a minute",
     otherReport: "{name}'s report",
     sharedNote: "You each see the other's report here; that is what the couple's report is built from.",
     stepWho: "Who are you two?",

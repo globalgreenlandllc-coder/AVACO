@@ -18,6 +18,7 @@ export default async function PartnerLinkPage({ params, searchParams }: { params
   const m = t.match;
   if (!match) return <p className="card mx-auto mt-10 max-w-lg p-10 text-center text-ink-2">{deleted ? m.partnerDeleted : t.org.record.invalid}</p>;
   await notePartnerOpened(match).catch(() => {}); // the orderer's tracker: "opened the link"
+  match.partnerOpenedAt ??= new Date(); // this very render must not still say "not opened"
   const state = await matchStatus(match, t, locale);
   const fill = (s: string) => s.replaceAll("{a}", match.ownerName).replaceAll("{b}", match.partnerName);
   const self = `/m/${token}`;
