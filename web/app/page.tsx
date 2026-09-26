@@ -6,6 +6,10 @@ import { Reveal } from "@/components/Motion";
 import { Radar } from "@/components/Radar";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
 import { isOpenHost } from "@/lib/visitor";
+import { industryTeaser } from "@/lib/industry-chapter";
+import { matchFit } from "@/lib/match";
+import { matchEn } from "@/lib/i18n/match-en";
+import { matchRu } from "@/lib/i18n/match-ru";
 import { organizationJsonLd } from "@/lib/contact";
 import { getDict } from "@/lib/i18n";
 import { LEGAL } from "@/lib/legal";
@@ -29,6 +33,14 @@ export default async function Home() {
   const startLabel = userId || open ? h.cta : h.ctaSignedOut;
 
   const rows = psytypeRows(SAMPLE_PSY.map(([key, value]) => ({ key, label: key, value, zone: zoneOf(value) })), t);
+  // The deeper readings, shown on the sample profile: the roles it would lead in one industry, and how it pairs with a warm partner.
+  const sampleTypes = SAMPLE_PSY.map(([key, value]) => ({ key, value }));
+  const teaser = industryTeaser("construction", sampleTypes, locale);
+  const exampleIndustry = teaser ? h.deeperExampleIndustry.replace("{industry}", teaser.name).replace("{roles}", teaser.roles.map((r) => `${r.name} ${r.score}`).join(" · ")) : "";
+  const partner = sampleTypes.map(({ key }) => ({ key, value: key === "harmonizer" ? 64 : key === "mediator" ? 45 : 11 }));
+  const fit = matchFit(sampleTypes, partner);
+  const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
+  const exampleMatch = fit ? h.deeperExampleMatch.replace("{a}", typeName(fit.leaders[0])).replace("{b}", typeName(fit.leaders[1])).replace("{score}", String(fit.score)).replace("{verdict}", (locale === "ru" ? matchRu : matchEn).bands[fit.band].title) : "";
   const leader = rows[0];
   const packs = packViews(billing.packs.filter((p) => p.audience === "user"), billing.currency, locale);
   const single = billing.packs.find((p) => p.audience === "user" && p.credits === 1);
@@ -123,6 +135,34 @@ export default async function Home() {
         </div>
       </Reveal>
 
+      {/* One report, then further: the two deeper readings as the next steps, with live examples from the sample profile */}
+      <Reveal as="section" className="soft-panel p-8 sm:p-12">
+        <p className="eyebrow !text-accent-text">{h.deeperEyebrow}</p>
+        <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{h.deeperTitle}</h2>
+        <p className="mt-4 max-w-2xl leading-relaxed text-ink-2">{h.deeperLead}</p>
+        <ol className="mt-8 flex flex-wrap items-center gap-2 text-sm font-semibold">
+          {h.deeperSteps.map((step, i) => (
+            <li key={step} className="flex items-center gap-2">
+              <span className={`rounded-full px-4 py-2 ${i === 0 ? "bg-accent text-accent-ink" : "border border-accent text-accent-text"}`}>{step}</span>
+              {i < h.deeperSteps.length - 1 && <span className="text-accent-text" aria-hidden>→</span>}
+            </li>
+          ))}
+        </ol>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          {h.deeper.map((d, i) => (
+            <div key={d.title} className="card overflow-hidden">
+              <p className="tab-title">{d.title}</p>
+              <p className="px-6 pt-4 leading-relaxed text-ink-2">{d.text}</p>
+              <div className="mx-6 mb-6 mt-5 rounded-2xl bg-accent-soft p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{h.deeperExample}</p>
+                <p className="mt-2 text-sm leading-relaxed">{i === 0 ? exampleIndustry : exampleMatch}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-sm text-muted">{h.deeperNote}</p>
+      </Reveal>
+
       {/* The eight types */}
       <Reveal as="section">
         <p className="eyebrow">{h.typesEyebrow}</p>
@@ -139,22 +179,6 @@ export default async function Home() {
         <Link href={start} className="btn mt-8">{h.typesCta}</Link>
       </Reveal>
 
-      {/* After the report: the two ways it can go deeper, said warmly */}
-      <Reveal as="section" className="soft-panel p-8 sm:p-12">
-        <p className="eyebrow !text-accent-text">{h.deeperEyebrow}</p>
-        <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{h.deeperTitle}</h2>
-        <p className="mt-4 max-w-2xl leading-relaxed text-ink-2">{h.deeperLead}</p>
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          {h.deeper.map((d) => (
-            <div key={d.title} className="card overflow-hidden">
-              <p className="tab-title">{d.title}</p>
-              <p className="px-6 pb-6 pt-4 leading-relaxed text-ink-2">{d.text}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-6 text-sm text-muted">{h.deeperNote}</p>
-      </Reveal>
-
       {/* Price (not on an open host, where everything is free) */}
       {!open && <Reveal as="section" className="gold-panel p-8 sm:p-12">
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -162,6 +186,7 @@ export default async function Home() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-80">{h.priceEyebrow}</p>
             <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{billing.enabled ? h.priceTitle.replace("{price}", price ?? "") : h.priceFreeTitle}</h2>
             <p className="mt-4 max-w-xl leading-relaxed opacity-90">{billing.enabled ? h.priceText : h.priceFreeText.replace("{price}", price ?? "")}</p>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed opacity-80">{h.priceAfter}</p>
             {billing.enabled && packs.length > 1 && (
               <ul className="mt-6 flex flex-wrap gap-3">
                 {packs.map((p) => <li key={p.id} className="rounded-full border border-current/40 px-4 py-1.5 text-sm">{h.pack.replace("{n}", String(p.credits)).replace("{price}", p.price)}</li>)}
