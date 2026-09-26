@@ -1,0 +1,18 @@
+import { desc, eq } from "drizzle-orm";
+import { db } from "../lib/db";
+import { creditLedger, industryAccess, purchases, settings } from "../lib/db/schema";
+const rows = await db().select().from(purchases).orderBy(desc(purchases.createdAt)).limit(8);
+console.log("--- purchases (newest first)");
+for (const p of rows) console.log(p.createdAt.toISOString(), p.status, p.ownerKind, p.ownerId.slice(0, 14), p.pack, p.amountCents, p.currency, "unlock:", p.unlockAnalysisId?.slice(0, 8) ?? "-", "session:", p.stripeSessionId ? p.stripeSessionId.slice(0, 12) + "…" : "-", "paid:", (p as { paidAt?: Date | null }).paidAt?.toISOString() ?? "-");
+const led = await db().select().from(creditLedger).orderBy(desc(creditLedger.createdAt)).limit(10);
+console.log("--- credit ledger (newest first)");
+for (const l of led) console.log(l.createdAt.toISOString(), l.ownerKind, l.ownerId.slice(0, 14), l.reason, l.delta, l.ref?.slice(0, 20) ?? "-");
+const ia = await db().select().from(industryAccess).orderBy(desc(industryAccess.unlockedAt)).limit(6);
+console.log("--- industry access rows");
+for (const r of ia) console.log(r.unlockedAt.toISOString(), r.ownerId.slice(0, 14), r.analysisId.slice(0, 8), r.industry, r.source);
+const [st] = await db().select().from(settings).where(eq(settings.key, "stripe"));
+const v = (st?.value ?? {}) as Record<string, unknown>;
+console.log("--- stripe settings keys:", Object.keys(v).join(", "), "| webhookHint:", v.webhookHint ?? v.webhookId ?? "-", "| keyHint:", v.keyHint ?? "-");
+const [bl] = await db().select().from(settings).where(eq(settings.key, "billing"));
+console.log("--- billing enabled:", (bl?.value as { enabled?: boolean } | undefined)?.enabled);
+process.exit(0);

@@ -7,6 +7,7 @@
 import "server-only";
 import { and, count, eq, gte, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
+import { retrieveCheckout } from "./stripe";
 import { creditLedger, db, industryAccess, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
 export class NoCredits extends Error {}
@@ -107,13 +108,14 @@ export async function workspaceTrial(workspaceId: string): Promise<void> {
 
 // ---------- purchases ----------
 
-export async function startPurchase(owner: Owner, packId: string, unlockAnalysisId?: string | null) {
+/** `unlockAnalysisId` is the report the buyer was looking at; `unlockIndustry`, the industry chapter they were about to open on it. */
+export async function startPurchase(owner: Owner, packId: string, unlockAnalysisId?: string | null, unlockIndustry?: string | null) {
   const cfg = await getSettings();
   const pack = cfg.packs.find((p) => p.id === packId && p.audience === owner.kind);
   if (!pack) throw new BadCode("Unknown pack");
   const [row] = await db().insert(purchases).values({
     id: crypto.randomUUID(), ownerKind: owner.kind, ownerId: owner.id, pack: pack.id, credits: pack.credits,
-    amountCents: pack.amountCents, currency: cfg.currency, unlockAnalysisId: unlockAnalysisId ?? null,
+    amountCents: pack.amountCents, currency: cfg.currency, unlockAnalysisId: unlockAnalysisId ?? null, unlockIndustry: unlockAnalysisId ? unlockIndustry ?? null : null,
   }).returning();
   return row;
 }
@@ -129,8 +131,27 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
   const owner: Owner = { kind: p.ownerKind, id: p.ownerId };
   const fresh = await post(owner, { delta: p.credits, reason: "purchase", ref: p.id, amountCents: paid.amountCents, currency: paid.currency, note: p.pack });
   await db().update(purchases).set({ status: "paid", paidAt: new Date() }).where(and(eq(purchases.id, p.id), eq(purchases.status, "pending")));
-  if (p.unlockAnalysisId && owner.kind === "user") await unlock(owner.id, p.unlockAnalysisId).catch(() => {});
+  if (p.unlockAnalysisId && owner.kind === "user") {
+    // What the buyer came for: the report, then the industry chapter they were looking at. Both cost nothing when already open.
+    await unlock(owner.id, p.unlockAnalysisId).catch(() => {});
+    if (p.unlockIndustry) await unlockIndustry(owner.id, p.unlockAnalysisId, p.unlockIndustry).catch(() => {});
+  }
   return fresh ? "credited" : "already";
+}
+
+/**
+ * The buyer is back from Stripe with the session id in the URL. Asks Stripe whether that session was paid and, if so,
+ * completes the purchase right away: usually the webhook has done it already and this changes nothing, but when the
+ * webhook is slow the buyer must not come back to a closed report. Only the purchase's own owner can confirm it.
+ */
+export async function confirmCheckout(owner: Owner, sessionId: string): Promise<{ purchase: typeof purchases.$inferSelect; paid: boolean } | null> {
+  const [p] = await db().select().from(purchases).where(and(eq(purchases.stripeSessionId, sessionId), eq(purchases.ownerKind, owner.kind), eq(purchases.ownerId, owner.id)));
+  if (!p) return null;
+  if (p.status === "paid") return { purchase: p, paid: true };
+  const session = await retrieveCheckout(sessionId).catch(() => null);
+  if (!session?.paid) return { purchase: p, paid: false };
+  await completePurchase(p.id, { amountCents: session.amountCents, currency: session.currency });
+  return { purchase: p, paid: true };
 }
 
 // ---------- promo codes ----------
@@ -168,11 +189,14 @@ export async function hasFullAccess(userId: string, analysisId: string): Promise
   return Boolean(open);
 }
 
-/** Spends one credit to open a report; admins open it for nothing. Throws NoCredits when there is nothing to spend. */
+/**
+ * Spends one credit to open a report. Nothing is spent when it is open already: billing off, a report from before
+ * charging was switched on, an admin, or a report opened earlier. Throws NoCredits when there is nothing to spend.
+ */
 export async function unlock(userId: string, analysisId: string): Promise<void> {
-  const admin = await isAdminUser(userId);
-  if (!admin && !(await charge(asUser(userId), analysisId))) throw new NoCredits("No credits");
-  await db().insert(reportAccess).values({ analysisId, ownerKind: "user", ownerId: userId, source: admin ? "admin" : "credit" }).onConflictDoNothing();
+  if (await hasFullAccess(userId, analysisId)) return;
+  if (!(await charge(asUser(userId), analysisId))) throw new NoCredits("No credits");
+  await db().insert(reportAccess).values({ analysisId, ownerKind: "user", ownerId: userId, source: "credit" }).onConflictDoNothing();
 }
 
 /** May this person make another free preview? Counts recordings of the last 30 days that were never unlocked; admins are never capped. */

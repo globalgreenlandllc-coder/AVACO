@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { buildReportFile, saveFile } from "@/lib/export";
 import type { Dict } from "@/lib/i18n";
 import type { IndustryChapter, IndustryTeaser } from "@/lib/industry-chapter";
+import { RefreshWhile } from "./RefreshWhile";
 
 export interface IndustryProps {
   /** The picker, in the visitor's language. */
@@ -23,6 +25,10 @@ export interface IndustryProps {
   price?: string | null;
   /** A live example from the person's own scores, for the pitch. */
   teaser?: IndustryTeaser | null;
+  /** The industry to show first: the one the buyer was opening when they went to pay. */
+  initialIndustry?: string | null;
+  /** Just back from Stripe: the payment is confirmed, or still being confirmed (the page then refreshes by itself). */
+  paid?: "confirmed" | "pending" | null;
   t: Dict["industry"];
 }
 
@@ -32,9 +38,10 @@ type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kin
  * "Narrow it to your industry": the picker, the paywall when an industry is still closed, and the chapter.
  * Chapters already fetched stay in the page, so print and the downloaded file carry every opened industry.
  */
-export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, t }: IndustryProps) {
+export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, t }: IndustryProps) {
   const [open, setOpen] = useState<string[]>(unlocked);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(initialIndustry);
+  const [saving, setSaving] = useState(false);
   const [state, setState] = useState<State>({ kind: "idle" });
   const [chapters, setChapters] = useState<Record<string, IndustryChapter>>({});
   const [busy, setBusy] = useState(false);
@@ -52,6 +59,21 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
   }
 
   useEffect(() => { if (picked) void load(picked); }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A refresh can bring the news that the picked industry was opened meanwhile (the payment landed): fetch it then.
+  const unlockedKey = unlocked.join(",");
+  useEffect(() => { if (picked && state.kind === "locked" && unlocked.includes(picked)) void load(picked); }, [unlockedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** One industry chapter as a file of its own; the full report download at the bottom carries every opened chapter too. */
+  async function downloadChapter(chapter: IndustryChapter) {
+    const node = document.querySelector<HTMLElement>(`[data-industry-chapter="${chapter.industry}"]`);
+    if (!node) return;
+    setSaving(true);
+    try {
+      saveFile(await buildReportFile(node, `${chapter.name} · AVOCO`), `avoco-${chapter.industry}-chapter.html`);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function unlock() {
     if (!picked || !unlockUrl) return;
@@ -59,11 +81,14 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
     const res = await fetch(unlockUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, industry: picked }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) await load(picked);
-    else if (res?.status === 402) window.location.href = `${creditsHref}?unlock=${analysisId}`;
+    else if (res?.status === 402) window.location.href = `${creditsHref}?unlock=${analysisId}&industry=${picked}`;
     else setState({ kind: "error" });
   }
 
   const pickedName = industries.find((i) => i.key === picked)?.name ?? "";
+  // "Pending" only while the chapter really is still closed; once it is open the payment has plainly landed.
+  const paidState = paid === "pending" && initialIndustry && open.includes(initialIndustry) ? "confirmed" : paid;
+  const paidName = industries.find((i) => i.key === initialIndustry)?.name ?? "";
 
   return (
     <section className="card card-flow overflow-hidden" data-industry>
@@ -108,6 +133,13 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
       <h3 className="font-display text-3xl font-medium sm:text-4xl">{t.title}</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{t.lead}</p>
 
+      {paidState && (
+        <p role="status" className="no-print mt-8 rounded-xl border border-accent px-5 py-4 text-sm" data-no-export>
+          {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
+        </p>
+      )}
+      {paidState === "pending" && <RefreshWhile />}
+
       <div className="no-print mt-8 scroll-mt-24" id="industry-pick">
         <p className="eyebrow">{t.pick}</p>
         <div className="mt-3 flex flex-wrap gap-2" role="listbox" aria-label={t.pick}>
@@ -129,9 +161,16 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
           <div className="mt-6 flex flex-wrap items-center gap-4">
             {freeUnlock || credits > 0
               ? <button type="button" className="btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
-              : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn">{t.lock.getCredits}</Link>}
+              : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn">{t.lock.getCredits}</Link>}
             <p className="text-sm text-ink-2">{freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
           </div>
+        </div>
+      )}
+
+      {state.kind === "chapter" && (
+        <div className="no-print mt-8 flex flex-wrap items-center gap-3" data-no-export>
+          <button type="button" className="btn btn-quiet" onClick={() => downloadChapter(state.chapter)} disabled={saving}>{saving ? t.downloading : t.download}</button>
+          <span className="text-xs text-muted">{t.downloadNote}</span>
         </div>
       )}
 

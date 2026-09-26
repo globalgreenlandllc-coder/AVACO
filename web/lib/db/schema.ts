@@ -131,6 +131,8 @@ export const purchases = pgTable("purchases", {
   status: text("status").$type<"pending" | "paid">().notNull().default("pending"),
   /** A report to unlock as soon as the payment lands, so the buyer comes back to an open report. */
   unlockAnalysisId: uuid("unlock_analysis_id"),
+  /** And, when the purchase started from a closed industry chapter, that industry: it is opened with the new credit. */
+  unlockIndustry: text("unlock_industry"),
   createdAt: ts("created_at").notNull().defaultNow(),
   paidAt: ts("paid_at"),
 });

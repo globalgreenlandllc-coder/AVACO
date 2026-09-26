@@ -181,6 +181,16 @@ export async function createCheckout(input: CheckoutInput): Promise<{ id: string
   return { id: body.id, url: body.url };
 }
 
+/** One Checkout session as Stripe sees it now: whether it was paid, for how much, and which purchase it carries. */
+export async function retrieveCheckout(sessionId: string): Promise<{ paid: boolean; amountCents: number; currency: string; purchaseId: string | null } | null> {
+  const key = (await stripeKeys())?.secretKey;
+  if (!key || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) return null;
+  const res = await fetch(`${STRIPE}/checkout/sessions/${encodeURIComponent(sessionId)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return null;
+  return { paid: body.payment_status === "paid", amountCents: Number(body.amount_total) || 0, currency: String(body.currency ?? "usd"), purchaseId: body.metadata?.purchase_id ?? body.client_reference_id ?? null };
+}
+
 const TOLERANCE_SECONDS = 300;
 
 /**

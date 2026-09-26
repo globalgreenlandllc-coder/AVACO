@@ -6,8 +6,8 @@ import type { Dict } from "@/lib/i18n";
 
 export interface PackView { id: string; credits: number; price: string; perReport: string }
 
-/** Credit packs and the promo-code field. For a person, or for a workspace when workspaceId is given. `unlock` opens that report after payment. */
-export function BuyCredits({ packs, canPay, t, workspaceId, unlock }: { packs: PackView[]; canPay: boolean; t: Dict["billing"]; workspaceId?: string; unlock?: string }) {
+/** Credit packs and the promo-code field. For a person, or for a workspace when workspaceId is given. `unlock` opens that report after payment, and `industry` the chapter on it. */
+export function BuyCredits({ packs, canPay, t, workspaceId, unlock, industry }: { packs: PackView[]; canPay: boolean; t: Dict["billing"]; workspaceId?: string; unlock?: string; industry?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -17,7 +17,7 @@ export function BuyCredits({ packs, canPay, t, workspaceId, unlock }: { packs: P
 
   async function buy(pack: string) {
     setBusy(pack); setMessage(null);
-    const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack, workspaceId, unlock }) }).catch(() => null);
+    const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack, workspaceId, unlock, industry }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
     if (res?.ok && body?.url) { window.location.href = body.url; return; }
     setMessage({ ok: false, text: body?.message ?? t.notReady });

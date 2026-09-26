@@ -1,15 +1,17 @@
 import { desc, eq, and } from "drizzle-orm";
 import { BuyCredits } from "@/components/BuyCredits";
-import { asUser, balance, getSettings } from "@/lib/billing";
+import { asUser, balance, confirmCheckout, getSettings } from "@/lib/billing";
 import { creditLedger, db } from "@/lib/db";
 import { formatDate, getDict } from "@/lib/i18n";
 import { money, packViews } from "@/lib/money";
 import { currentUserId } from "@/lib/page";
 import { stripeReady } from "@/lib/stripe";
 
-export default async function CreditsPage({ searchParams }: { searchParams: Promise<{ unlock?: string; paid?: string }> }) {
-  const [userId, { t, locale }, { unlock, paid }, cfg] = await Promise.all([currentUserId(), getDict(), searchParams, getSettings()]);
+export default async function CreditsPage({ searchParams }: { searchParams: Promise<{ unlock?: string; paid?: string; session?: string; industry?: string }> }) {
+  const [userId, { t, locale }, { unlock, paid, session, industry }, cfg] = await Promise.all([currentUserId(), getDict(), searchParams, getSettings()]);
   const b = t.billing;
+  // Back from Stripe: confirm the payment now, so the balance below is already right even if the webhook is late.
+  if (typeof session === "string") await confirmCheckout(asUser(userId), session).catch(() => null);
   const [credits, history] = await Promise.all([
     balance(asUser(userId)),
     db().select().from(creditLedger).where(and(eq(creditLedger.ownerKind, "user"), eq(creditLedger.ownerId, userId))).orderBy(desc(creditLedger.createdAt)).limit(50),
@@ -27,7 +29,7 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
 
       <section>
         <h2 className="mb-6 font-display text-3xl font-medium">{b.buy}</h2>
-        <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "user"), cfg.currency, locale)} canPay={await stripeReady()} t={b} unlock={unlock} />
+        <BuyCredits packs={packViews(cfg.packs.filter((p) => p.audience === "user"), cfg.currency, locale)} canPay={await stripeReady()} t={b} unlock={unlock} industry={industry} />
       </section>
 
       <section>

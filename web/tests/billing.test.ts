@@ -195,3 +195,24 @@ describe("admin accounts", () => {
     await expect(B.unlock("user_dana", A2)).rejects.toThrow();
   });
 });
+
+describe("buying from a closed industry chapter", () => {
+  it("opens that chapter with the new credit, and never charges for a report that is already open", async () => {
+    await on();
+    // A report from before charging was switched on has no recording row: it is open for free.
+    expect(await B.hasFullAccess("user_dana", A1)).toBe(true);
+    expect(await B.hasIndustryAccess("user_dana", A1, "it")).toBe(false);
+    const p = await B.startPurchase(dana, "one", A1, "it");
+    expect(p.unlockIndustry).toBe("it");
+    await B.completePurchase(p.id, { amountCents: 900, currency: "usd" });
+    expect(await B.hasIndustryAccess("user_dana", A1, "it")).toBe(true);
+    expect(await B.balance(dana)).toBe(0); // the one credit went to the chapter, not to the report
+    await B.unlock("user_dana", A1); // opening an open report by hand costs nothing either
+    expect(await B.balance(dana)).toBe(0);
+  });
+
+  it("remembers no chapter without a report", async () => {
+    const p = await B.startPurchase(dana, "one", null, "it");
+    expect(p.unlockIndustry).toBeNull();
+  });
+});
