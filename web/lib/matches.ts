@@ -6,7 +6,8 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
-import { asUser, chargeMatch, matchIsFree, NoCredits } from "./billing";
+import { asUser, chargeMatch, matchIsFree } from "./billing";
+import { matchCredits, startMatchPurchase } from "./match-billing";
 import { consensus } from "./consensus";
 import { db, matches, type OwnerKind } from "./db";
 import { gateway, type Analysis } from "./gateway";
@@ -20,20 +21,26 @@ export type Match = typeof matches.$inferSelect;
 export const partnerOwner = (matchId: string) => `m:${matchId}`;
 const clean = (v: unknown, max: number, what: string) => { const s = typeof v === "string" ? v.trim() : ""; if (!s || s.length > max) throw new Invalid(`${what} is required (up to ${max} characters)`); return s; };
 
-/** Orders a match from one of the person's own completed reports. Charges MATCH_CREDITS unless free for them. */
-export async function createMatch(userId: string, input: { analysisId: unknown; ownerName: unknown; partnerName: unknown; withFamily?: unknown }): Promise<Match> {
+/**
+ * Orders a match from one of the person's own completed reports. Free for admins, on the open host and while billing
+ * is off; otherwise paid with report credits when the person has enough, else with the card: the match is created
+ * unpaid and a purchase is returned for the Stripe Checkout (lib/match-billing.ts), and the partner's link stays
+ * closed until the payment lands.
+ */
+export async function createMatch(userId: string, input: { analysisId: unknown; ownerName: unknown; partnerName: unknown; withFamily?: unknown }): Promise<{ match: Match; purchase: Awaited<ReturnType<typeof startMatchPurchase>> | null }> {
   const analysisId = typeof input.analysisId === "string" ? input.analysisId : "";
   const analysis = analysisId ? await gateway.getAnalysisFor(userId, analysisId) : null;
   if (!analysis || analysis.status !== "completed" || !analysis.psytype?.length) throw new NotFound("Report not found");
   const ownerName = clean(input.ownerName, 60, "Your name"), partnerName = clean(input.partnerName, 60, "Partner's name");
   const id = crypto.randomUUID();
   const free = await matchIsFree(userId);
-  if (!free && !(await chargeMatch(asUser(userId), id))) throw new NoCredits("No credits");
+  const byCredits = !free && (await chargeMatch(asUser(userId), id, await matchCredits()));
+  const paid = Boolean(free) || byCredits;
   const [match] = await db().insert(matches).values({
     id, ownerKind: "user" as OwnerKind, ownerId: userId, analysisId, ownerName, partnerName,
-    partnerToken: randomBytes(24).toString("base64url"), withFamily: input.withFamily === true, source: free ?? "credit",
+    partnerToken: randomBytes(24).toString("base64url"), withFamily: input.withFamily === true, source: free ?? "credit", paidAt: paid ? new Date() : null,
   }).returning();
-  return match;
+  return { match, purchase: paid ? null : await startMatchPurchase(asUser(userId), analysisId, id) };
 }
 
 export async function matchesFor(userId: string, analysisId?: string): Promise<Match[]> {
@@ -47,10 +54,11 @@ export async function matchFor(userId: string, id: string): Promise<Match | null
   return m ?? null;
 }
 
+/** The partner's link: only a paid-for match answers to it. */
 export async function matchByToken(token: string): Promise<Match | null> {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return null;
   const [m] = await db().select().from(matches).where(eq(matches.partnerToken, token));
-  return m ?? null;
+  return m?.paidAt ? m : null;
 }
 
 /** The partner's recordings, newest first. */

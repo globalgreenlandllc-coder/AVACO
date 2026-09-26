@@ -12,11 +12,12 @@ import { fieldFits } from "@/lib/fit";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { money } from "@/lib/money";
-import { stripeReady } from "@/lib/stripe";
 import { isOpenVisitor, visitorId } from "@/lib/visitor";
 import { agreementBand } from "@/lib/consensus";
 import { profileFor } from "@/lib/profile";
-import { MATCH_CREDITS, matchIsFree } from "@/lib/billing";
+import { matchIsFree } from "@/lib/billing";
+import { matchCredits, matchPriceCents } from "@/lib/match-billing";
+import { stripeReady } from "@/lib/stripe";
 import { matchesFor, partnerAnalyses } from "@/lib/matches";
 import { stageOf } from "@/lib/match-stage";
 
@@ -91,11 +92,11 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // The relationship match add-on: the couple's report, ordered from this report.
   let match: React.ComponentProps<typeof ReportView>["match"];
   if (full && analysis.status === "completed") {
-    const [free, existing, cfg, credits] = await Promise.all([matchIsFree(userId), matchesFor(userId, analysis.id), getSettings(), balance(asUser(userId))]);
-    const cheapest = cfg.packs.filter((p) => p.audience === "user").map((p) => Math.round(p.amountCents / p.credits)).sort((a, b) => a - b)[0];
-    const price = free ? null : `${t.match.price.replace("{n}", String(MATCH_CREDITS))}${cheapest ? ` · ${money(cheapest * MATCH_CREDITS, cfg.currency, locale)}` : ""}`;
+    const [free, existing, cfg, credits, needed, cents, card] = await Promise.all([matchIsFree(userId), matchesFor(userId, analysis.id), getSettings(), balance(asUser(userId)), matchCredits(), matchPriceCents(), stripeReady()]);
+    // The couple's report has its own price: the card, or the person's report credits when they have enough.
+    const price = free ? null : t.match.priceCard.replace("{price}", money(cents, cfg.currency, locale)).replace("{n}", String(needed));
     const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
-    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(MATCH_CREDITS)) : t.match.free, credits, canOrder: Boolean(free) || credits >= MATCH_CREDITS, existing: statuses };
+    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses };
   }
 
   return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={takes} match={match} />;

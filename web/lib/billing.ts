@@ -5,11 +5,11 @@
  * Billing can be switched off in the admin portal; then every report is free and none of this gates anything.
  */
 import "server-only";
-import { and, count, eq, gte, sql, sum } from "drizzle-orm";
+import { and, count, eq, gte, isNull, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
 import { isOpenVisitor } from "./visitor";
 import { retrieveCheckout } from "./stripe";
-import { creditLedger, db, gifts, industryAccess, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
+import { creditLedger, db, gifts, industryAccess, matches, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
 export class NoCredits extends Error {}
 export class BadCode extends Error {}
@@ -144,6 +144,7 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
   }
   const fresh = await post(owner, { delta: p.credits, reason: "purchase", ref: p.id, amountCents: paid.amountCents, currency: paid.currency, note: p.pack });
   await db().update(purchases).set({ status: "paid", paidAt: new Date() }).where(and(eq(purchases.id, p.id), eq(purchases.status, "pending")));
+  if (p.matchId) await payMatch(owner, p);
   if (p.unlockAnalysisId && owner.kind === "user") {
     // What the buyer came for: the report, then the industry chapter they were looking at. Both cost nothing when already open.
     await unlock(owner.id, p.unlockAnalysisId).catch(() => {});
@@ -264,18 +265,23 @@ export async function hasIndustryAccess(userId: string, analysisId: string, indu
   return Boolean(row);
 }
 
-// ---------- relationship match (lib/matches.ts): MATCH_CREDITS, once per match ----------
-
-export const MATCH_CREDITS = 2;
+// ---------- relationship match (lib/matches.ts): its credits (lib/match-billing.ts), once per match ----------
 
 /** Takes the match's credits. Idempotent per match, like charge(). */
-export async function chargeMatch(owner: Owner, matchId: string): Promise<boolean> {
+export async function chargeMatch(owner: Owner, matchId: string, credits: number): Promise<boolean> {
   const [already] = await db().select({ id: creditLedger.id }).from(creditLedger)
     .where(and(eq(creditLedger.ownerKind, owner.kind), eq(creditLedger.ownerId, owner.id), eq(creditLedger.reason, "match"), eq(creditLedger.ref, matchId)));
   if (already) return true;
-  if ((await balance(owner)) < MATCH_CREDITS) return false;
-  await post(owner, { delta: -MATCH_CREDITS, reason: "match", ref: matchId });
+  if ((await balance(owner)) < credits) return false;
+  await post(owner, { delta: -credits, reason: "match", ref: matchId });
   return true;
+}
+
+/** A card payment for a match landed: its credits go in and straight out again, and the match opens. */
+async function payMatch(owner: Owner, p: { id: string; matchId: string | null; credits: number }): Promise<void> {
+  if (!p.matchId) return;
+  await chargeMatch(owner, p.matchId, p.credits).catch(() => {});
+  await db().update(matches).set({ paidAt: new Date(), source: "credit" }).where(and(eq(matches.id, p.matchId), isNull(matches.paidAt)));
 }
 
 /** Is a match free for this person? Billing off, an admin, or an open-host visitor. */

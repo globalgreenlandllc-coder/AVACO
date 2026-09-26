@@ -7,6 +7,7 @@ import { asUser, asWorkspace, getSettings, grant, saveSettings, type Pack } from
 import { admins, db, promoCodes } from "@/lib/db";
 import { baseUrl } from "@/lib/page";
 import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
+import { saveMatchPricing } from "@/lib/match-billing";
 import { saveIndustryPrice } from "@/lib/industry-billing";
 import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
@@ -34,6 +35,8 @@ export async function saveSettingsAction(form: FormData) {
   });
   const addon = Number(form.get("industryPrice"));
   if (addon > 0) await saveIndustryPrice(Math.round(addon * 100));
+  const matchPrice = Number(form.get("matchPrice")), matchN = Number(form.get("matchCredits"));
+  await saveMatchPricing({ priceCents: matchPrice > 0 ? Math.round(matchPrice * 100) : undefined, credits: matchN >= 1 ? matchN : undefined });
   revalidatePath("/admin", "layout");
 }
 

@@ -7,6 +7,7 @@ import { listAdmins, listPromoCodes, requireAdmin } from "@/lib/admin";
 import { getSettings } from "@/lib/billing";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
 import { industryPriceCents } from "@/lib/industry-billing";
+import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { baseUrl } from "@/lib/page";
 import { stripeStatus } from "@/lib/stripe";
 import { allProgress, deeplStatus, dictionaryCharacters } from "@/lib/translate";
@@ -18,7 +19,7 @@ const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm";
 const NAMES: Record<string, string> = { one: "Single report", three: "Three reports", ten: "Ten reports", team25: "Team 25", team100: "Team 100", team500: "Team 500" };
 
 export default async function AdminSettings() {
-  const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents()]);
+  const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents, matchCents, matchN] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents(), matchPriceCents(), matchCredits()]);
   const envAdmins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   const webhookUrl = `${origin}/api/stripe/webhook`;
   const languageSize = Math.round(dictionaryCharacters() / 1000) * 1000;
@@ -89,6 +90,8 @@ export default async function AdminSettings() {
           <label className="text-sm"><span className="text-ink-2">Free previews per person, per 30 days</span><input name="freePreviews" type="number" min="0" max="100" defaultValue={cfg.freePreviewsPer30Days} className={`${input} mt-1.5 w-full`} /></label>
           <label className="text-sm"><span className="text-ink-2">Trial credits for a new company</span><input name="trialCredits" type="number" min="0" max="1000" defaultValue={cfg.workspaceTrialCredits} className={`${input} mt-1.5 w-full`} /></label>
           <label className="text-sm"><span className="text-ink-2">Industry chapter, per industry ({cfg.currency.toUpperCase()})</span><input name="industryPrice" type="number" min="0.5" step="0.01" defaultValue={(addonCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Paid straight from the card on a report. A report credit can open a chapter too.</span></label>
+          <label className="text-sm"><span className="text-ink-2">Relationship report, per couple ({cfg.currency.toUpperCase()})</span><input name="matchPrice" type="number" min="0.5" step="0.01" defaultValue={(matchCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Paid straight from the card on a report; the partner's own report is included.</span></label>
+          <label className="text-sm"><span className="text-ink-2">Relationship report, in credits</span><input name="matchCredits" type="number" min="1" step="1" defaultValue={matchN} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">What it costs someone who pays with report credits instead of the card.</span></label>
         </div>
         <p className="text-xs leading-relaxed text-muted">Each free preview costs you one AVOCO analysis, so the preview limit is your protection against people who record and never pay.</p>
         <button type="submit" className="btn">Save pricing</button>

@@ -11,6 +11,8 @@ export interface MatchAddonProps {
   price: string | null;
   freeLabel: string;
   credits: number;
+  /** Credits one couple's report costs, when paid with credits. */
+  needed?: number;
   canOrder: boolean;
   creditsHref?: string;
   existing: Array<{ id: string; partnerName: string; stage: "invited" | "opened" | "recording" | "analysing" | "ready" }>;
@@ -18,7 +20,7 @@ export interface MatchAddonProps {
 }
 
 /** The add-on card in a report: order a couple's report by inviting the partner, and the matches already ordered. */
-export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, creditsHref = "/credits", existing, t }: MatchAddonProps) {
+export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, t }: MatchAddonProps) {
   const router = useRouter();
   const [ownerName, setOwnerName] = useState("");
   const [partnerName, setPartnerName] = useState("");
@@ -32,8 +34,12 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
   async function order(mode: "upload" | "invite") {
     if (!ownerName.trim() || !partnerName.trim()) { setError(t.namesFirst); (ownerName.trim() ? partnerRef : ownerRef).current?.focus(); return; }
     setBusy(mode); setError(null);
-    const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily }) }).catch(() => null);
-    if (res?.status === 201) { const { id } = await res.json(); router.push(`/match/${id}?mode=${mode}`); return; }
+    const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily, mode }) }).catch(() => null);
+    if (res?.status === 201) {
+      const { id, url } = await res.json();
+      if (url) { window.location.href = url; return; } // paying by card: Stripe, then back to the match page
+      router.push(`/match/${id}?mode=${mode}`); return;
+    }
     if (res?.status === 402) { window.location.href = `${creditsHref}?unlock=${analysisId}`; return; }
     setError((await res?.json().catch(() => null))?.message ?? "Error");
     setBusy(null);
@@ -82,9 +88,9 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
                 <button type="button" className="btn btn-quiet mt-3 w-full" disabled={Boolean(busy)} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta.replace("{name}", who)}</button>
               </div>
             </div>
-          ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn addon-btn w-full">{t.getCredits} · {t.needCredits.replace("{n}", "2")}</Link>}
+          ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn addon-btn w-full">{t.getCredits} · {t.needCredits.replace("{n}", String(needed))}</Link>}
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-          {canOrder && price && <p className="text-xs text-muted">{t.needCredits.replace("{n}", "2")} {price}</p>}
+          {canOrder && price && <p className="text-xs text-muted">{credits >= needed ? t.payWithCredits.replace("{n}", String(needed)).replace("{have}", String(credits)) : t.payByCard.replace("{price}", price.split(" ·")[0])}</p>}
         </form>
       </div>
     </section>

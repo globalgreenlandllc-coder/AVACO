@@ -34,7 +34,7 @@ describe("gifts", () => {
   it("cost the single-report price per report plus the add-on price per industry chapter", async () => {
     expect((await giftPrice(1, 0)).amountCents).toBe(900);
     expect((await giftPrice(2, 3)).amountCents).toBe(2 * 900 + 3 * 490);
-    expect((await giftPrice(1, 0, 1)).amountCents).toBe(900 + 2 * 900); // a match is MATCH_CREDITS reports
+    expect((await giftPrice(1, 0, 1)).amountCents).toBe(900 + 1490); // a match at its own price (lib/match-billing.ts default)
   });
 
   it("refuse nonsense", async () => {
@@ -45,7 +45,7 @@ describe("gifts", () => {
 
   it("wait for the payment, then are claimed once into the recipient's account, and open their recordings by themselves", async () => {
     const gift = await createGift("user_dana", { giverName: "Dana", recipientName: "Lena", message: "For you", reports: 1, industries: 1, matches: 1 });
-    expect(gift).toMatchObject({ status: "pending", amountCents: 1390 + 1800, reports: 1, industries: 1, matches: 1 });
+    expect(gift).toMatchObject({ status: "pending", amountCents: 1390 + 1490, reports: 1, industries: 1, matches: 1 });
     expect((await giftByToken(gift.token))?.id).toBe(gift.id);
 
     // Not claimable before it is paid.

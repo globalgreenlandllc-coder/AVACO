@@ -12,14 +12,32 @@ import { matchStatus } from "@/lib/match-status";
 import { markSeen, matchFor } from "@/lib/matches";
 import { baseUrl } from "@/lib/page";
 import { visitorId } from "@/lib/visitor";
+import { asUser, confirmCheckout } from "@/lib/billing";
+import { RefreshWhile } from "@/components/RefreshWhile";
 
 export const metadata = { robots: { index: false, follow: false } };
 
-export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string }> }) {
-  const [{ id }, { mode }, userId, { t, locale }, origin] = await Promise.all([params, searchParams, visitorId(), getDict(), baseUrl()]);
+export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string; paid?: string; session?: string }> }) {
+  const [{ id }, { mode, session }, userId, { t, locale }, origin] = await Promise.all([params, searchParams, visitorId(), getDict(), baseUrl()]);
   if (!userId) notFound();
-  const match = await matchFor(userId, id);
+  let match = await matchFor(userId, id);
   if (!match) notFound();
+  // Back from Stripe: confirm the payment on this very load, so the link opens now, not whenever the webhook gets round to it.
+  let justPaid = false;
+  if (!match.paidAt && typeof session === "string") {
+    const outcome = await confirmCheckout(asUser(userId), session).catch(() => null);
+    if (outcome?.paid) { justPaid = true; match = (await matchFor(userId, id)) ?? match; }
+  }
+  if (!match.paidAt) {
+    return (
+      <div className="mx-auto max-w-lg space-y-6 pt-10 text-center">
+        <RefreshWhile />
+        <div className="relative mx-auto grid h-20 w-20 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
+        <p className="leading-relaxed text-ink-2">{t.match.awaitingPayment}</p>
+        <Link href={`/reports/${match.analysisId}`} className="text-sm text-muted hover:text-ink">← {t.report.back}</Link>
+      </div>
+    );
+  }
   const state = await matchStatus(match, t, locale);
   if (state.status === "ready" && !match.ownerSeenAt) await markSeen(match); // the notice on every page has done its job
   const m = t.match;
@@ -65,6 +83,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   return (
     <div className="space-y-10">
       <Link href={`/reports/${match.analysisId}`} className="no-print text-sm text-muted hover:text-ink">← {t.report.back}</Link>
+      {justPaid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{t.match.paymentConfirmed}</p>}
       <MatchView initial={view} pollUrl={`/api/match/${match.id}`} waiting={uploadFirst ? upload : invite} side="owner" t={m} />
       {partnerReport?.status === "completed" && (
         <section>

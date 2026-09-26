@@ -71,6 +71,13 @@
       "when": 1790460960350,
       "tag": "0009_gift_matches",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790462335744,
+      "tag": "0010_match_payment",
+      "breakpoints": true
     }
   ]
 }

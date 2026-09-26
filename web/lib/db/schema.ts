@@ -135,6 +135,8 @@ export const purchases = pgTable("purchases", {
   unlockIndustry: text("unlock_industry"),
   /** A gift being paid for (lib/gifts.ts): its credits wait in the gift, the buyer's balance is untouched. */
   giftId: uuid("gift_id"),
+  /** A relationship match bought straight from the card: paid for the moment the payment lands (lib/match-billing.ts). */
+  matchId: uuid("match_id"),
   createdAt: ts("created_at").notNull().defaultNow(),
   paidAt: ts("paid_at"),
 });
@@ -195,6 +197,8 @@ export const matches = pgTable(
     withFamily: boolean("with_family").notNull().default(false),
     source: text("source").$type<"credit" | "free" | "admin">().notNull(),
     partnerConsentAt: ts("partner_consent_at"),
+    /** Null while a card payment is still pending; the partner's link stays closed until then. */
+    paidAt: ts("paid_at"),
     /** When the partner first opened their link, and when they first pressed record or chose a file: the orderer watches this. */
     partnerOpenedAt: ts("partner_opened_at"),
     partnerStartedAt: ts("partner_started_at"),
