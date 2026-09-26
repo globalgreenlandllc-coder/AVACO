@@ -7,9 +7,21 @@ import type { Dict } from "@/lib/i18n";
 import { AudioError, MAX_SECONDS, MIN_SECONDS, toAnalysisWav } from "@/lib/wav";
 import { Thinking } from "./Thinking";
 
-type Phase = "idle" | "checking" | "recording" | "recorded" | "sending";
-/** Room check: how long we listen before recording, and the average level (RMS, dBFS) above which a room counts as noisy. */
-const ROOM_CHECK_MS = 1500, NOISY_DBFS = -45;
+type Phase = "idle" | "recording" | "recorded" | "sending";
+/**
+ * Room check, measured during the recording itself: the quiet moments between words give the room's noise
+ * floor, the loud moments give the voice. A recording counts as noisy when the voice stands less than
+ * NOISY_SNR_DB above the floor, or the floor itself is loud. Independent of microphone gain and of whether
+ * the person started talking at once.
+ */
+const NOISY_SNR_DB = 15, NOISY_FLOOR_DBFS = -32;
+const percentile = (sorted: number[], p: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+export function isNoisy(frameDb: number[]): boolean {
+  const sorted = frameDb.filter(Number.isFinite).sort((a, b) => a - b);
+  if (sorted.length < 20) return false;
+  const floor = percentile(sorted, 0.1), voice = percentile(sorted, 0.9);
+  return voice - floor < NOISY_SNR_DB || floor > NOISY_FLOOR_DBFS;
+}
 type ErrorKey = keyof Dict["record"]["errors"];
 
 const RING = 2 * Math.PI * 54;
@@ -83,21 +95,15 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     ctx.createMediaStreamSource(stream).connect(analyser);
     const samples = new Float32Array(analyser.fftSize);
     let frame = 0;
-    let rmsSum = 0, rmsCount = 0;
+    const frameDb: number[] = []; // one level per animation frame, for the room check at the end
     const meter = () => {
       analyser.getFloatTimeDomainData(samples);
       const peak = samples.reduce((max, v) => Math.max(max, Math.abs(v)), 0);
-      rmsSum += Math.sqrt(samples.reduce((sum, v) => sum + v * v, 0) / samples.length); rmsCount++;
+      frameDb.push(20 * Math.log10(Math.sqrt(samples.reduce((sum, v) => sum + v * v, 0) / samples.length) || 1e-9));
       setLevel((prev) => prev * 0.7 + Math.min(1, peak * 2.2) * 0.3);
       frame = requestAnimationFrame(meter);
     };
     meter();
-
-    // Room check: listen to the room for a moment before recording. A loud floor means the recording, and the
-    // reading, will be about the room as much as the person; we warn but don't refuse.
-    setPhase("checking");
-    await new Promise((resolve) => setTimeout(resolve, ROOM_CHECK_MS));
-    if (rmsCount > 0 && 20 * Math.log10(rmsSum / rmsCount) > NOISY_DBFS) setNoisy(true);
 
     const chunks: Blob[] = [];
     const startedAt = Date.now();
@@ -112,6 +118,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         return;
       }
       setRecording(new Blob(chunks, { type: rec.mimeType }));
+      setNoisy(isNoisy(frameDb)); // we warn, we don't refuse
       setPhase("recorded");
     };
 
@@ -206,7 +213,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             <circle cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round"
               strokeDasharray={RING} strokeDashoffset={RING * (1 - ring)} style={{ transition: "stroke-dashoffset 0.25s linear" }} />
           </svg>
-          <button type="button" onClick={recording ? stop : start} disabled={phase === "sending" || phase === "checking"}
+          <button type="button" onClick={recording ? stop : start} disabled={phase === "sending"}
             aria-label={recording ? t.stop : phase === "recorded" ? t.again : t.start}
             className="relative grid h-28 w-28 place-items-center rounded-full bg-accent text-accent-ink shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-50">
             {recording
@@ -218,7 +225,6 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         <p className="mt-6 font-display text-5xl tabular-nums" aria-live="off">{clock(seconds)}</p>
         <p className="mt-2 min-h-6 text-sm text-ink-2" aria-live="polite">
           {recording ? (seconds >= MAX_SECONDS ? t.maxReached : enough ? t.ready : t.minimum)
-            : phase === "checking" ? t.checking
             : phase === "recorded" ? t.recorded
             : phase === "sending" ? progress
             : t.start}
@@ -235,7 +241,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
           </div>
         )}
 
-        {(phase === "idle" || phase === "checking") && (
+        {phase === "idle" && (
           <div className="mt-8 max-w-md text-left">
             <p className="eyebrow">{t.quietTitle}</p>
             <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-ink-2">
