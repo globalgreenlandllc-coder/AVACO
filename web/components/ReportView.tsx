@@ -202,6 +202,12 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       {locked}
 
       {!isLocked && (<>
+      {industry && psy.length === 8 && (
+        <Reveal as="section" id="industry" className="scroll-mt-24">
+          <Industry {...industry} analysisId={report.id} t={t.industry} />
+        </Reveal>
+      )}
+
       {profiled.some((type) => type.details.length > 0) && (
         <Reveal as="section" id="profile" className="scroll-mt-24">
           <h2 className="font-display text-4xl font-medium sm:text-5xl">{r.profileTitle}</h2>
@@ -262,11 +268,6 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </Reveal>
       )}
 
-      {industry && psy.length === 8 && (
-        <Reveal as="section" id="industry" className="scroll-mt-24">
-          <Industry {...industry} analysisId={report.id} t={t.industry} />
-        </Reveal>
-      )}
 
       {emo.length > 0 && (
         <Reveal as="section" className="card card-flow p-8 sm:p-12">

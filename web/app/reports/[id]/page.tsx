@@ -5,7 +5,7 @@ import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
 import { asUser, balance, getSettings, hasFullAccess, noteResult, openIndustries } from "@/lib/billing";
 import { isAdminUser } from "@/lib/admin";
-import { industryNames } from "@/lib/industry-chapter";
+import { industryNames, industryTeaser } from "@/lib/industry-chapter";
 import { fieldFits } from "@/lib/fit";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
@@ -35,7 +35,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   if (full && analysis.status === "completed") {
     const [cfg, admin, unlocked, credits] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId))]);
     // Admins get the same closed chapter and the same button as a client, but opening it costs them nothing.
-    industry = { industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled ? "/api/billing/unlock-industry" : undefined, unlocked, credits, freeUnlock: admin };
+    const cheapest = cfg.packs.filter((p) => p.audience === "user").map((p) => Math.round(p.amountCents / p.credits)).sort((a, b) => a - b)[0];
+    const price = cfg.enabled && !admin ? `${t.industry.lock.oneCredit}${cheapest ? ` · ${money(cheapest, cfg.currency, locale)}` : ""}` : null;
+    industry = { industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled ? "/api/billing/unlock-industry" : undefined, unlocked, credits, freeUnlock: admin, price, teaser: industryTeaser("it", analysis.psytype ?? [], locale) };
   }
 
   return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} />;

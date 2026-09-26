@@ -114,3 +114,13 @@ export function industryChapter(industry: IndustryKey, types: Array<{ key: strin
     scoreHelp: ui.scoreHelp,
   };
 }
+
+export interface IndustryTeaser { industry: IndustryKey; name: string; overall: number; roles: Array<{ name: string; score: number }>; more: number }
+
+/** A taste of one industry for the pitch at the top of the report: the fit and the three best role names. No texts. */
+export function industryTeaser(industry: IndustryKey, types: Array<{ key: string; value: number }>, locale: string): IndustryTeaser | null {
+  const fit = industryFit(industry, types);
+  if (!fit) return null;
+  const text = textsFor(locale)[industry];
+  return { industry, name: text.name, overall: fit.overall, roles: fit.roles.slice(0, 3).map((r) => ({ name: text.roles[r.key]?.name ?? r.key, score: r.score })), more: Math.max(0, fit.roles.length - 3) };
+}
