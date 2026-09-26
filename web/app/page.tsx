@@ -101,7 +101,7 @@ export default async function Home() {
           </div>
         </div>
         <div className="p-8 sm:p-12">
-          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} />
+          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} draftOwner={userId ?? "guest"} />
         </div>
       </Reveal>
       )}

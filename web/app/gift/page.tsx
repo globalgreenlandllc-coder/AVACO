@@ -32,7 +32,7 @@ export default async function GiftPage() {
         </div>
       </div>
 
-      <GiftForm t={g.form} defaultName={user?.firstName ?? ""} reportCents={price.reportCents} industryCents={price.industryCents} matchCents={price.matchCents} currency={price.currency} locale={locale} free={!cfg.enabled || admin} signedIn signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} />
+      <GiftForm t={g.form} defaultName={user?.firstName ?? ""} reportCents={price.reportCents} industryCents={price.industryCents} matchCents={price.matchCents} currency={price.currency} locale={locale} free={!cfg.enabled || admin} signedIn signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} draftOwner={userId} />
 
       <section>
         <h2 className="font-display text-3xl font-medium">{g.form.given}</h2>

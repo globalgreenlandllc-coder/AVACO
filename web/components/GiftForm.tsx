@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 
-const DRAFT_KEY = "avoco-gift-draft";
+/**
+ * Drafts are kept per account, so a gift someone started never shows up for another person who uses the same browser.
+ * A draft typed while signed out ("guest") carries over once, into the account that signs in next. The old shared key
+ * is removed on sight: it could hold another account's names.
+ */
+const LEGACY_KEY = "avoco-gift-draft";
+const draftKey = (owner: string) => `avoco-gift-draft:${owner}`;
 interface Draft { giverName: string; recipientName: string; message: string; reports: number; industries: number; matches: number }
 
 /**
@@ -12,24 +18,32 @@ interface Draft { giverName: string; recipientName: string; message: string; rep
  * total, and the button that pays. It lives on the landing page too, where a visitor may not be signed in yet: the
  * draft is kept in the browser, so after signing in the form on /gift is exactly as they left it.
  */
-export function GiftForm({ t, defaultName, reportCents, industryCents, matchCents, currency, locale, free, signedIn, signInHref, maxReports, maxIndustries, maxMatches }: {
+export function GiftForm({ t, defaultName, reportCents, industryCents, matchCents, currency, locale, free, signedIn, signInHref, maxReports, maxIndustries, maxMatches, draftOwner }: {
   t: Dict["gift"]["form"]; defaultName: string; reportCents: number; industryCents: number; matchCents: number; currency: string; locale: string;
   free: boolean; signedIn: boolean; signInHref: string; maxReports: number; maxIndustries: number; maxMatches: number;
+  /** Whose draft this is: the signed-in user's id, or "guest". */
+  draftOwner: string;
 }) {
+  const key = draftKey(draftOwner);
   const [draft, setDraft] = useState<Draft>({ giverName: defaultName, recipientName: "", message: "", reports: 1, industries: 0, matches: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // What was typed before signing in comes back; what is typed now is kept.
+  // This account's draft comes back; a draft typed while signed out comes back once, into this account; nothing else does.
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null") as Partial<Draft> | null;
-      if (saved) setDraft((d) => ({ ...d, ...saved, giverName: saved.giverName || d.giverName }));
+      localStorage.removeItem(LEGACY_KEY);
+      let saved = JSON.parse(localStorage.getItem(key) ?? "null") as Partial<Draft> | null;
+      if (!saved && signedIn) {
+        saved = JSON.parse(localStorage.getItem(draftKey("guest")) ?? "null") as Partial<Draft> | null;
+        if (saved) { localStorage.removeItem(draftKey("guest")); localStorage.setItem(key, JSON.stringify(saved)); }
+      }
+      if (saved) setDraft((d) => ({ ...d, ...saved, giverName: saved!.giverName || d.giverName }));
     } catch { /* storage may be unavailable */ }
-  }, []);
+  }, [key, signedIn]);
   const update = (patch: Partial<Draft>) => setDraft((d) => {
     const next = { ...d, ...patch };
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(next)); } catch { /* fine without */ }
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* fine without */ }
     return next;
   });
 
@@ -42,7 +56,7 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
     setBusy(true); setError(null);
     const res = await fetch("/api/gift", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(draft) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ } window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { try { localStorage.removeItem(key); } catch { /* fine */ } window.location.href = body.url; return; }
     setError(body?.message ?? "Something went wrong. Please try again.");
     setBusy(false);
   }
