@@ -29,9 +29,11 @@ export interface RecorderProps {
   limitText?: string;
   /** Shown when the server answers 402 (no free previews or credits left). */
   payText?: string;
+  /** Called once the microphone is live or a file was chosen: the moment "recording" begins, for pages that show progress to someone else. */
+  onStart?: () => void;
 }
 
-export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText }: RecorderProps) {
+export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText, onStart }: RecorderProps) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -129,6 +131,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     };
 
     recorder.current = rec;
+    onStart?.();
     rec.start(1000);
     setSeconds(0);
     setPhase("recording");
@@ -150,6 +153,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
 
   function chooseFile(file: File | undefined) {
     if (!file) return;
+    onStart?.();
     setError(null);
     setRecording(file);
     setSeconds(0);

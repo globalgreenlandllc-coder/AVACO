@@ -363,7 +363,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" className="pill pill-off" onClick={() => download("type")} disabled={saving}>↓ {r.downloadType}</button>
               <button type="button" className="pill pill-off" onClick={() => download("industry")} disabled={saving || openChapters === 0} title={openChapters === 0 ? r.downloadIndustryNone : undefined}>↓ {r.downloadIndustry.replace("{n}", String(openChapters))}</button>
-              {match?.existing.filter((m) => m.status === "ready").map((m) => (
+              {match?.existing.filter((m) => m.stage === "ready").map((m) => (
                 <Link key={m.id} href={`/match/${m.id}?download=1`} className="pill pill-off">↓ {r.downloadCouple.replace("{names}", m.partnerName)}</Link>
               ))}
               <button type="button" className="pill pill-on" onClick={() => download("all")} disabled={saving}>↓ {r.downloadAll}</button>

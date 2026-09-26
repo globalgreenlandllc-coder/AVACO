@@ -1,14 +1,14 @@
 /**
- * The partner's private link. Before recording: who invited them, consent, the recorder. After: their own
- * report, and the couple's report as soon as AVOCO has read their voice.
+ * The partner's private link. First: who invited them, the tracker showing the orderer's voice is done, consent
+ * and the recorder. After recording: the couple's report (once AVOCO is done), their own report, the orderer's report.
  */
 import Link from "next/link";
+import { MatchRecorder } from "@/components/MatchRecorder";
 import { MatchView } from "@/components/MatchView";
-import { Recorder } from "@/components/Recorder";
 import { ReportView } from "@/components/ReportView";
 import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
-import { matchByToken } from "@/lib/matches";
+import { matchByToken, notePartnerOpened } from "@/lib/matches";
 
 export const metadata = { robots: { index: false, follow: false } };
 
@@ -17,19 +17,28 @@ export default async function PartnerLinkPage({ params, searchParams }: { params
   const match = await matchByToken(token);
   const m = t.match;
   if (!match) return <p className="card mx-auto mt-10 max-w-lg p-10 text-center text-ink-2">{deleted ? m.partnerDeleted : t.org.record.invalid}</p>;
+  await notePartnerOpened(match).catch(() => {}); // the orderer's tracker: "opened the link"
   const state = await matchStatus(match, t, locale);
-  const fill = (s: string) => s.replace("{a}", match.ownerName).replace("{b}", match.partnerName);
+  const fill = (s: string) => s.replaceAll("{a}", match.ownerName).replaceAll("{b}", match.partnerName);
   const self = `/m/${token}`;
+  const { ownerReport, partnerReport, ...view } = state;
+  const others = ownerReport && (
+    <section>
+      <h2 className="font-display text-4xl font-medium">{m.otherReport.replace("{name}", match.ownerName)}</h2>
+      <p className="mb-6 mt-2 text-sm text-muted">{m.sharedNote}</p>
+      <ReportView initial={ownerReport} recordedOn={formatDate(ownerReport.created_at, locale)} t={t} pollUrl={`/api/m/${token}/match`} deleteUrl={null} back={null} />
+    </section>
+  );
 
-  if (state.partnerReport && !again) {
+  if (partnerReport && !again) {
     return (
       <div className="space-y-12">
-        <MatchView initial={{ status: state.status, partnerName: state.partnerName, ownerName: state.ownerName, report: state.report }} pollUrl={`/api/m/${token}/match`} waiting={null} t={m} />
+        <MatchView initial={view} pollUrl={`/api/m/${token}/match`} waiting={null} side="partner" t={m} />
         <section>
           <h2 className="mb-6 font-display text-4xl font-medium">{m.yourReport}</h2>
           <ReportView
-            initial={state.partnerReport}
-            recordedOn={formatDate(state.partnerReport.created_at, locale)}
+            initial={partnerReport}
+            recordedOn={formatDate(partnerReport.created_at, locale)}
             t={t}
             pollUrl={`/api/m/${token}/report`}
             deleteUrl={`/api/m/${token}/report`}
@@ -40,18 +49,26 @@ export default async function PartnerLinkPage({ params, searchParams }: { params
             lead={<p className="no-print text-sm leading-relaxed text-ink-2"><Link href={`${self}?again=1`} className="font-semibold text-accent-text hover:underline">{m.partnerAgain}</Link></p>}
           />
         </section>
+        {others}
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-2xl">
+  const recorder = (
+    <section className="card p-7 sm:p-10">
       <p className="addon-badge">{m.eyebrow}</p>
-      <h1 className="mt-2 font-display text-5xl font-medium">{fill(m.partnerTitle)}</h1>
-      <p className="mt-4 leading-relaxed text-ink-2">{fill(m.partnerText)}</p>
-      <div className="mt-8">
-        <Recorder t={t.record} uploadUrl={`/api/m/${token}/upload-token`} createUrl={`/api/m/${token}/recordings`} doneUrl={self} consentText={fill(m.partnerConsent)} />
+      <h1 className="mt-2 font-display text-4xl font-medium sm:text-5xl">{fill(m.partnerTitle)}</h1>
+      <p className="mt-4 max-w-2xl leading-relaxed text-ink-2">{fill(m.partnerIntro)}</p>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-2">{fill(m.partnerText)}</p>
+      <p className="eyebrow mt-8">{m.partnerYourTurn}</p>
+      <div className="mt-4">
+        <MatchRecorder t={t.record} uploadUrl={`/api/m/${token}/upload-token`} createUrl={`/api/m/${token}/recordings`} doneUrl={self} consentText={fill(m.partnerConsent)} startedUrl={`/api/m/${token}/started`} />
       </div>
+    </section>
+  );
+  return (
+    <div className="space-y-10">
+      <MatchView initial={view} pollUrl={`/api/m/${token}/match`} waiting={recorder} side="partner" t={m} />
     </div>
   );
 }

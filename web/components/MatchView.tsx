@@ -1,15 +1,54 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { buildReportFile, saveFile } from "@/lib/export";
 import type { Dict } from "@/lib/i18n";
 import type { MatchReport } from "@/lib/match-report";
+import type { Stage } from "@/lib/match-stage";
 
-export interface MatchState { status: "waiting" | "processing" | "ready"; partnerName: string; ownerName: string; report: MatchReport | null }
+export interface Side { name: string; leading: { name: string; value: number } | null; recordedAt: string | null }
+export interface MatchState {
+  status: "waiting" | "processing" | "ready";
+  stage: Stage;
+  owner: Side;
+  partner: Side & { openedAt: string | null; startedAt: string | null };
+  partnerName: string;
+  ownerName: string;
+  report: MatchReport | null;
+}
 
-/** The couple's report. Polls while the partner's recording is being analysed; `waiting` is what the page shows until then. */
-export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchState; pollUrl: string; waiting: React.ReactNode; t: Dict["match"] }) {
+/** The three steps both sides see: the orderer's voice, the partner's voice, the couple's report. */
+function Progress({ state, side, t }: { state: MatchState; side: "owner" | "partner"; t: Dict["match"] }) {
+  const done = (x: Side) => (x.leading ? t.stepDone.replace("{type}", x.leading.name).replace("{value}", String(x.leading.value)) : x.recordedAt ? t.stepRecorded.replace("{when}", x.recordedAt) : t.stepPending);
+  const partnerLine = state.stage === "ready" ? done(state.partner) : t.stages[state.stage].replace("{when}", state.partner.recordedAt ?? state.partner.openedAt ?? "").replace("{type}", state.partner.leading?.name ?? "").replace("{value}", String(state.partner.leading?.value ?? ""));
+  const steps = [
+    { label: side === "owner" ? t.stepYou : t.stepPartner.replace("{name}", state.owner.name), text: done(state.owner), state: state.owner.leading ? "done" : "wait" },
+    { label: side === "partner" ? t.stepYou : t.stepPartner.replace("{name}", state.partner.name), text: partnerLine, state: state.stage === "ready" ? "done" : state.stage === "invited" ? "wait" : "now" },
+    { label: t.stepCouple, text: state.status === "ready" ? t.coupleReady : t.coupleWaiting, state: state.status === "ready" ? "done" : "wait" },
+  ] as const;
+  return (
+    <section className="card p-6 sm:p-8" aria-label={t.progressTitle} data-no-export>
+      <p className="eyebrow">{t.progressTitle}</p>
+      <ol className="mt-4 grid gap-4 sm:grid-cols-3">
+        {steps.map((s, i) => (
+          <li key={s.label} className={`rounded-2xl border p-4 ${s.state === "done" ? "border-accent bg-accent-soft" : s.state === "now" ? "border-accent" : "border-line"}`}>
+            <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.12em] text-accent-text">
+              <span aria-hidden className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${s.state === "done" ? "bg-accent text-accent-ink" : s.state === "now" ? "breathe bg-accent text-accent-ink" : "border border-line text-muted"}`}>{s.state === "done" ? "✓" : i + 1}</span>{s.label}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-2">{s.text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export function MatchView({ initial, pollUrl, waiting, side, t }: { initial: MatchState; pollUrl: string; waiting: React.ReactNode; side: "owner" | "partner"; t: Dict["match"] }) {
+  const router = useRouter();
   const [state, setState] = useState(initial);
+  // When the other side's recording lands, the page's server-rendered parts (their report) must appear too.
+  useEffect(() => { if (state.status === "ready" && initial.status !== "ready") router.refresh(); }, [state.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const [saving, setSaving] = useState(false);
   const article = useRef<HTMLElement>(null);
   // Coming from the report's downloads box: save the file as soon as the report is on the page.
@@ -35,22 +74,32 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
     try { saveFile(await buildReportFile(article.current, `AVOCO · ${t.matchTitle.replace("{a}", rep.names.a).replace("{b}", rep.names.b)}`), `avoco-match-${rep.names.a}-${rep.names.b}.html`.toLowerCase()); } finally { setSaving(false); }
   }
 
-  if (state.status === "waiting") return <>{waiting}</>;
+  const progress = <Progress state={state} side={side} t={t} />;
+  if (state.status === "waiting") return <div className="space-y-8">{progress}{waiting}</div>;
   if (state.status === "processing" || !state.report) {
     return (
-      <div className="card flex flex-col items-center px-7 py-16 text-center" aria-live="polite">
-        <div className="relative grid h-20 w-20 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
-        <p className="mt-8 max-w-md leading-relaxed text-ink-2">{t.processing.replace("{name}", state.partnerName)}</p>
+      <div className="space-y-8">
+        {progress}
+        <div className="card flex flex-col items-center px-7 py-16 text-center" aria-live="polite">
+          <div className="relative grid h-20 w-20 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
+          <p className="mt-8 max-w-md leading-relaxed text-ink-2">{t.processing.replace("{name}", state.partnerName)}</p>
+        </div>
       </div>
     );
   }
   const r = state.report;
   return (
+    <div className="space-y-8">
+    {progress}
     <article ref={article} className="space-y-10" data-match>
       <section className="cover relative overflow-hidden px-7 py-12 sm:px-12 sm:py-14">
         <span className="cover-capsule" style={{ top: -90, right: "6%", width: 110, height: 300, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
         <p className="cover-eyebrow relative">{t.eyebrow}</p>
         <h1 className="gold-text relative mt-5 pb-1 font-display text-5xl font-semibold leading-[0.98] sm:text-7xl">{t.matchTitle.replace("{a}", r.names.a).replace("{b}", r.names.b)}</h1>
+        <div className="relative mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm" style={{ color: "var(--cover-muted)" }}>
+          <span><span className="font-semibold" style={{ color: "var(--cover-ink)" }}>{r.names.a}</span> · {r.hearts.a.name} {r.hearts.a.value}</span>
+          <span><span className="font-semibold" style={{ color: "var(--cover-ink)" }}>{r.names.b}</span> · {r.hearts.b.name} {r.hearts.b.value}</span>
+        </div>
         <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[auto_1fr]">
           <div className="flex items-baseline gap-3">
             <span className="text-8xl font-semibold tabular-nums leading-none">{r.score}</span>
@@ -119,5 +168,6 @@ export function MatchView({ initial, pollUrl, waiting, t }: { initial: MatchStat
         <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{t.print}</button>
       </div>
     </article>
+    </div>
   );
 }

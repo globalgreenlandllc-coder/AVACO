@@ -13,7 +13,7 @@ export interface MatchAddonProps {
   credits: number;
   canOrder: boolean;
   creditsHref?: string;
-  existing: Array<{ id: string; partnerName: string; status: "waiting" | "processing" | "ready" }>;
+  existing: Array<{ id: string; partnerName: string; stage: "invited" | "opened" | "recording" | "analysing" | "ready" }>;
   t: Dict["match"];
 }
 
@@ -26,7 +26,7 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
   const [busy, setBusy] = useState<"upload" | "invite" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const ownerRef = useRef<HTMLInputElement>(null), partnerRef = useRef<HTMLInputElement>(null);
-  const who = partnerName.trim() || "…";
+  const who = partnerName.trim() || t.partnerFallback;
 
   /** Both ways in create (and pay for) the match; the match page then opens on the chosen way. */
   async function order(mode: "upload" | "invite") {
@@ -53,7 +53,7 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
               <ul className="mt-2 divide-y divide-line">
                 {existing.map((m) => (
                   <li key={m.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                    <span>{m.partnerName} <span className="text-muted">· {m.status === "ready" ? t.ready : t.waiting.replace("{name}", m.partnerName)}</span></span>
+                    <span>{m.partnerName} <span className="text-muted">· {m.stage === "ready" ? t.ready : t.stages[m.stage].replace(" {when}", "").replace("{when}", "")}</span></span>
                     <Link href={`/match/${m.id}`} className="font-semibold text-accent-text hover:underline">{t.open} →</Link>
                   </li>
                 ))}

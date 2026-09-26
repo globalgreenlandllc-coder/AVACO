@@ -1,4 +1,4 @@
-/** The orderer's view of a match: the partner's link while waiting, then the couple's report. */
+/** The orderer's view of a match: the tracker, the partner's link or the upload while waiting, then the couple's report and the partner's own report. */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyLink } from "@/components/CopyLink";
@@ -6,7 +6,8 @@ import { DeleteMatch } from "@/components/DeleteMatch";
 import { MatchView } from "@/components/MatchView";
 import { Qr } from "@/components/Qr";
 import { Recorder } from "@/components/Recorder";
-import { getDict } from "@/lib/i18n";
+import { ReportView } from "@/components/ReportView";
+import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
 import { matchFor } from "@/lib/matches";
 import { baseUrl } from "@/lib/page";
@@ -49,12 +50,19 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
       <p className="mt-6 text-sm"><Link href={`/match/${match.id}?mode=invite`} className="font-semibold text-accent-text hover:underline">{fill(m.switchToInvite)}</Link></p>
     </section>
   );
-  const waiting = uploadFirst ? upload : invite;
+  const { ownerReport: _o, partnerReport, ...view } = state;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <Link href={`/reports/${match.analysisId}`} className="no-print text-sm text-muted hover:text-ink">← {t.report.back}</Link>
-      <MatchView initial={{ status: state.status, partnerName: state.partnerName, ownerName: state.ownerName, report: state.report }} pollUrl={`/api/match/${match.id}`} waiting={waiting} t={m} />
+      <MatchView initial={view} pollUrl={`/api/match/${match.id}`} waiting={uploadFirst ? upload : invite} side="owner" t={m} />
+      {partnerReport?.status === "completed" && (
+        <section>
+          <h2 className="font-display text-4xl font-medium">{m.otherReport.replace("{name}", match.partnerName)}</h2>
+          <p className="mb-6 mt-2 text-sm text-muted">{m.sharedNote}</p>
+          <ReportView initial={partnerReport} recordedOn={formatDate(partnerReport.created_at, locale)} t={t} pollUrl={`/api/match/${match.id}`} deleteUrl={null} back={null} />
+        </section>
+      )}
       <DeleteMatch id={match.id} label={fill(m.deleteMatch)} confirm={fill(m.deleteConfirm)} afterHref={`/reports/${match.analysisId}`} />
     </div>
   );

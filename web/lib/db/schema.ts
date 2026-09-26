@@ -193,6 +193,9 @@ export const matches = pgTable(
     withFamily: boolean("with_family").notNull().default(false),
     source: text("source").$type<"credit" | "free" | "admin">().notNull(),
     partnerConsentAt: ts("partner_consent_at"),
+    /** When the partner first opened their link, and when they first pressed record or chose a file: the orderer watches this. */
+    partnerOpenedAt: ts("partner_opened_at"),
+    partnerStartedAt: ts("partner_started_at"),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("matches_owner_idx").on(t.ownerKind, t.ownerId, t.createdAt.desc())],

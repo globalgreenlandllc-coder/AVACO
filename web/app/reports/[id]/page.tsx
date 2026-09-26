@@ -18,6 +18,7 @@ import { agreementBand } from "@/lib/consensus";
 import { profileFor } from "@/lib/profile";
 import { MATCH_CREDITS, matchIsFree } from "@/lib/billing";
 import { matchesFor, partnerAnalyses } from "@/lib/matches";
+import { stageOf } from "@/lib/match-stage";
 
 /** `paid`, `session` and `industry` are what Stripe Checkout sends the buyer back with (see api/billing/checkout). */
 type Query = { paid?: string; session?: string; industry?: string };
@@ -93,7 +94,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     const [free, existing, cfg, credits] = await Promise.all([matchIsFree(userId), matchesFor(userId, analysis.id), getSettings(), balance(asUser(userId))]);
     const cheapest = cfg.packs.filter((p) => p.audience === "user").map((p) => Math.round(p.amountCents / p.credits)).sort((a, b) => a - b)[0];
     const price = free ? null : `${t.match.price.replace("{n}", String(MATCH_CREDITS))}${cheapest ? ` · ${money(cheapest * MATCH_CREDITS, cfg.currency, locale)}` : ""}`;
-    const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, status: (p.some((x) => x.status === "completed") ? "ready" : p.length ? "processing" : "waiting") as "ready" | "processing" | "waiting" }; }));
+    const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
     match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(MATCH_CREDITS)) : t.match.free, credits, canOrder: Boolean(free) || credits >= MATCH_CREDITS, existing: statuses };
   }
 

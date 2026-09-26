@@ -67,6 +67,14 @@ export async function startPartnerRecording(match: Match, input: { audioUrl: unk
   return id;
 }
 
+/** The partner opened their link (first time only), or pressed record / chose a file. */
+export async function notePartnerOpened(match: Match): Promise<void> {
+  if (!match.partnerOpenedAt) await db().update(matches).set({ partnerOpenedAt: new Date() }).where(eq(matches.id, match.id));
+}
+export async function notePartnerStarted(match: Match): Promise<void> {
+  if (!match.partnerStartedAt) await db().update(matches).set({ partnerStartedAt: new Date(), partnerOpenedAt: match.partnerOpenedAt ?? new Date() }).where(eq(matches.id, match.id));
+}
+
 /** The partner (or the orderer) removes everything the partner recorded. */
 export async function erasePartner(match: Match): Promise<void> {
   for (const a of await partnerAnalyses(match)) await gateway.deleteAnalysis(a.id).catch(() => {});
