@@ -248,6 +248,8 @@ export const en = {
       text: "One credit opens the industry chapter for this report: the roles ranked for you, your path in, and what to watch. Each industry is opened separately.",
       unlock: "Open for 1 credit",
       unlocking: "Opening…",
+      unlockAdmin: "Open · free for admins",
+      adminNote: "Clients see this box and pay 1 credit here. As an admin you open it for nothing.",
       getCredits: "Get credits",
       youHave: "You have {n}.",
       need: "You have no credits yet.",

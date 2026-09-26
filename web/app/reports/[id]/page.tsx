@@ -34,8 +34,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   let industry: React.ComponentProps<typeof ReportView>["industry"];
   if (full && analysis.status === "completed") {
     const [cfg, admin, unlocked, credits] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId))]);
-    const free = !cfg.enabled || admin;
-    industry = { industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: free ? undefined : "/api/billing/unlock-industry", unlocked, credits };
+    // Admins get the same closed chapter and the same button as a client, but opening it costs them nothing.
+    industry = { industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled ? "/api/billing/unlock-industry" : undefined, unlocked, credits, freeUnlock: admin };
   }
 
   return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} />;

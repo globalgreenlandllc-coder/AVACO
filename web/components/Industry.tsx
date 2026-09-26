@@ -17,6 +17,8 @@ export interface IndustryProps {
   unlocked?: string[];
   credits?: number;
   creditsHref?: string;
+  /** Admins: the unlock button always shows and says it is free; nothing is charged. */
+  freeUnlock?: boolean;
   t: Dict["industry"];
 }
 
@@ -26,7 +28,7 @@ type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kin
  * "Narrow it to your industry": the picker, the paywall when an industry is still closed, and the chapter.
  * Chapters already fetched stay in the page, so print and the downloaded file carry every opened industry.
  */
-export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", t }: IndustryProps) {
+export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, t }: IndustryProps) {
   const [open, setOpen] = useState<string[]>(unlocked);
   const [picked, setPicked] = useState<string | null>(null);
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -83,10 +85,10 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
           <h3 className="font-display text-3xl font-medium">{t.lock.title.replace("{industry}", pickedName)}</h3>
           <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{t.lock.text}</p>
           <div className="mt-6 flex flex-wrap items-center gap-4">
-            {credits > 0
-              ? <button type="button" className="btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : t.lock.unlock}</button>
+            {freeUnlock || credits > 0
+              ? <button type="button" className="btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
               : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn">{t.lock.getCredits}</Link>}
-            <p className="text-sm text-ink-2">{credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
+            <p className="text-sm text-ink-2">{freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
           </div>
         </div>
       )}

@@ -82,8 +82,9 @@ industry's roles ranked for their profile, a path (start here → grow into → 
 the industry rewards. The catalogue (`lib/industries.ts`: role keys, levels, type weights) is language-free;
 names and texts are in `lib/i18n/industries-en.ts` and `-ru.ts`, and a test keeps the three in step. Scores are
 weighted averages of the eight type scores, the same idea as `lib/fit.ts`. One credit opens one industry on one
-report (`unlockIndustry`, ledger reason `industry`, table `industry_access`); admins and the partner page get it
-free, and so does everyone while billing is off. The chapter text only leaves the server once it is open
+report (`unlockIndustry`, ledger reason `industry`, table `industry_access`). Admins see the same closed chapter
+and button as a client, but opening costs them nothing, so the paid flow can be tested from an admin account; the
+partner page is free, and so is everyone while billing is off. The chapter text only leaves the server once it is open
 (`/api/analyses/:id/industry/:key` answers 402 until then).
 
 ## Where things are

@@ -214,9 +214,13 @@ export async function openIndustries(analysisId: string): Promise<string[]> {
   return rows.map((r) => r.industry);
 }
 
-/** May this person read this industry chapter? Free when billing is off or for admins; otherwise it must have been opened. */
+/**
+ * May this person read this industry chapter? Free when billing is off; otherwise it must have been opened.
+ * Admins are not waved through here on purpose: they see the same closed chapter a client sees and open it
+ * with the same button, which unlockIndustry() makes free for them. That is how the paid flow gets tested.
+ */
 export async function hasIndustryAccess(userId: string, analysisId: string, industry: string): Promise<boolean> {
-  if (!(await getSettings()).enabled || (await isAdminUser(userId))) return true;
+  if (!(await getSettings()).enabled) return true;
   const [row] = await db().select({ industry: industryAccess.industry }).from(industryAccess)
     .where(and(eq(industryAccess.analysisId, analysisId), eq(industryAccess.industry, industry), eq(industryAccess.ownerId, userId)));
   return Boolean(row);
