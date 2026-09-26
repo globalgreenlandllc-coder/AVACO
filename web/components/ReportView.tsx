@@ -42,13 +42,15 @@ export interface ReportViewProps {
   lead?: React.ReactNode;
   /** Leaves out the emotional-state section (a workspace setting). */
   hideEmotions?: boolean;
+  /** The person's profile across several recordings (lib/consensus.ts), when they have them. Names and dates pre-localized. */
+  takes?: { n: number; band: "high" | "medium" | "low"; pct: number; leader: string; thisRecording: { name: string; value: number } | null; recordings: Array<{ id: string; date: string; name: string; value: number; current: boolean }> };
   /** The "narrow it to your industry" chapter; absent where it isn't offered. */
   industry?: Omit<IndustryProps, "t" | "analysisId">;
   /** A free preview: the cover and the summary, then this (the paywall) in place of everything else. */
   locked?: React.ReactNode;
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -150,6 +152,26 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     <article ref={article} className="space-y-10">
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
+      {/* The paid industry chapter, announced once at the top in a colour of its own and sold at the bottom: never mistaken for the report. */}
+      {industry && psy.length === 8 && !isLocked && (
+        <aside data-no-export className="no-print addon-strip" aria-label={t.industry.addon.badge}>
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div className="min-w-0 flex-1">
+              <p className="addon-badge">{t.industry.addon.badge}</p>
+              <p className="mt-1 font-display text-2xl font-medium leading-tight">{t.industry.addon.title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.industry.addon.text}</p>
+              {industry.teaser && industry.teaser.roles[0] && (
+                <p className="mt-2 text-xs text-muted"><span className="addon-tag">{t.industry.addon.exampleTag}</span>{t.industry.addon.example.replace("{industry}", industry.teaser.name).replace("{role}", industry.teaser.roles[0].name).replace("{score}", String(industry.teaser.roles[0].score))}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="addon-pill">{industry.price ? t.industry.addon.price.replace("{price}", industry.price) : industry.freeUnlock ? t.industry.promo.freeAdmin : t.industry.promo.free}</span>
+              <a href="#industry" className="btn addon-btn">{t.industry.addon.cta} ↓</a>
+            </div>
+          </div>
+        </aside>
+      )}
+
       {top && (
         <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">
           {/* The capsules of AVOCO's printed cover. */}
@@ -162,7 +184,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
           <div className="relative mt-10 grid items-center gap-10 lg:grid-cols-[1fr_1.15fr] print:mt-6 print:grid-cols-[1fr_1.2fr] print:gap-4">
             <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--cover-muted)" }}>{leaders.length === 0 ? r.balancedTitle : leaders.length > 1 ? r.leadingTypes : r.leadingType}</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--cover-muted)" }}>{takes ? t.consistency.coverLabel.replace("{n}", String(takes.n)) : leaders.length === 0 ? r.balancedTitle : leaders.length > 1 ? r.leadingTypes : r.leadingType}</p>
               <div className="mt-3 space-y-6">
                 {profiled.map((type) => (
                   <div key={type.key}>
@@ -192,6 +214,23 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
       {lead}
 
+      {takes && (
+        <Reveal as="section" className="card break-inside-avoid p-7 sm:p-10" id="consistency">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <p className="eyebrow">{t.consistency.title}</p>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${takes.band === "low" ? "border border-line text-ink-2" : "bg-accent text-accent-ink"}`}>{t.consistency.bands[takes.band]} · {takes.pct}%</span>
+          </div>
+          <p className="mt-3 max-w-3xl leading-relaxed text-ink-2">{t.consistency.text.replace("{leader}", takes.leader).replace("{n}", String(takes.n)).replace("{pct}", String(takes.pct))}</p>
+          {takes.thisRecording && takes.thisRecording.name !== takes.leader && <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-2">{t.consistency.thisRecording.replace("{type}", takes.thisRecording.name).replace("{value}", String(takes.thisRecording.value))}</p>}
+          <ul className="mt-5 flex flex-wrap gap-2">
+            {takes.recordings.map((x) => (
+              <li key={x.id} className={`rounded-full px-3 py-1.5 text-xs ${x.current ? "bg-accent text-accent-ink font-semibold" : "border border-line text-ink-2"}`}>{x.date} · {x.name} {x.value}</li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs leading-relaxed text-muted">{t.consistency.note}</p>
+        </Reveal>
+      )}
+
       {summary.length > 0 && (
         <Reveal as="section" className="soft-panel break-inside-avoid p-7 sm:p-10">
           <p className="eyebrow !text-accent-text">{ui.summaryTitle}</p>
@@ -202,12 +241,6 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       {locked}
 
       {!isLocked && (<>
-      {industry && psy.length === 8 && (
-        <Reveal as="section" id="industry" className="scroll-mt-24">
-          <Industry {...industry} analysisId={report.id} t={t.industry} />
-        </Reveal>
-      )}
-
       {profiled.some((type) => type.details.length > 0) && (
         <Reveal as="section" id="profile" className="scroll-mt-24">
           <h2 className="font-display text-4xl font-medium sm:text-5xl">{r.profileTitle}</h2>
@@ -301,6 +334,13 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
           ))}
         </div>
       </Reveal>
+
+      {/* The industry add-on comes last, after the report proper, marked in its own colour: see the strip at the top. */}
+      {industry && psy.length === 8 && (
+        <Reveal as="section" id="industry" className="scroll-mt-24">
+          <Industry {...industry} analysisId={report.id} t={t.industry} />
+        </Reveal>
+      )}
 
       </>)}
 

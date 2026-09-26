@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ReportView, type Report } from "@/components/ReportView";
 import { zoneOf } from "@/lib/report";
 import { formatDate, getDict } from "@/lib/i18n";
+import { industryNames, industryTeaser } from "@/lib/industry-chapter";
 
 // Sample scores, to look at the report's design without recording. Development only. ?two=1 shows two leading types.
 const PSY: Array<[string, number]> = [["catalyst", 78.4], ["driver", 46.2], ["performer", 41], ["harmonizer", 33.5], ["organizer", 27.8], ["mediator", 21], ["skeptic", 17.3], ["analyst", 12.6]];
@@ -17,5 +18,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
     psytype: psy.map(([key, value]) => ({ key, label: key, value, zone: zoneOf(value) })),
     emostate: EMO.map(([key, value]) => ({ key, label: key, value })),
   };
-  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} />;
+  // The industry add-on as a paying client sees it (the chapter itself needs a real report; here only the strip and the picker show).
+  const industry = { industries: industryNames(locale), chapterUrl: "/api/preview/industry/{key}", unlockUrl: "/api/preview/unlock", price: "1 credit · $9", teaser: industryTeaser("it", report.psytype ?? [], locale) };
+  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} />;
 }

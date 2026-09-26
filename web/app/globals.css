@@ -23,6 +23,11 @@
   --cover-ink: #fbf1dc;
   --cover-muted: #cdbd98;
   --cover-gold: #ecb657;
+  /* The industry add-on has a colour of its own (teal), so a paid chapter is never taken for part of the report. */
+  --addon: #0f6b62;
+  --addon-text: #0c5a52;
+  --addon-soft: #e6f4f1;
+  --addon-ink: #f4fbf9;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,6 +49,10 @@
     --danger: #e0786c;
     --cover-bg: #221909;
     --cover-bg-2: #3d2b0e;
+    --addon: #4fc3b4;
+    --addon-text: #7fd8cb;
+    --addon-soft: #10302c;
+    --addon-ink: #08211e;
   }
 }
 
@@ -157,3 +166,11 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
   .gold-text, .sheen { background: none; color: var(--cover-gold); }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* The industry add-on, in its own colour: the strip at the top of a report, the badge, the price pill, the section's border. */
+.addon-strip { border-radius: 20px; border: 1px solid color-mix(in oklab, var(--addon) 45%, transparent); background: var(--addon-soft); padding: 1rem 1.25rem; }
+.addon-badge { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: var(--addon-text); }
+.addon-pill { border-radius: 999px; border: 1px solid var(--addon); color: var(--addon-text); padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.addon-btn { background: var(--addon) !important; color: var(--addon-ink) !important; }
+.addon-card { border-color: color-mix(in oklab, var(--addon) 45%, transparent) !important; }
+.addon-tag { display: inline-block; margin-right: 0.4rem; border-radius: 999px; background: var(--addon); color: var(--addon-ink); padding: 0.05rem 0.5rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }

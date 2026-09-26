@@ -38,7 +38,7 @@ type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kin
  * "Narrow it to your industry": the picker, the paywall when an industry is still closed, and the chapter.
  * Chapters already fetched stay in the page, so print and the downloaded file carry every opened industry.
  */
-export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, t }: IndustryProps) {
+export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, initialIndustry = null, paid = null, t }: IndustryProps) {
   const [open, setOpen] = useState<string[]>(unlocked);
   const [picked, setPicked] = useState<string | null>(initialIndustry);
   const [saving, setSaving] = useState(false);
@@ -91,47 +91,16 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
   const paidName = industries.find((i) => i.key === initialIndustry)?.name ?? "";
 
   return (
-    <section className="card card-flow overflow-hidden" data-industry>
-      {/* The pitch: what the add-on does, what it costs, and a live taste from this person's own scores. */}
-      <div className="cover relative overflow-hidden rounded-none px-7 py-10 sm:px-12 sm:py-12">
-        <span className="cover-capsule" style={{ top: -90, right: "6%", width: 110, height: 300, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
-        <div className="relative grid gap-10 lg:grid-cols-[1.1fr_1fr]">
-          <div>
-            <p className="cover-eyebrow">{t.promo.eyebrow}</p>
-            <h2 className="gold-text mt-4 pb-1 font-display text-5xl font-semibold leading-[0.98] sm:text-6xl">{t.promo.title}</h2>
-            <p className="mt-5 max-w-xl leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>{t.promo.text}</p>
-            <ul className="mt-5 space-y-2 text-sm" style={{ color: "var(--cover-ink)" }}>
-              {t.promo.points.map((x) => <li key={x} className="flex gap-3"><span className="mt-2 h-1.5 w-3 shrink-0 rounded-full" style={{ background: "var(--cover-gold)" }} aria-hidden /><span>{x}</span></li>)}
-            </ul>
-            <div className="no-print mt-7 flex flex-wrap items-center gap-4">
-              <a href="#industry-pick" className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{t.promo.cta}</a>
-              <span className="rounded-full border px-4 py-2 text-sm font-bold" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-gold)" }}>{price ? t.promo.price.replace("{price}", price) : freeUnlock ? t.promo.freeAdmin : t.promo.free}</span>
-            </div>
-          </div>
-          {teaser && (
-            <div className="rounded-3xl p-6 sm:p-7" style={{ background: "color-mix(in oklab, var(--cover-gold) 12%, transparent)", border: "1px solid color-mix(in oklab, var(--cover-gold) 35%, transparent)" }}>
-              <p className="cover-eyebrow">{t.promo.exampleTitle.replace("{industry}", teaser.name)}</p>
-              <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--cover-muted)" }}>{t.promo.exampleText.replace("{industry}", teaser.name)}</p>
-              <p className="mt-4 font-display text-4xl font-semibold leading-tight" style={{ color: "var(--cover-gold)" }}>{teaser.name}</p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums">{teaser.overall}<span className="text-sm font-medium opacity-70"> / 100</span></p>
-              <ol className="mt-4 space-y-2">
-                {teaser.roles.map((r, i) => (
-                  <li key={r.name} className="flex items-baseline justify-between gap-3 border-t pt-2 text-sm" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 30%, transparent)" }}>
-                    <span><span className="mr-2 font-display text-xl" style={{ color: "var(--cover-gold)" }}>{String(i + 1).padStart(2, "0")}</span>{r.name}</span>
-                    <span className="font-semibold tabular-nums">{r.score}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-4 text-xs leading-relaxed" style={{ color: "var(--cover-muted)" }}>{t.promo.exampleMore.replace("{n}", String(teaser.more)).replace("{industry}", teaser.name)}</p>
-              <button type="button" className="no-print mt-4 text-sm font-bold underline-offset-4 hover:underline" style={{ color: "var(--cover-gold)" }} onClick={() => setPicked(teaser.industry)}>{t.promo.exampleCta.replace("{industry}", teaser.name)} →</button>
-            </div>
-          )}
-        </div>
-      </div>
-
+    <section className="card card-flow addon-card overflow-hidden" data-industry>
       <div className="p-8 sm:p-12">
-      <h3 className="font-display text-3xl font-medium sm:text-4xl">{t.title}</h3>
+      {/* Marked as an add-on in its own colour, so a paid chapter is never taken for part of the report above. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="addon-badge">{t.addon.badge}</p>
+        <span className="addon-pill">{price ? t.addon.price.replace("{price}", price) : freeUnlock ? t.promo.freeAdmin : t.promo.free}</span>
+      </div>
+      <h3 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{t.title}</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{t.lead}</p>
+      <p className="mt-2 text-xs text-muted">{t.addon.sectionNote}</p>
 
       {paidState && (
         <p role="status" className="no-print mt-8 rounded-xl border border-accent px-5 py-4 text-sm" data-no-export>
