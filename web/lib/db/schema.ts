@@ -88,7 +88,7 @@ export type Recording = typeof recordings.$inferSelect;
 
 /** Who holds credits: a person (their Clerk user id) or a company (workspace id). */
 export type OwnerKind = "user" | "workspace";
-export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "match" | "refund";
+export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "match" | "gift" | "refund";
 
 /**
  * Every movement of credits, and the only source of truth for a balance (the sum of delta).
@@ -133,6 +133,8 @@ export const purchases = pgTable("purchases", {
   unlockAnalysisId: uuid("unlock_analysis_id"),
   /** And, when the purchase started from a closed industry chapter, that industry: it is opened with the new credit. */
   unlockIndustry: text("unlock_industry"),
+  /** A gift being paid for (lib/gifts.ts): its credits wait in the gift, the buyer's balance is untouched. */
+  giftId: uuid("gift_id"),
   createdAt: ts("created_at").notNull().defaultNow(),
   paidAt: ts("paid_at"),
 });
@@ -202,6 +204,34 @@ export const matches = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("matches_owner_idx").on(t.ownerKind, t.ownerId, t.createdAt.desc())],
+);
+
+/**
+ * A gift (lib/gifts.ts): paid by one person, claimed by another into their own account. Its credits wait in the gift
+ * until it is claimed; the recipient's first `reports` recordings are then opened with them, no paywall.
+ */
+export const gifts = pgTable(
+  "gifts",
+  {
+    id: uuid("id").primaryKey(),
+    token: text("token").notNull().unique(),
+    giverId: text("giver_id").notNull(),
+    giverName: text("giver_name").notNull(),
+    recipientName: text("recipient_name"),
+    message: text("message"),
+    reports: integer("reports").notNull(),
+    industries: integer("industries").notNull().default(0),
+    reportsUsed: integer("reports_used").notNull().default(0),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("usd"),
+    status: text("status").$type<"pending" | "paid" | "claimed">().notNull().default("pending"),
+    claimedBy: text("claimed_by"),
+    paidAt: ts("paid_at"),
+    openedAt: ts("opened_at"),
+    claimedAt: ts("claimed_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("gifts_giver_idx").on(t.giverId, t.createdAt.desc()), index("gifts_claimed_idx").on(t.claimedBy)],
 );
 
 /** What a finished report said, for statistics: filled in the first time a completed report is read. */

@@ -3,6 +3,7 @@ import { orgEn } from "./org-en";
 import { typesEn } from "./types-en";
 import { deepEn } from "./deep-en";
 import { legalEn } from "./legal-en";
+import { giftEn } from "./gift-en";
 export const en = {
   brand: "AVOCO",
   nav: { record: "New recording", reports: "My reports", signIn: "Sign in", start: "Get started", sample: "Sample report" },
@@ -220,6 +221,7 @@ export const en = {
     signUpSubtitle: "Thirty seconds of your voice, a report in about a minute.",
   },
   legal: legalEn,
+  gift: giftEn,
   partners: {
     eyebrow: "Partner access",
     title: "Test the AVOCO report",

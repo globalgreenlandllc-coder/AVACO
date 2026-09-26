@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Bars } from "@/components/Bars";
 import { Contact } from "@/components/Contact";
+import { GiftRibbon } from "@/components/GiftRibbon";
 import { Reveal } from "@/components/Motion";
 import { Radar } from "@/components/Radar";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
@@ -196,6 +197,27 @@ export default async function Home() {
           <Link href={start} className="btn" style={{ background: "var(--cover-bg)", color: "var(--cover-gold)" }}>{startLabel}</Link>
         </div>
       </Reveal>}
+
+      {/* A gift: someone pays, someone they care about records and gets the report with the giver's name on it. */}
+      {!open && (
+      <Reveal as="section" className="card overflow-hidden p-0">
+        <div className="grid gap-8 p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+          <GiftRibbon size={96} />
+          <div>
+            <p className="eyebrow">{t.gift.landing.eyebrow}</p>
+            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{t.gift.landing.title}</h2>
+            <p className="mt-4 max-w-2xl leading-relaxed text-ink-2">{t.gift.landing.text}</p>
+            <ul className="mt-5 space-y-2 text-sm text-ink-2">
+              {t.gift.landing.points.map((x) => <li key={x} className="flex gap-3"><span aria-hidden className="text-accent-text">✓</span><span>{x}</span></li>)}
+            </ul>
+          </div>
+          <div className="flex flex-col items-start gap-3 lg:items-end">
+            <span className="rounded-full border border-accent px-4 py-1.5 text-sm font-bold text-accent-text">{t.gift.landing.from.replace("{price}", money(billing.packs.find((p) => p.audience === "user" && p.credits === 1)?.amountCents ?? 900, billing.currency, locale))}</span>
+            <Link href={userId ? "/gift" : "/sign-up?redirect_url=%2Fgift"} className="btn">{t.gift.landing.cta}</Link>
+          </div>
+        </div>
+      </Reveal>
+      )}
 
       {/* Companies + privacy */}
       <div className="grid gap-6 lg:grid-cols-2">

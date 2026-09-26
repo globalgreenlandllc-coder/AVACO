@@ -3,6 +3,7 @@ import { orgRu } from "./org-ru";
 import { typesRu } from "./types-ru";
 import { deepRu } from "./deep-ru";
 import { legalRu } from "./legal-ru";
+import { giftRu } from "./gift-ru";
 import type { Dict } from "./en";
 
 export const ru: Dict = {
@@ -222,6 +223,7 @@ export const ru: Dict = {
     signUpSubtitle: "Тридцать секунд голоса, отчёт примерно через минуту.",
   },
   legal: legalRu,
+  gift: giftRu,
   partners: {
     eyebrow: "Доступ для партнёров",
     title: "Попробуйте отчёт AVOCO",

@@ -9,7 +9,7 @@ import { and, count, eq, gte, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
 import { isOpenVisitor } from "./visitor";
 import { retrieveCheckout } from "./stripe";
-import { creditLedger, db, industryAccess, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
+import { creditLedger, db, gifts, industryAccess, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
 export class NoCredits extends Error {}
 export class BadCode extends Error {}
@@ -82,6 +82,11 @@ async function post(owner: Owner, entry: Entry): Promise<boolean> {
   return rows.length > 0;
 }
 
+/** A claimed gift's credits, into the recipient's balance: once per gift, however many times it is asked. */
+export async function creditGift(owner: Owner, credits: number, giftId: string, from: string): Promise<boolean> {
+  return post(owner, { delta: credits, reason: "gift", ref: giftId, note: from.slice(0, 200) });
+}
+
 /** An admin gives (or takes back, with a negative number) credits. Never idempotent: each grant is its own act. */
 export async function grant(owner: Owner, credits: number, by: string, note?: string): Promise<void> {
   if (!Number.isInteger(credits) || credits === 0 || Math.abs(credits) > 100_000) throw new Error("Credits must be a non-zero whole number");
@@ -130,6 +135,13 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
   const [p] = await db().select().from(purchases).where(eq(purchases.id, purchaseId));
   if (!p) return "unknown";
   const owner: Owner = { kind: p.ownerKind, id: p.ownerId };
+  if (p.giftId) {
+    // A gift: the money is recorded on the buyer, the credits wait in the gift until the recipient claims it (lib/gifts.ts).
+    const fresh = await post(owner, { delta: 0, reason: "purchase", ref: p.id, amountCents: paid.amountCents, currency: paid.currency, note: `gift ${p.giftId}` });
+    await db().update(purchases).set({ status: "paid", paidAt: new Date() }).where(and(eq(purchases.id, p.id), eq(purchases.status, "pending")));
+    await db().update(gifts).set({ status: "paid", paidAt: new Date() }).where(and(eq(gifts.id, p.giftId), eq(gifts.status, "pending")));
+    return fresh ? "credited" : "already";
+  }
   const fresh = await post(owner, { delta: p.credits, reason: "purchase", ref: p.id, amountCents: paid.amountCents, currency: paid.currency, note: p.pack });
   await db().update(purchases).set({ status: "paid", paidAt: new Date() }).where(and(eq(purchases.id, p.id), eq(purchases.status, "pending")));
   if (p.unlockAnalysisId && owner.kind === "user") {

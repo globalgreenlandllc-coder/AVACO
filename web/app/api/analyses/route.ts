@@ -2,6 +2,7 @@
 import { errorResponse, json, requireUser } from "@/lib/api";
 import { asUser, balance, noteSelfRecording, previewsLeft } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
+import { coverWithGift } from "@/lib/gifts";
 
 export async function POST(req: Request) {
   const user = await requireUser();
@@ -18,6 +19,8 @@ export async function POST(req: Request) {
 
     const created = await gateway.createAnalysis({ audioUrl: body.audioUrl, owner: user.userId });
     await noteSelfRecording(user.userId, created.id);
+    // Someone holding a gift never meets the paywall: the gift's credit opens this report right away.
+    await coverWithGift(user.userId, created.id).catch(() => null);
     return json({ id: created.id }, 202);
   } catch (err) {
     return errorResponse(err);
