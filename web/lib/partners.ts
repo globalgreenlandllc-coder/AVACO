@@ -1,6 +1,6 @@
 /**
  * The partner page: a no-account, no-charge way to record and read a report, served only on its own
- * free Vercel host so it never appears on the main domain. Analyses are filed in the gateway under one
+ * free Vercel hosts so it never appears on the main domain. Analyses are filed in the gateway under one
  * shared owner, and a daily cap keeps an open page from running up AVOCO usage.
  */
 import "server-only";
@@ -9,14 +9,17 @@ import { gateway, type Analysis } from "./gateway";
 import { LimitReached } from "./workspaces";
 
 export const PARTNER_OWNER = "partners";
-export const partnerHost = () => process.env.PARTNER_HOST || "avoco-partners.vercel.app";
+/** The hosts that serve the partner page. The first is the canonical one that other hosts redirect to. */
+export const DEFAULT_PARTNER_HOSTS = ["avoco-partners.vercel.app", "avaco-web-git-main-gutters.vercel.app"];
+export const partnerHosts = () => (process.env.PARTNER_HOSTS ?? process.env.PARTNER_HOST ?? DEFAULT_PARTNER_HOSTS.join(",")).split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+export const partnerHost = () => partnerHosts()[0];
 export const dailyLimit = () => Number(process.env.PARTNER_DAILY_LIMIT) || 100;
 
 /** True on the partner host (and in local development, where there is only one host). */
 export async function isPartnerHost(): Promise<boolean> {
   const h = await headers();
   const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").toLowerCase();
-  return host === partnerHost() || host.startsWith("localhost");
+  return partnerHosts().includes(host) || host.startsWith("localhost");
 }
 
 /** Recordings made on the partner page since midnight UTC. */
