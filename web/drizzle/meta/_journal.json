@@ -50,6 +50,13 @@
       "when": 1790450968079,
       "tag": "0006_match_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790456896870,
+      "tag": "0007_match_notice",
+      "breakpoints": true
     }
   ]
 }

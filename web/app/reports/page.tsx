@@ -2,12 +2,28 @@ import Link from "next/link";
 import { Trends } from "@/components/Trends";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
+import { stageOf } from "@/lib/match-stage";
+import { matchesFor, partnerAnalyses } from "@/lib/matches";
 import { leadingTypes, psytypeRows } from "@/lib/report";
 import { visitorId } from "@/lib/visitor";
 
 export default async function ReportsPage() {
   const [userId, { locale, t }] = await Promise.all([visitorId(), getDict()]);
   const { data } = userId ? await gateway.listAnalyses(userId) : { data: [] };
+
+  // Relationship matches, each with where the partner is; a finished one the person hasn't opened yet is marked new.
+  const when = (d: Date | string | null | undefined) => (d ? formatDate(typeof d === "string" ? d : d.toISOString(), locale) : "");
+  const matchRows = await Promise.all((userId ? await matchesFor(userId).catch(() => []) : []).map(async (m) => {
+    const partner = await partnerAnalyses(m).catch(() => []);
+    const stage = stageOf({ openedAt: m.partnerOpenedAt, startedAt: m.partnerStartedAt, analyses: partner });
+    const ready = stage === "ready";
+    return {
+      id: m.id, unseen: ready && !m.ownerSeenAt,
+      title: t.match.list.pair.replace("{a}", m.ownerName).replace("{b}", m.partnerName),
+      text: ready ? t.match.list.ready : t.match.stages[stage].replace("{when}", when(partner[0]?.created_at ?? m.partnerOpenedAt)).replace(" · {type} {value}", ""),
+      status: ready ? t.match.ready : t.match.waiting.replace("{name}", m.partnerName),
+    };
+  }));
 
   return (
     <div>
@@ -39,6 +55,28 @@ export default async function ReportsPage() {
             );
           })}
         </ul>
+      )}
+
+      {matchRows.length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-display text-3xl font-medium">{t.match.list.title}</h2>
+          <ul className="mt-5 space-y-3">
+            {matchRows.map((r) => (
+              <li key={r.id}>
+                <Link href={`/match/${r.id}`} className={`card flex flex-wrap items-center justify-between gap-4 p-6 transition-colors hover:border-ink-2 ${r.unseen ? "border-accent" : ""}`}>
+                  <div>
+                    <p className="font-medium">{r.title}</p>
+                    <p className="mt-1 text-sm text-ink-2">{r.text}</p>
+                  </div>
+                  <span className="flex items-center gap-3 text-sm text-muted">
+                    {r.unseen && <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent-ink">{t.match.list.new}</span>}
+                    {r.status} →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="mt-10">

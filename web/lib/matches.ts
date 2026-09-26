@@ -5,7 +5,7 @@
  */
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { asUser, chargeMatch, matchIsFree, NoCredits } from "./billing";
 import { consensus } from "./consensus";
 import { db, matches, type OwnerKind } from "./db";
@@ -85,6 +85,21 @@ export async function deleteMatch(match: Match): Promise<void> {
   await db().delete(matches).where(eq(matches.id, match.id));
 }
 
+/** The couple's report exists: remembered once, so the orderer can be told wherever they are (unseenReadyMatches). */
+export async function markReady(match: Match): Promise<void> {
+  if (!match.readyAt) await db().update(matches).set({ readyAt: new Date() }).where(and(eq(matches.id, match.id), isNull(matches.readyAt)));
+}
+
+/** The orderer has opened the finished report; the notice goes away. */
+export async function markSeen(match: Match): Promise<void> {
+  if (!match.ownerSeenAt) await db().update(matches).set({ ownerSeenAt: new Date() }).where(eq(matches.id, match.id));
+}
+
+/** Finished matches the orderer has not opened yet: the notice at the top of every page. One cheap query, no gateway. */
+export async function unseenReadyMatches(userId: string): Promise<Match[]> {
+  return db().select().from(matches).where(and(eq(matches.ownerId, userId), isNotNull(matches.readyAt), isNull(matches.ownerSeenAt))).orderBy(desc(matches.readyAt));
+}
+
 /** The finished match, or null while the partner hasn't recorded yet. */
 export async function buildMatch(match: Match, t: Dict, locale: string): Promise<MatchReport | null> {
   const [own, partner] = await Promise.all([gateway.getAnalysis(match.analysisId), partnerAnalyses(match)]);
@@ -93,5 +108,6 @@ export async function buildMatch(match: Match, t: Dict, locale: string): Promise
   const a = (await profileFor(match.ownerId, own)).psytype ?? own.psytype;
   const b = consensus(done.map((x) => ({ id: x.id, created_at: x.created_at, psytype: x.psytype! })))?.scores ?? done[0].psytype!;
   const fit = matchFit(a, b, { scalesA: own.emostate, scalesB: done[0].emostate, withFamily: match.withFamily });
+  if (fit) await markReady(match);
   return fit ? matchReport(fit, { a: match.ownerName, b: match.partnerName }, t, locale) : null;
 }

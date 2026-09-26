@@ -296,6 +296,18 @@ export const en = {
     waiting: "Waiting for {name}",
     ready: "Ready",
     open: "Open",
+    whatNow: {
+      title: "What happens now",
+      steps: [
+        "{name} opens the link on a phone or a computer. You will see it here the moment it happens.",
+        "{name} records a minute of speech, or uploads a clip, whenever it suits them: today or next week. The link does not expire.",
+        "The moment their voice is analysed, the couple's report appears here, and on {name}'s page too.",
+      ],
+      close: "You can close this page. The match stays under My reports as \"Waiting for {name}\", and when the report is ready a notice appears at the top of every page until you open it.",
+      noEmail: "We don't send emails yet, so the notice in the app is how you will know.",
+    },
+    list: { title: "Relationship matches", pair: "{a} and {b}", ready: "The couple's report is ready", new: "New" },
+    notice: { ready: "Your couple's report with {name} is ready.", open: "Open the report", later: "Later" },
     inviteTitle: "Send this link to {name}",
     inviteText: "It is private: only someone with the link can open it. {name} records a minute of speech, or uploads a voice or video clip, and sees their own report there. As soon as it is ready, your couple's report appears here.",
     copy: "Copy link",

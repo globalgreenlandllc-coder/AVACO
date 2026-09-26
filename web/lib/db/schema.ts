@@ -196,6 +196,9 @@ export const matches = pgTable(
     /** When the partner first opened their link, and when they first pressed record or chose a file: the orderer watches this. */
     partnerOpenedAt: ts("partner_opened_at"),
     partnerStartedAt: ts("partner_started_at"),
+    /** When the couple's report first existed, and when the orderer first opened it: the "report ready" notice lives between the two. */
+    readyAt: ts("ready_at"),
+    ownerSeenAt: ts("owner_seen_at"),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("matches_owner_idx").on(t.ownerKind, t.ownerId, t.createdAt.desc())],

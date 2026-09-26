@@ -3,12 +3,14 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Link from "next/link";
 import { Header } from "@/components/Header";
+import { MatchReadyNotice } from "@/components/MatchReadyNotice";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk-ui";
 import { getDict } from "@/lib/i18n";
 import { directionOf } from "@/lib/i18n/languages";
 import { LEGAL } from "@/lib/legal";
-import { isOpenHost } from "@/lib/visitor";
+import { unseenReadyMatches } from "@/lib/matches";
+import { isOpenHost, visitorId } from "@/lib/visitor";
 import { availableLanguages } from "@/lib/translate";
 import "./globals.css";
 
@@ -22,11 +24,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [{ locale, t }, languages, open] = await Promise.all([getDict(), availableLanguages(), isOpenHost()]);
+  const [{ locale, t }, languages, open, visitor] = await Promise.all([getDict(), availableLanguages(), isOpenHost(), visitorId()]);
+  // Finished couple's reports the person hasn't opened yet: a notice on every page, and a count on "My reports".
+  const ready = visitor ? await unseenReadyMatches(visitor).catch(() => []) : [];
   const page = (
       <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
         <body className="flex flex-col">
-          <Header locale={locale} t={t} />
+          <Header locale={locale} t={t} alerts={ready.length} />
+          <MatchReadyNotice matches={ready} t={t.match} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>
           <footer className="no-print border-t border-line px-5 py-8 text-xs text-muted">
             <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">

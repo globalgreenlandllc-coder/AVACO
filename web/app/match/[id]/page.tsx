@@ -9,7 +9,7 @@ import { Recorder } from "@/components/Recorder";
 import { ReportView } from "@/components/ReportView";
 import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
-import { matchFor } from "@/lib/matches";
+import { markSeen, matchFor } from "@/lib/matches";
 import { baseUrl } from "@/lib/page";
 import { visitorId } from "@/lib/visitor";
 
@@ -21,6 +21,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   const match = await matchFor(userId, id);
   if (!match) notFound();
   const state = await matchStatus(match, t, locale);
+  if (state.status === "ready" && !match.ownerSeenAt) await markSeen(match); // the notice on every page has done its job
   const m = t.match;
   const link = `${origin}/m/${match.partnerToken}`;
   const fill = (s: string) => s.replace("{name}", match.partnerName);
@@ -35,6 +36,15 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
       <div className="mt-6 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-start">
         <Qr value={link} label={fill(m.inviteTitle)} size={180} />
         <CopyLink value={link} label={m.copy} copied={m.copied} />
+      </div>
+      {/* What to expect while the partner takes their time, and how the orderer will learn the report is ready. */}
+      <div className="mt-8 rounded-2xl border border-line bg-surface p-6">
+        <p className="eyebrow">{m.whatNow.title}</p>
+        <ol className="mt-3 space-y-2.5 text-sm leading-relaxed text-ink-2">
+          {m.whatNow.steps.map((step, i) => <li key={step} className="flex gap-3"><span className="font-display text-xl leading-none text-accent-text">{i + 1}</span><span>{fill(step)}</span></li>)}
+        </ol>
+        <p className="mt-4 text-sm leading-relaxed">{fill(m.whatNow.close)}</p>
+        <p className="mt-2 text-xs text-muted">{m.whatNow.noEmail}</p>
       </div>
       <p className="mt-6 text-sm"><Link href={`/match/${match.id}?mode=upload`} className="font-semibold text-accent-text hover:underline">{fill(m.switchToUpload)}</Link></p>
     </section>

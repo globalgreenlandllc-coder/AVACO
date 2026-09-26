@@ -7,7 +7,7 @@ import { availableLanguages } from "@/lib/translate";
 import { isOpenHost } from "@/lib/visitor";
 import { LanguageSwitch } from "./LanguageSwitch";
 
-export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
+export async function Header({ locale, t, alerts = 0 }: { locale: Locale; t: Dict; alerts?: number }) {
   const [languages, partner, open] = await Promise.all([availableLanguages(), isPartnerHost(), isOpenHost()]);
   const admin = partner || open ? false : await showAdminLink();
   return (
@@ -17,12 +17,12 @@ export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
         {/* The partner host has no accounts: just the language menu. The open host has the original links, no sign-in. */}
         {partner ? <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} /> : open ? <>
           <Link href="/record" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.record}</Link>
-          <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}</Link>
+          <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}{alerts > 0 && <span className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 align-middle text-[11px] font-bold text-accent-ink" aria-label={`${alerts} ${t.match.list.new}`}>{alerts}</span>}</Link>
           <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} />
         </> : <>
         <Show when="signed-in">
           <Link href="/record" className="hidden text-ink-2 hover:text-ink sm:inline">{t.nav.record}</Link>
-          <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}</Link>
+          <Link href="/reports" className="text-ink-2 hover:text-ink">{t.nav.reports}{alerts > 0 && <span className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 align-middle text-[11px] font-bold text-accent-ink" aria-label={`${alerts} ${t.match.list.new}`}>{alerts}</span>}</Link>
           <Link href="/w" className="text-ink-2 hover:text-ink">{t.org.nav}</Link>
           <Link href="/credits" className="hidden text-ink-2 hover:text-ink sm:inline">{t.billing.nav}</Link>
           {admin && <Link href="/admin" className="rounded-full bg-accent px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-ink hover:opacity-90">Admin</Link>}
