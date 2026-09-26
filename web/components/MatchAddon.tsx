@@ -53,11 +53,24 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
           <h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">{t.title}</h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-2">{t.lead}</p>
           <p className="mt-4"><span className="addon-pill">{price ?? freeLabel}</span></p>
-          {existing.length > 0 && (
+          {existing.some((m) => m.stage !== "ready") && (
+            <div className="mt-6 rounded-2xl border border-[var(--addon)] bg-surface p-4">
+              <p className="addon-badge">{t.inProgressTitle}</p>
+              <ul className="mt-3 space-y-3">
+                {existing.filter((m) => m.stage !== "ready").map((m) => (
+                  <li key={m.id} className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-sm"><span className="font-semibold">{t.inProgressFor.replace("{name}", m.partnerName)}</span> <span className="text-ink-2">· {t.stages[m.stage].replace(" {when}", "").replace("{when}", "").replace(" · {type} {value}", "")}</span></span>
+                    <Link href={`/match/${m.id}`} className="btn addon-btn !px-5 !py-2 text-sm">{t.continue} →</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {existing.some((m) => m.stage === "ready") && (
             <div className="mt-6">
               <p className="eyebrow">{t.existing}</p>
               <ul className="mt-2 divide-y divide-line">
-                {existing.map((m) => (
+                {existing.filter((m) => m.stage === "ready").map((m) => (
                   <li key={m.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                     <span>{m.partnerName} <span className="text-muted">· {m.stage === "ready" ? t.ready : t.stages[m.stage].replace(" {when}", "").replace("{when}", "")}</span></span>
                     <Link href={`/match/${m.id}`} className="font-semibold text-accent-text hover:underline">{t.open} →</Link>
@@ -67,6 +80,7 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
             </div>
           )}
         </div>
+        {(() => { const busyWithOne = existing.some((m) => m.stage !== "ready"); const form = (
         <form onSubmit={(e) => e.preventDefault()} className="card space-y-3 p-5">
           <p className="eyebrow">1 · {t.stepWho}</p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -92,6 +106,7 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
           {canOrder && price && <p className="text-xs text-muted">{credits >= needed ? t.payWithCredits.replace("{n}", String(needed)).replace("{have}", String(credits)) : t.payByCard.replace("{price}", price.split(" ·")[0])}</p>}
         </form>
+        ); return busyWithOne ? <details className="card p-5"><summary className="cursor-pointer text-sm font-semibold text-accent-text">{t.startAnother}</summary><div className="mt-4">{form}</div></details> : form; })()}
       </div>
     </section>
   );

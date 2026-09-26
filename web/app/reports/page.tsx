@@ -18,7 +18,7 @@ export default async function ReportsPage() {
     const stage = stageOf({ openedAt: m.partnerOpenedAt, startedAt: m.partnerStartedAt, analyses: partner });
     const ready = stage === "ready";
     return {
-      id: m.id, unseen: ready && !m.ownerSeenAt,
+      id: m.id, unseen: ready && !m.ownerSeenAt, unfinished: !ready,
       title: t.match.list.pair.replace("{a}", m.ownerName).replace("{b}", m.partnerName),
       text: ready ? t.match.list.ready : t.match.stages[stage].replace("{when}", when(partner[0]?.created_at ?? m.partnerOpenedAt)).replace(" · {type} {value}", ""),
       status: ready ? t.match.ready : t.match.waiting.replace("{name}", m.partnerName),
@@ -31,6 +31,20 @@ export default async function ReportsPage() {
         <h1 className="font-display text-5xl font-medium">{t.reports.title}</h1>
         <Link href="/record" className="btn">{t.nav.record}</Link>
       </div>
+      {/* Paid couple's reports still waiting for the partner come first: nothing paid for should look lost. */}
+      {matchRows.some((r) => r.unfinished) && (
+        <section className="addon-strip mb-10" aria-label={t.match.unfinishedTitle}>
+          <p className="addon-badge">{t.match.unfinishedTitle}</p>
+          <ul className="mt-3 space-y-3">
+            {matchRows.filter((r) => r.unfinished).map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm"><span className="font-semibold">{r.title}</span> <span className="text-ink-2">· {t.match.unfinishedText.replace("{stage}", r.text)}</span></span>
+                <Link href={`/match/${r.id}`} className="btn addon-btn !px-5 !py-2 text-sm">{t.match.continue} →</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {data.length === 0 ? (
         <p className="card mt-10 p-10 text-center text-ink-2">{t.reports.empty}</p>

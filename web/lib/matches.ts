@@ -27,11 +27,21 @@ const clean = (v: unknown, max: number, what: string) => { const s = typeof v ==
  * unpaid and a purchase is returned for the Stripe Checkout (lib/match-billing.ts), and the partner's link stays
  * closed until the payment lands.
  */
-export async function createMatch(userId: string, input: { analysisId: unknown; ownerName: unknown; partnerName: unknown; withFamily?: unknown }): Promise<{ match: Match; purchase: Awaited<ReturnType<typeof startMatchPurchase>> | null }> {
+export async function createMatch(userId: string, input: { analysisId: unknown; ownerName: unknown; partnerName: unknown; withFamily?: unknown }): Promise<{ match: Match; purchase: Awaited<ReturnType<typeof startMatchPurchase>> | null; reused?: boolean }> {
   const analysisId = typeof input.analysisId === "string" ? input.analysisId : "";
   const analysis = analysisId ? await gateway.getAnalysisFor(userId, analysisId) : null;
   if (!analysis || analysis.status !== "completed" || !analysis.psytype?.length) throw new NotFound("Report not found");
   const ownerName = clean(input.ownerName, 60, "Your name"), partnerName = clean(input.partnerName, 60, "Partner's name");
+
+  // The same couple ordered again from the same report, while the first one isn't finished: reopen it, never charge twice.
+  // (Unpaid: a fresh checkout for that same match. Finished ones may be ordered again: a new recording, a new reading.)
+  const same = (await matchesFor(userId, analysisId)).filter((m) => m.partnerName.trim().toLowerCase() === partnerName.toLowerCase());
+  for (const m of same) {
+    const partner = await partnerAnalyses(m).catch(() => []);
+    if (partner.some((a) => a.status === "completed")) continue;
+    return { match: m, purchase: m.paidAt ? null : await startMatchPurchase(asUser(userId), analysisId, m.id), reused: true };
+  }
+
   const id = crypto.randomUUID();
   const free = await matchIsFree(userId);
   const byCredits = !free && (await chargeMatch(asUser(userId), id, await matchCredits()));

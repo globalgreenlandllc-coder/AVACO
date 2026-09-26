@@ -34,7 +34,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
         <RefreshWhile />
         <div className="relative mx-auto grid h-20 w-20 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
         <p className="leading-relaxed text-ink-2">{t.match.awaitingPayment}</p>
-        <Link href={`/reports/${match.analysisId}`} className="text-sm text-muted hover:text-ink">← {t.report.back}</Link>
+        <Link href={`/reports/${match.analysisId}`} className="text-sm font-semibold text-accent-text hover:underline">← {t.match.backToReport}</Link>
       </div>
     );
   }
@@ -46,6 +46,18 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
 
   // The way the orderer chose in the report: upload the partner's recording themselves, or send the partner a link.
   const uploadFirst = mode === "upload";
+  // Both ways in, side by side at the top: the person can change their mind at any time without losing anything.
+  const tabs = (
+    <div className="space-y-2">
+      <div className="grid gap-2 sm:grid-cols-2" role="tablist">
+        {([["upload", fill(m.modeUpload)], ["invite", fill(m.modeInvite)]] as const).map(([key, label]) => {
+          const on = (key === "upload") === uploadFirst;
+          return <Link key={key} href={`/match/${match.id}?mode=${key}`} role="tab" aria-selected={on} className={`rounded-2xl border px-5 py-4 text-center text-sm font-semibold ${on ? "border-[var(--addon)] bg-[var(--addon)] text-[var(--addon-ink)]" : "border-line bg-surface text-ink-2 hover:border-[var(--addon)]"}`}>{label}</Link>;
+        })}
+      </div>
+      <p className="text-center text-xs text-muted">{m.modeHint}</p>
+    </div>
+  );
   const invite = (
     <section className="card p-7 sm:p-10">
       <p className="addon-badge">{m.eyebrow}</p>
@@ -82,9 +94,9 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
 
   return (
     <div className="space-y-10">
-      <Link href={`/reports/${match.analysisId}`} className="no-print text-sm text-muted hover:text-ink">← {t.report.back}</Link>
+      <Link href={`/reports/${match.analysisId}`} className="no-print inline-block text-sm font-semibold text-accent-text hover:underline">← {m.backToReport}</Link>
       {justPaid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{t.match.paymentConfirmed}</p>}
-      <MatchView initial={view} pollUrl={`/api/match/${match.id}`} waiting={uploadFirst ? upload : invite} side="owner" t={m} />
+      <MatchView initial={view} pollUrl={`/api/match/${match.id}`} waiting={<div className="space-y-6">{tabs}{uploadFirst ? upload : invite}</div>} side="owner" t={m} />
       {partnerReport?.status === "completed" && (
         <section>
           <h2 className="font-display text-4xl font-medium">{m.otherReport.replace("{name}", match.partnerName)}</h2>
