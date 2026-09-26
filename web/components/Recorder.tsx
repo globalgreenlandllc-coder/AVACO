@@ -7,7 +7,9 @@ import type { Dict } from "@/lib/i18n";
 import { AudioError, MAX_SECONDS, MIN_SECONDS, toAnalysisWav } from "@/lib/wav";
 import { Thinking } from "./Thinking";
 
-type Phase = "idle" | "recording" | "recorded" | "sending";
+type Phase = "idle" | "checking" | "recording" | "recorded" | "sending";
+/** Room check: how long we listen before recording, and the average level (RMS, dBFS) above which a room counts as noisy. */
+const ROOM_CHECK_MS = 1500, NOISY_DBFS = -45;
 type ErrorKey = keyof Dict["record"]["errors"];
 
 const RING = 2 * Math.PI * 54;
@@ -34,6 +36,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
+  const [noisy, setNoisy] = useState(false);
   const [clip, setClip] = useState<{ blob: Blob; url: string } | null>(null);
   const [consent, setConsent] = useState(false);
   const [extra, setExtra] = useState(false);
@@ -60,9 +63,12 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     setError(null);
     setRecording(null);
     setConsent(false);
+    setNoisy(false);
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+      // The raw microphone. The browser's noise suppression, echo cancellation and gain control all rewrite the very
+      // things AVOCO measures (breath, pitch movement, loudness dynamics); the same clip scored differently with them on.
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
     } catch {
       setError("mic");
       return;
@@ -75,13 +81,21 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     ctx.createMediaStreamSource(stream).connect(analyser);
     const samples = new Float32Array(analyser.fftSize);
     let frame = 0;
+    let rmsSum = 0, rmsCount = 0;
     const meter = () => {
       analyser.getFloatTimeDomainData(samples);
       const peak = samples.reduce((max, v) => Math.max(max, Math.abs(v)), 0);
+      rmsSum += Math.sqrt(samples.reduce((sum, v) => sum + v * v, 0) / samples.length); rmsCount++;
       setLevel((prev) => prev * 0.7 + Math.min(1, peak * 2.2) * 0.3);
       frame = requestAnimationFrame(meter);
     };
     meter();
+
+    // Room check: listen to the room for a moment before recording. A loud floor means the recording, and the
+    // reading, will be about the room as much as the person; we warn but don't refuse.
+    setPhase("checking");
+    await new Promise((resolve) => setTimeout(resolve, ROOM_CHECK_MS));
+    if (rmsCount > 0 && 20 * Math.log10(rmsSum / rmsCount) > NOISY_DBFS) setNoisy(true);
 
     const chunks: Blob[] = [];
     const startedAt = Date.now();
@@ -188,7 +202,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             <circle cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round"
               strokeDasharray={RING} strokeDashoffset={RING * (1 - ring)} style={{ transition: "stroke-dashoffset 0.25s linear" }} />
           </svg>
-          <button type="button" onClick={recording ? stop : start} disabled={phase === "sending"}
+          <button type="button" onClick={recording ? stop : start} disabled={phase === "sending" || phase === "checking"}
             aria-label={recording ? t.stop : phase === "recorded" ? t.again : t.start}
             className="relative grid h-28 w-28 place-items-center rounded-full bg-accent text-accent-ink shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-50">
             {recording
@@ -200,6 +214,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         <p className="mt-6 font-display text-5xl tabular-nums" aria-live="off">{clock(seconds)}</p>
         <p className="mt-2 min-h-6 text-sm text-ink-2" aria-live="polite">
           {recording ? (seconds >= MAX_SECONDS ? t.maxReached : enough ? t.ready : t.minimum)
+            : phase === "checking" ? t.checking
             : phase === "recorded" ? t.recorded
             : phase === "sending" ? progress
             : t.start}
@@ -215,6 +230,16 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             <p className="text-xs text-muted">{t.uploadHint}</p>
           </div>
         )}
+
+        {(phase === "idle" || phase === "checking") && (
+          <div className="mt-8 max-w-md text-left">
+            <p className="eyebrow">{t.quietTitle}</p>
+            <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-ink-2">
+              {t.quietTips.map((tip) => <li key={tip} className="flex gap-2"><span className="text-accent-text" aria-hidden>·</span><span>{tip}</span></li>)}
+            </ul>
+          </div>
+        )}
+        {noisy && phase !== "idle" && <p role="status" className="mx-auto mt-5 max-w-md rounded-xl border border-accent px-4 py-3 text-sm text-ink-2">{t.noisy}</p>}
       </div>
 
       {(phase === "recorded" || phase === "sending") && clip && (
