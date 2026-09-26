@@ -39,7 +39,7 @@ export function LanguageSwitch({ locale, label, languages, openUp = false }: { l
   return (
     <div ref={root} className="relative">
       <button type="button" aria-label={label} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-2 hover:border-ink-2 hover:text-ink ${pending ? "opacity-60" : ""}`}>
+        className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-2 hover:border-ink-2 hover:text-ink `}>
         <span aria-hidden className="text-sm leading-none">{current?.flag}</span>
         <span lang={current?.code}>{current?.name}</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><path d={openUp ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} /></svg>
