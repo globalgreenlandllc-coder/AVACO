@@ -7,6 +7,7 @@ import { errorResponse, json, requireUser } from "@/lib/api";
 import { asUser, attachStripeSession, getSettings } from "@/lib/billing";
 import { createMatch } from "@/lib/matches";
 import { baseUrl } from "@/lib/page";
+import { checkoutContact } from "@/lib/receipts";
 import { createCheckout, stripeReady } from "@/lib/stripe";
 
 export async function POST(req: Request) {
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
       currency: (await getSettings()).currency,
       successUrl: `${origin}/match/${match.id}?mode=${mode}&paid=1&session={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/reports/${match.analysisId}`,
+      ...(await checkoutContact(user.userId)),
     });
     await attachStripeSession(purchase.id, session.id);
     void asUser;

@@ -147,7 +147,8 @@ export async function clearStripeKeys(): Promise<void> {
   await db().delete(settings).where(eq(settings.key, "stripe"));
 }
 
-export interface CheckoutInput { purchaseId: string; name: string; amountCents: number; currency: string; successUrl: string; cancelUrl: string; email?: string }
+/** `email` fills in (and locks) Checkout's email field: the buyer's sign-in email. `lang` is kept on the payment for the receipt. */
+export interface CheckoutInput { purchaseId: string; name: string; amountCents: number; currency: string; successUrl: string; cancelUrl: string; email?: string | null; lang?: string }
 
 /** Opens a Stripe Checkout session for one purchase and returns where to send the buyer. */
 export async function createCheckout(input: CheckoutInput): Promise<{ id: string; url: string }> {
@@ -166,14 +167,22 @@ export async function createCheckout(input: CheckoutInput): Promise<{ id: string
     cancel_url: input.cancelUrl,
   });
   if (input.email) form.set("customer_email", input.email);
+  if (input.lang) form.set("metadata[lang]", input.lang);
 
-  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+  const request = (idempotencyKey: string) => fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded", "Idempotency-Key": `checkout-${input.purchaseId}` },
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded", "Idempotency-Key": idempotencyKey },
     body: form,
     signal: AbortSignal.timeout(20_000),
   });
-  const body = await res.json().catch(() => ({}));
+  let res = await request(`checkout-${input.purchaseId}`);
+  let body = await res.json().catch(() => ({}));
+  if (!res.ok && input.email && body?.error?.param === "customer_email") {
+    // Stripe refused the sign-in email as given: the buyer types one on the payment page instead of not paying at all.
+    form.delete("customer_email");
+    res = await request(`checkout-${input.purchaseId}-typed-email`);
+    body = await res.json().catch(() => ({}));
+  }
   if (!res.ok || typeof body.url !== "string") {
     console.error("Stripe checkout failed", res.status, body?.error?.type, body?.error?.code);
     throw new Error("Could not start the payment");
@@ -189,6 +198,39 @@ export async function retrieveCheckout(sessionId: string): Promise<{ paid: boole
   const body = await res.json().catch(() => ({}));
   if (!res.ok) return null;
   return { paid: body.payment_status === "paid", amountCents: Number(body.amount_total) || 0, currency: String(body.currency ?? "usd"), purchaseId: body.metadata?.purchase_id ?? body.client_reference_id ?? null };
+}
+
+export interface PaymentDetails {
+  /** The email Checkout collected: the sign-in email we filled in, or what the buyer typed. */
+  email: string | null;
+  lang: string | null;
+  /** Where Checkout sent the buyer back to, whose origin is the site they paid on. */
+  successUrl: string | null;
+  card: { brand: string; last4: string; wallet: string | null } | null;
+  /** Stripe's own receipt page for the charge. */
+  receiptUrl: string | null;
+  amountCents: number | null;
+  currency: string | null;
+}
+
+/** What the receipt needs to know about a paid Checkout session: who, in which language, and with which card. */
+export async function paymentDetails(sessionId: string): Promise<PaymentDetails | null> {
+  const key = (await stripeKeys())?.secretKey;
+  if (!key || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) return null;
+  const res = await fetch(`${STRIPE}/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=payment_intent.latest_charge`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) }).catch(() => null);
+  const body = res?.ok ? await res.json().catch(() => null) : null;
+  if (!body) return null;
+  const charge = body.payment_intent?.latest_charge;
+  const card = charge?.payment_method_details?.card;
+  return {
+    email: body.customer_details?.email ?? body.customer_email ?? null,
+    lang: typeof body.metadata?.lang === "string" ? body.metadata.lang : null,
+    successUrl: typeof body.success_url === "string" ? body.success_url : null,
+    card: card ? { brand: String(card.brand ?? ""), last4: String(card.last4 ?? ""), wallet: card.wallet?.type ?? null } : charge?.payment_method_details?.type ? { brand: String(charge.payment_method_details.type), last4: "", wallet: null } : null,
+    receiptUrl: typeof charge?.receipt_url === "string" ? charge.receipt_url : null,
+    amountCents: Number.isFinite(body.amount_total) ? Number(body.amount_total) : null,
+    currency: typeof body.currency === "string" ? body.currency : null,
+  };
 }
 
 const TOLERANCE_SECONDS = 300;

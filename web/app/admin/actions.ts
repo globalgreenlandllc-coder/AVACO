@@ -7,6 +7,9 @@ import { asUser, asWorkspace, getSettings, grant, saveSettings, type Pack } from
 import { admins, db, promoCodes } from "@/lib/db";
 import { baseUrl } from "@/lib/page";
 import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
+import { clearEmailSettings, saveEmailSettings } from "@/lib/email";
+import { getLocale } from "@/lib/i18n";
+import { sendSampleReceipt } from "@/lib/receipts";
 import { saveMatchPricing } from "@/lib/match-billing";
 import { saveIndustryPrice } from "@/lib/industry-billing";
 import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
@@ -89,6 +92,29 @@ export async function disconnectStripeAction() {
   await requireAdmin();
   await clearStripeKeys();
   revalidatePath("/admin", "layout");
+}
+
+/** Connects the mailbox receipts are sent from: logs in to Google's mail server with it, then stores the password sealed. */
+export async function connectEmailAction(_prev: StripeActionState, form: FormData): Promise<StripeActionState> {
+  const admin = await requireAdmin();
+  const result = await saveEmailSettings({ user: String(form.get("user") ?? ""), pass: String(form.get("pass") ?? ""), fromName: String(form.get("fromName") ?? "") }, admin.email);
+  revalidatePath("/admin", "layout");
+  return result.ok ? { ok: true, message: `Connected. Receipts are sent from ${result.from}.` } : { ok: false, message: result.reason };
+}
+
+export async function disconnectEmailAction() {
+  await requireAdmin();
+  await clearEmailSettings();
+  revalidatePath("/admin", "layout");
+}
+
+/** Sends the admin a sample receipt for one personality type report, at today's price, in the language they are reading. */
+export async function sampleReceiptAction(_prev: StripeActionState): Promise<StripeActionState> {
+  const admin = await requireAdmin();
+  const cfg = await getSettings();
+  const single = cfg.packs.find((p) => p.audience === "user" && p.credits === 1);
+  const result = await sendSampleReceipt(admin.email, await getLocale(), { amountCents: single?.amountCents ?? 900, currency: cfg.currency });
+  return result.ok ? { ok: true, message: `Sent to ${admin.email}. Check the inbox (and the spam folder the first time).` } : { ok: false, message: result.reason };
 }
 
 export async function connectDeeplAction(_prev: StripeActionState, form: FormData): Promise<StripeActionState> {

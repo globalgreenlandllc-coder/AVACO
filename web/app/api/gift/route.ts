@@ -8,6 +8,7 @@ import { attachStripeSession, getSettings } from "@/lib/billing";
 import { createGift, startGiftPurchase } from "@/lib/gifts";
 import { getDict } from "@/lib/i18n";
 import { baseUrl } from "@/lib/page";
+import { checkoutContact } from "@/lib/receipts";
 import { createCheckout, stripeReady } from "@/lib/stripe";
 
 export async function POST(req: Request) {
@@ -30,6 +31,7 @@ export async function POST(req: Request) {
       currency: purchase.currency,
       successUrl: `${origin}/gift/${gift.id}?paid=1&session={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/gift/${gift.id}`,
+      ...(await checkoutContact(user.userId)),
     });
     await attachStripeSession(purchase.id, session.id);
     return json({ id: gift.id, url: session.url }, 201);

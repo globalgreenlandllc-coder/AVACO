@@ -4,6 +4,7 @@ import { attachStripeSession } from "@/lib/billing";
 import { giftFor, startGiftPurchase } from "@/lib/gifts";
 import { getDict } from "@/lib/i18n";
 import { baseUrl } from "@/lib/page";
+import { checkoutContact } from "@/lib/receipts";
 import { createCheckout, stripeReady } from "@/lib/stripe";
 
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     const session = await createCheckout({
       purchaseId: purchase.id, name: `AVOCO · ${t.gift.nav}`, amountCents: purchase.amountCents, currency: purchase.currency,
       successUrl: `${origin}/gift/${gift.id}?paid=1&session={CHECKOUT_SESSION_ID}`, cancelUrl: `${origin}/gift/${gift.id}`,
+      ...(await checkoutContact(user.userId)),
     });
     await attachStripeSession(purchase.id, session.id);
     return json({ url: session.url });

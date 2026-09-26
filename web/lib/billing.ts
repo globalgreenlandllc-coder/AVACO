@@ -9,6 +9,7 @@ import { and, count, eq, gte, inArray, isNull, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
 import { isOpenVisitor } from "./visitor";
 import { retrieveCheckout } from "./stripe";
+import { sendReceiptLater } from "./receipts";
 import { creditLedger, db, gifts, industryAccess, matches, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
 export class NoCredits extends Error {}
@@ -140,6 +141,7 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
     const fresh = await post(owner, { delta: 0, reason: "purchase", ref: p.id, amountCents: paid.amountCents, currency: paid.currency, note: `gift ${p.giftId}` });
     await db().update(purchases).set({ status: "paid", paidAt: new Date() }).where(and(eq(purchases.id, p.id), eq(purchases.status, "pending")));
     await db().update(gifts).set({ status: "paid", paidAt: new Date() }).where(and(eq(gifts.id, p.giftId), eq(gifts.status, "pending")));
+    if (fresh) sendReceiptLater(p.id);
     return fresh ? "credited" : "already";
   }
   const fresh = await post(owner, { delta: p.credits, reason: "purchase", ref: p.id, amountCents: paid.amountCents, currency: paid.currency, note: p.pack });
@@ -150,6 +152,8 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
     await unlock(owner.id, p.unlockAnalysisId).catch(() => {});
     if (p.unlockIndustry) await unlockIndustry(owner.id, p.unlockAnalysisId, p.unlockIndustry).catch(() => {});
   }
+  // Only the call that recorded the payment sends the receipt, so the webhook and the return page never send two.
+  if (fresh) sendReceiptLater(p.id);
   return fresh ? "credited" : "already";
 }
 

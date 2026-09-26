@@ -25,7 +25,12 @@ export async function getLocale(): Promise<Locale> {
 
 export async function getDict(): Promise<{ locale: Locale; t: Dict }> {
   const locale = await getLocale();
-  return { locale, t: handWritten[locale] ?? (await translatedDict(locale)) };
+  return { locale, t: await dictFor(locale) };
+}
+
+/** The dictionary of a given language, outside a visitor's request (an email written from a webhook). */
+export async function dictFor(locale: Locale): Promise<Dict> {
+  return handWritten[locale] ?? (await translatedDict(locale));
 }
 
 const DATE: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" };

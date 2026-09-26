@@ -4,6 +4,7 @@ import { typesEn } from "./types-en";
 import { deepEn } from "./deep-en";
 import { legalEn } from "./legal-en";
 import { giftEn } from "./gift-en";
+import { receiptEn } from "./receipt-en";
 export const en = {
   brand: "AVOCO",
   nav: { record: "New recording", reports: "My reports", signIn: "Sign in", start: "Get started", sample: "Sample report" },
@@ -246,6 +247,7 @@ export const en = {
   },
   legal: legalEn,
   gift: giftEn,
+  receipt: receiptEn,
   partners: {
     eyebrow: "Partner access",
     title: "Test the AVOCO report",

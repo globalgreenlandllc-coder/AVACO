@@ -85,7 +85,7 @@ export const legalEn: LegalDict = {
         bullets: [
           "To analyse your voice and build your report: your explicit consent, given by ticking the box before each analysis. You withdraw it by deleting the report; the analysis itself cannot be undone, but its results and the recording are gone.",
           "To run your account, keep your reports, and show them to you: performance of our agreement with you (the terms of service).",
-          "To take payments, keep accounts and answer support questions: performance of the agreement and our legal obligations to keep accounting records.",
+          "To take payments, email you a receipt for each one, keep accounts and answer support questions: performance of the agreement and our legal obligations to keep accounting records.",
           "To keep the service secure and prevent abuse (rate limits, logs, blocking misuse): our legitimate interest in running a safe service, which does not override your rights.",
           "To understand how the product is used, in aggregate: our legitimate interest, using anonymous statistics only.",
           "Nothing else. We do not use your recordings to train models, we do not build advertising profiles, and we do not sell or rent personal data.",
@@ -111,6 +111,7 @@ export const legalEn: LegalDict = {
             ["Neon", "The database", "Accounts' numbers, reports, workspaces, credits", "United States (AWS, N. Virginia)"],
             ["Clerk", "Sign-up and sign-in", "Your email, name, sign-in method and session", "United States"],
             ["Stripe", "Card payments", "Your email and the purchase; your card details go to Stripe only", "United States"],
+            ["Google", "Sends our email, such as payment receipts", "Your email address and the receipt", "United States"],
           ],
         },
         after: [

@@ -10,6 +10,7 @@ import { industryNames } from "@/lib/industry-chapter";
 import { INDUSTRY_PACK, startIndustryPurchase } from "@/lib/industry-billing";
 import { isIndustry } from "@/lib/industries";
 import { baseUrl } from "@/lib/page";
+import { checkoutContact } from "@/lib/receipts";
 import { createCheckout, stripeReady } from "@/lib/stripe";
 import { requireMember } from "@/lib/workspaces";
 
@@ -43,6 +44,8 @@ export async function POST(req: Request) {
       // Stripe fills in {CHECKOUT_SESSION_ID}; the page the buyer lands on confirms the payment itself instead of waiting for the webhook.
       successUrl: `${origin}${back}?paid=1&session={CHECKOUT_SESSION_ID}${withIndustry}`,
       cancelUrl: `${origin}${back}${industry ? `?industry=${industry}` : ""}`,
+      // The buyer's sign-in email, filled in on the payment page, and their language: the receipt goes there, in that language.
+      ...(await checkoutContact(user.userId)),
     });
     await attachStripeSession(purchase.id, session.id);
     return json({ url: session.url });

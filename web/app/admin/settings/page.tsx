@@ -1,17 +1,20 @@
 import { CopyField } from "@/components/CopyField";
+import { EmailConnect, SampleReceipt } from "@/components/EmailConnect";
 import { KeyConnect } from "@/components/KeyConnect";
 import { LanguageBuilder } from "@/components/LanguageBuilder";
 import { LanguageBuilderAll } from "@/components/LanguageBuilderAll";
 import { StripeConnect } from "@/components/StripeConnect";
 import { listAdmins, listPromoCodes, requireAdmin } from "@/lib/admin";
 import { getSettings } from "@/lib/billing";
+import { emailStatus } from "@/lib/email";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
+import { LEGAL } from "@/lib/legal";
 import { industryPriceCents } from "@/lib/industry-billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { baseUrl } from "@/lib/page";
 import { stripeStatus } from "@/lib/stripe";
 import { allProgress, deeplStatus, dictionaryCharacters } from "@/lib/translate";
-import { addAdminAction, connectDeeplAction, createPromoAction, disconnectDeeplAction, disconnectStripeAction, removeAdminAction, removeLanguageAction, saveSettingsAction, togglePromoAction } from "../actions";
+import { addAdminAction, connectDeeplAction, createPromoAction, disconnectDeeplAction, disconnectEmailAction, disconnectStripeAction, removeAdminAction, removeLanguageAction, saveSettingsAction, togglePromoAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +22,7 @@ const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm";
 const NAMES: Record<string, string> = { one: "Single report", three: "Three reports", ten: "Ten reports", team25: "Team 25", team100: "Team 100", team500: "Team 500" };
 
 export default async function AdminSettings() {
-  const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents, matchCents, matchN] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents(), matchPriceCents(), matchCredits()]);
+  const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents, matchCents, matchN, mail] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents(), matchPriceCents(), matchCredits(), emailStatus()]);
   // The personality type report is sold as the one-credit pack for people; its price field edits that pack.
   const typeCents = cfg.packs.find((p) => p.audience === "user" && p.credits === 1)?.amountCents ?? 900;
   const envAdmins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
@@ -58,6 +61,39 @@ export default async function AdminSettings() {
             </ol>
             {!stripe.canStore && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">The server has no SETTINGS_SECRET yet, so pasted keys can't be stored safely. Ask your developer to set it.</p>}
             <StripeConnect canStore={stripe.canStore} />
+          </>
+        )}
+      </section>
+
+      <section className="card space-y-5 p-7 sm:p-9">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-3xl font-medium">Email receipts</h2>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${mail.connected ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{mail.connected ? "Sending" : "Not connected"}</span>
+        </div>
+        <p className="text-sm leading-relaxed text-ink-2">
+          After every card payment the buyer gets a receipt: what they bought, the amount, the card, a button straight to what they paid for, and Stripe&apos;s own receipt.
+          It goes to the email they sign in with (for a company purchase, the email of the person who paid), in the language they were using.
+        </p>
+        {mail.connected ? (
+          <>
+            <p className="text-sm leading-relaxed text-ink-2">
+              Sent from <span className="font-semibold text-ink">{mail.fromName} &lt;{mail.from}&gt;</span>; replies go to <span className="font-semibold text-ink">{LEGAL.support}</span>
+              {mail.source === "portal" && mail.savedAt ? ` · connected by ${mail.savedBy} on ${mail.savedAt.slice(0, 10)}` : mail.source === "environment" ? " · set in the server environment" : ""}.
+            </p>
+            <div className="flex flex-wrap items-center gap-4">
+              <SampleReceipt />
+              {mail.source === "portal" && <form action={disconnectEmailAction}><button type="submit" className="btn btn-quiet btn-danger">Disconnect mailbox</button></form>}
+            </div>
+          </>
+        ) : (
+          <>
+            <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ink-2">
+              <li>Receipts are sent through Google, which already runs the mail of <span className="font-mono">{LEGAL.site}</span>, so they arrive from your own address and don&apos;t land in spam. Choose the mailbox they come from, for example <span className="font-mono">{LEGAL.support}</span>.</li>
+              <li>Signed in to Google as that mailbox, turn on <span className="font-semibold text-ink">2-Step Verification</span>, then open <span className="font-mono">myaccount.google.com/apppasswords</span> and create an app password called <span className="font-semibold text-ink">AVOCO receipts</span>. Google shows 16 letters once.</li>
+              <li>Paste the mailbox and those letters below. The server logs in with them to check, then stores the password encrypted; it is never shown again. The first sample may take a minute.</li>
+            </ol>
+            {!mail.canStore && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">The server has no SETTINGS_SECRET yet, so the password can&apos;t be stored safely. Ask your developer to set it.</p>}
+            <EmailConnect canStore={mail.canStore} suggested={LEGAL.support} />
           </>
         )}
       </section>
