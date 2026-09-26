@@ -25,7 +25,11 @@ export async function grantAction(form: FormData) {
 export async function saveSettingsAction(form: FormData) {
   await requireAdmin();
   const current = await getSettings();
-  const packs: Pack[] = current.packs.map((p) => ({ ...p, credits: Number(form.get(`credits:${p.id}`)) || p.credits, amountCents: Math.round(Number(form.get(`price:${p.id}`)) * 100) || p.amountCents }));
+  let packs: Pack[] = current.packs.map((p) => ({ ...p, credits: Number(form.get(`credits:${p.id}`)) || p.credits, amountCents: Math.round(Number(form.get(`price:${p.id}`)) * 100) || p.amountCents }));
+  // "Personality type report, per report" is the one-credit pack for people: a changed value there wins over the table.
+  const single = current.packs.find((p) => p.audience === "user" && p.credits === 1);
+  const typeCents = Math.round(Number(form.get("typePrice")) * 100);
+  if (single && typeCents >= 50 && typeCents !== single.amountCents) packs = packs.map((p) => (p.id === single.id ? { ...p, amountCents: typeCents } : p));
   await saveSettings({
     enabled: form.get("enabled") === "on",
     currency: String(form.get("currency") ?? current.currency).toLowerCase(),
