@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { PayWall } from "@/components/PayWall";
 import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
-import { asUser, balance, getSettings, hasFullAccess, noteResult } from "@/lib/billing";
+import { asUser, balance, getSettings, hasFullAccess, noteResult, openIndustries } from "@/lib/billing";
+import { isAdminUser } from "@/lib/admin";
+import { industryNames } from "@/lib/industry-chapter";
 import { fieldFits } from "@/lib/fit";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
@@ -28,5 +30,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     paywall = <PayWall analysisId={analysis.id} credits={credits} fromPrice={cheapest ? money(cheapest.amountCents, cfg.currency, locale) : ""} t={t.billing} />;
   }
 
-  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} />;
+  // The industry chapter: free for admins and while billing is off, otherwise one credit per industry.
+  let industry: React.ComponentProps<typeof ReportView>["industry"];
+  if (full && analysis.status === "completed") {
+    const [cfg, admin, unlocked, credits] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId))]);
+    const free = !cfg.enabled || admin;
+    industry = { industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: free ? undefined : "/api/billing/unlock-industry", unlocked, credits };
+  }
+
+  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} />;
 }

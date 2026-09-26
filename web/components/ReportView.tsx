@@ -8,6 +8,7 @@ import type { Dict } from "@/lib/i18n";
 import { buildReportFile, saveFile } from "@/lib/export";
 import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
 import { Bars } from "./Bars";
+import { Industry, type IndustryProps } from "./Industry";
 import { CountUp, Reveal } from "./Motion";
 import { Profile } from "./Profile";
 import { Radar } from "./Radar";
@@ -41,11 +42,13 @@ export interface ReportViewProps {
   lead?: React.ReactNode;
   /** Leaves out the emotional-state section (a workspace setting). */
   hideEmotions?: boolean;
+  /** The "narrow it to your industry" chapter; absent where it isn't offered. */
+  industry?: Omit<IndustryProps, "t" | "analysisId">;
   /** A free preview: the cover and the summary, then this (the paywall) in place of everything else. */
   locked?: React.ReactNode;
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -256,6 +259,12 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
             ))}
           </ol>
           <p className="mt-8 border-t border-line pt-6 text-xs leading-relaxed text-muted">{fit.note}</p>
+        </Reveal>
+      )}
+
+      {industry && psy.length === 8 && (
+        <Reveal as="section" id="industry" className="scroll-mt-24">
+          <Industry {...industry} analysisId={report.id} t={t.industry} />
         </Reveal>
       )}
 

@@ -75,6 +75,17 @@ included) the partner paths redirect to the partner host, so the page never appe
 (`proxy.ts`). `PARTNER_DAILY_LIMIT` (default 100 recordings a day across everyone) caps the AVOCO usage an open
 page can cause; `PARTNER_HOST` changes the host. Logic in `lib/partners.ts`.
 
+## Industry chapter (paid add-on)
+
+"Narrow it to your industry" at the end of a full report: the person picks one of 24 industries and gets that
+industry's roles ranked for their profile, a path (start here → grow into → aim for), their own angle and what
+the industry rewards. The catalogue (`lib/industries.ts`: role keys, levels, type weights) is language-free;
+names and texts are in `lib/i18n/industries-en.ts` and `-ru.ts`, and a test keeps the three in step. Scores are
+weighted averages of the eight type scores, the same idea as `lib/fit.ts`. One credit opens one industry on one
+report (`unlockIndustry`, ledger reason `industry`, table `industry_access`); admins and the partner page get it
+free, and so does everyone while billing is off. The chapter text only leaves the server once it is open
+(`/api/analyses/:id/industry/:key` answers 402 until then).
+
 ## Where things are
 
 ```

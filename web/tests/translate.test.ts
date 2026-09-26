@@ -115,16 +115,16 @@ describe("adding a language", () => {
   it("translates again only what changed, and removal takes the language away", async () => {
     stubDeepl();
     await saveDeeplKey(KEY, "dima");
-    let p = await buildLanguage("de", "dima", 2000);
+    let p = await buildLanguage("de", "dima", 5000);
     expect(p.done).toBe(p.total);
     // pretend one English string changed: its stored hash no longer matches the source
     await db.update(schema.translations).set({ sourceHash: "stale", text: "old" }).where(and(eq(schema.translations.lang, "de"), eq(schema.translations.path, "home.title")));
     forgetTranslations();
     expect((await languageProgress("de")).done).toBe(p.total - 1);
-    p = await buildLanguage("de", "dima", 2000);
+    p = await buildLanguage("de", "dima", 5000);
     expect(p.done).toBe(p.total);
     expect((await translatedDict("de")).home.title).toBe(`«${en.home.title}»`);
-    expect(await buildLanguage("de", "dima", 2000)).toEqual(p); // nothing left to do
+    expect(await buildLanguage("de", "dima", 5000)).toEqual(p); // nothing left to do
     await removeLanguage("de");
     expect((await availableLanguages()).some((l) => l.code === "de")).toBe(false);
     expect((await languageProgress("de")).done).toBe(0);

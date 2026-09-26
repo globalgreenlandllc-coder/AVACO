@@ -7,7 +7,7 @@
 import "server-only";
 import { and, count, eq, gte, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
-import { creditLedger, db, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
+import { creditLedger, db, industryAccess, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
 
 export class NoCredits extends Error {}
 export class BadCode extends Error {}
@@ -156,6 +156,7 @@ export async function noteSelfRecording(userId: string, analysisId: string): Pro
 export async function forgetReport(analysisId: string): Promise<void> {
   await db().delete(selfRecordings).where(eq(selfRecordings.analysisId, analysisId));
   await db().delete(reportAccess).where(eq(reportAccess.analysisId, analysisId));
+  await db().delete(industryAccess).where(eq(industryAccess.analysisId, analysisId));
 }
 
 /** Full, or preview only? Admins always get the full report; reports made before billing was switched on (no recording row) stay open. */
@@ -183,6 +184,42 @@ export async function previewsLeft(userId: string): Promise<number> {
     .leftJoin(reportAccess, eq(reportAccess.analysisId, selfRecordings.analysisId))
     .where(and(eq(selfRecordings.userId, userId), gte(selfRecordings.createdAt, since), sql`${reportAccess.analysisId} is null`));
   return Math.max(0, cfg.freePreviewsPer30Days - (row?.n ?? 0));
+}
+
+// ---------- industry chapters (lib/industries.ts): one credit each, per report ----------
+
+const industryRef = (analysisId: string, industry: string) => `${analysisId}:${industry}`;
+
+/** Takes one credit for an industry chapter. Idempotent per report and industry, like charge(). */
+export async function chargeIndustry(owner: Owner, analysisId: string, industry: string): Promise<boolean> {
+  const ref = industryRef(analysisId, industry);
+  const [already] = await db().select({ id: creditLedger.id }).from(creditLedger)
+    .where(and(eq(creditLedger.ownerKind, owner.kind), eq(creditLedger.ownerId, owner.id), eq(creditLedger.reason, "industry"), eq(creditLedger.ref, ref)));
+  if (already) return true;
+  if ((await balance(owner)) < 1) return false;
+  await post(owner, { delta: -1, reason: "industry", ref });
+  return true;
+}
+
+/** Opens an industry chapter on a person's own report; admins pay nothing. Throws NoCredits when there is nothing to spend. */
+export async function unlockIndustry(userId: string, analysisId: string, industry: string): Promise<void> {
+  const admin = await isAdminUser(userId);
+  if (!admin && !(await chargeIndustry(asUser(userId), analysisId, industry))) throw new NoCredits("No credits");
+  await db().insert(industryAccess).values({ analysisId, industry, ownerKind: "user", ownerId: userId, source: admin ? "admin" : "credit" }).onConflictDoNothing();
+}
+
+/** Industries already open on a report. */
+export async function openIndustries(analysisId: string): Promise<string[]> {
+  const rows = await db().select({ industry: industryAccess.industry }).from(industryAccess).where(eq(industryAccess.analysisId, analysisId));
+  return rows.map((r) => r.industry);
+}
+
+/** May this person read this industry chapter? Free when billing is off or for admins; otherwise it must have been opened. */
+export async function hasIndustryAccess(userId: string, analysisId: string, industry: string): Promise<boolean> {
+  if (!(await getSettings()).enabled || (await isAdminUser(userId))) return true;
+  const [row] = await db().select({ industry: industryAccess.industry }).from(industryAccess)
+    .where(and(eq(industryAccess.analysisId, analysisId), eq(industryAccess.industry, industry), eq(industryAccess.ownerId, userId)));
+  return Boolean(row);
 }
 
 // ---------- statistics feed ----------

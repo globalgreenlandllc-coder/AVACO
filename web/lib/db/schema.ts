@@ -88,7 +88,7 @@ export type Recording = typeof recordings.$inferSelect;
 
 /** Who holds credits: a person (their Clerk user id) or a company (workspace id). */
 export type OwnerKind = "user" | "workspace";
-export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "refund";
+export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "refund";
 
 /**
  * Every movement of credits, and the only source of truth for a balance (the sum of delta).
@@ -161,6 +161,20 @@ export const reportAccess = pgTable("report_access", {
   source: text("source").$type<"credit" | "free" | "admin">().notNull(),
   unlockedAt: ts("unlocked_at").notNull().defaultNow(),
 });
+
+/** Industry chapters opened on a report (lib/industries.ts). One row per report and industry. */
+export const industryAccess = pgTable(
+  "industry_access",
+  {
+    analysisId: uuid("analysis_id").notNull(),
+    industry: text("industry").notNull(),
+    ownerKind: text("owner_kind").$type<OwnerKind>().notNull(),
+    ownerId: text("owner_id").notNull(),
+    source: text("source").$type<"credit" | "free" | "admin">().notNull(),
+    unlockedAt: ts("unlocked_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.analysisId, t.industry] })],
+);
 
 /** What a finished report said, for statistics: filled in the first time a completed report is read. */
 export const reportStats = pgTable("report_stats", {

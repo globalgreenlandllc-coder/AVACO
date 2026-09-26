@@ -21,7 +21,7 @@ export const billingRu: Widen<typeof billingEn> = {
   redeem: "Применить",
   redeemed: "Добавлено кредитов: {n}.",
   history: "История",
-  reasons: { purchase: "Покупка", grant: "Начислено AVOCO", promo: "Промокод", trial: "Приветственные кредиты", report: "Открыт отчёт", refund: "Возврат" },
+  reasons: { purchase: "Покупка", grant: "Начислено AVOCO", promo: "Промокод", trial: "Приветственные кредиты", report: "Открыт отчёт", industry: "Открыта отраслевая глава", refund: "Возврат" },
   noHistory: "Пока ничего нет.",
   thanks: "Оплата получена. Кредиты уже на балансе.",
   pending: "Оплата получена. Кредиты появятся через мгновение; обновите страницу.",
