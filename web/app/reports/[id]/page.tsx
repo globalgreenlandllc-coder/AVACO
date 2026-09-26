@@ -16,6 +16,8 @@ import { stripeReady } from "@/lib/stripe";
 import { isOpenVisitor, visitorId } from "@/lib/visitor";
 import { agreementBand } from "@/lib/consensus";
 import { profileFor } from "@/lib/profile";
+import { MATCH_CREDITS, matchIsFree } from "@/lib/billing";
+import { matchesFor, partnerAnalyses } from "@/lib/matches";
 
 /** `paid`, `session` and `industry` are what Stripe Checkout sends the buyer back with (see api/billing/checkout). */
 type Query = { paid?: string; session?: string; industry?: string };
@@ -85,5 +87,15 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     };
   }
 
-  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={takes} />;
+  // The relationship match add-on: the couple's report, ordered from this report.
+  let match: React.ComponentProps<typeof ReportView>["match"];
+  if (full && analysis.status === "completed") {
+    const [free, existing, cfg, credits] = await Promise.all([matchIsFree(userId), matchesFor(userId, analysis.id), getSettings(), balance(asUser(userId))]);
+    const cheapest = cfg.packs.filter((p) => p.audience === "user").map((p) => Math.round(p.amountCents / p.credits)).sort((a, b) => a - b)[0];
+    const price = free ? null : `${t.match.price.replace("{n}", String(MATCH_CREDITS))}${cheapest ? ` · ${money(cheapest * MATCH_CREDITS, cfg.currency, locale)}` : ""}`;
+    const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, status: (p.some((x) => x.status === "completed") ? "ready" : p.length ? "processing" : "waiting") as "ready" | "processing" | "waiting" }; }));
+    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(MATCH_CREDITS)) : t.match.free, credits, canOrder: Boolean(free) || credits >= MATCH_CREDITS, existing: statuses };
+  }
+
+  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={takes} match={match} />;
 }
