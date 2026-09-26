@@ -88,7 +88,7 @@ export type Recording = typeof recordings.$inferSelect;
 
 /** Who holds credits: a person (their Clerk user id) or a company (workspace id). */
 export type OwnerKind = "user" | "workspace";
-export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "refund";
+export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "match" | "refund";
 
 /**
  * Every movement of credits, and the only source of truth for a balance (the sum of delta).
@@ -176,6 +176,26 @@ export const industryAccess = pgTable(
     unlockedAt: ts("unlocked_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.analysisId, t.industry] })],
+);
+
+/** A relationship match (lib/match.ts): the orderer's report, the partner's private link, and the payment. The partner's
+ *  recordings live in the gateway under "m:<id>"; the match is ready once one of them has completed. */
+export const matches = pgTable(
+  "matches",
+  {
+    id: uuid("id").primaryKey(),
+    ownerKind: text("owner_kind").$type<OwnerKind>().notNull(),
+    ownerId: text("owner_id").notNull(),
+    analysisId: uuid("analysis_id").notNull(),
+    ownerName: text("owner_name").notNull(),
+    partnerName: text("partner_name").notNull(),
+    partnerToken: text("partner_token").notNull().unique(),
+    withFamily: boolean("with_family").notNull().default(false),
+    source: text("source").$type<"credit" | "free" | "admin">().notNull(),
+    partnerConsentAt: ts("partner_consent_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("matches_owner_idx").on(t.ownerKind, t.ownerId, t.createdAt.desc())],
 );
 
 /** What a finished report said, for statistics: filled in the first time a completed report is read. */

@@ -17,7 +17,7 @@ export const billingEn = {
   redeem: "Apply",
   redeemed: "{n} credits added.",
   history: "History",
-  reasons: { purchase: "Purchase", grant: "Added by AVOCO", promo: "Promo code", trial: "Welcome credits", report: "Report opened", industry: "Industry chapter opened", refund: "Refund" },
+  reasons: { purchase: "Purchase", grant: "Added by AVOCO", promo: "Promo code", trial: "Welcome credits", report: "Report opened", industry: "Industry chapter opened", match: "Relationship match ordered", refund: "Refund" },
   noHistory: "Nothing yet.",
   thanks: "Payment received. Your credits are here.",
   pending: "Payment received. Your credits will appear in a moment; refresh this page.",

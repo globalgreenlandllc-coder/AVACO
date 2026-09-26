@@ -9,6 +9,7 @@ import { buildReportFile, saveFile } from "@/lib/export";
 import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
 import { Bars } from "./Bars";
 import { Industry, type IndustryProps } from "./Industry";
+import { MatchAddon, type MatchAddonProps } from "./MatchAddon";
 import { CountUp, Reveal } from "./Motion";
 import { Profile } from "./Profile";
 import { Radar } from "./Radar";
@@ -46,11 +47,13 @@ export interface ReportViewProps {
   takes?: { n: number; band: "high" | "medium" | "low"; pct: number; leader: string; thisRecording: { name: string; value: number } | null; recordings: Array<{ id: string; date: string; name: string; value: number; current: boolean }> };
   /** The "narrow it to your industry" chapter; absent where it isn't offered. */
   industry?: Omit<IndustryProps, "t" | "analysisId">;
+  /** The relationship-match add-on; absent where it isn't offered. */
+  match?: Omit<MatchAddonProps, "t" | "analysisId">;
   /** A free preview: the cover and the summary, then this (the paywall) in place of everything else. */
   locked?: React.ReactNode;
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -155,6 +158,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
       {/* The industry add-on: sold and shown in this one card above the report, never inside it. */}
       {industry && psy.length === 8 && !isLocked && <Industry {...industry} analysisId={report.id} t={t.industry} printSlot={slot} />}
+      {match && psy.length === 8 && !isLocked && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
 
       {top && (
         <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">

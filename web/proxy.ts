@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 // Recording, reports and the API need a signed-in user. The landing page and sign-in are public.
 // Participant links (/r, /s), their APIs and the company API carry their own credentials, so they stay public.
-const PROTECTED = ["/record", "/reports", "/w", "/join", "/credits", "/admin", "/api/upload-token", "/api/analyses", "/api/w", "/api/billing", "/api/admin"];
+const PROTECTED = ["/record", "/reports", "/match", "/w", "/join", "/credits", "/admin", "/api/upload-token", "/api/analyses", "/api/match", "/api/w", "/api/billing", "/api/admin"];
 
 // The partner page lives on its own free Vercel hosts (the same list as lib/partners.ts, which the edge runtime
 // can't import). There, "/" is the partner page; anywhere else, the partner paths send the visitor to the first

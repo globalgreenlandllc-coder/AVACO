@@ -252,6 +252,26 @@ export async function hasIndustryAccess(userId: string, analysisId: string, indu
   return Boolean(row);
 }
 
+// ---------- relationship match (lib/matches.ts): MATCH_CREDITS, once per match ----------
+
+export const MATCH_CREDITS = 2;
+
+/** Takes the match's credits. Idempotent per match, like charge(). */
+export async function chargeMatch(owner: Owner, matchId: string): Promise<boolean> {
+  const [already] = await db().select({ id: creditLedger.id }).from(creditLedger)
+    .where(and(eq(creditLedger.ownerKind, owner.kind), eq(creditLedger.ownerId, owner.id), eq(creditLedger.reason, "match"), eq(creditLedger.ref, matchId)));
+  if (already) return true;
+  if ((await balance(owner)) < MATCH_CREDITS) return false;
+  await post(owner, { delta: -MATCH_CREDITS, reason: "match", ref: matchId });
+  return true;
+}
+
+/** Is a match free for this person? Billing off, an admin, or an open-host visitor. */
+export async function matchIsFree(userId: string): Promise<"free" | "admin" | null> {
+  if (isOpenVisitor(userId) || !(await getSettings()).enabled) return "free";
+  return (await isAdminUser(userId)) ? "admin" : null;
+}
+
 // ---------- statistics feed ----------
 
 export async function noteResult(analysisId: string, scope: "self" | "workspace", leadingType: string | undefined, topField: string | undefined): Promise<void> {

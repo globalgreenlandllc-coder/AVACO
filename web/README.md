@@ -85,6 +85,18 @@ Clerk on that host at all: `proxy.ts` sets an anonymous cookie, `lib/visitor.ts`
 (`hasFullAccess`, `previewsLeft`, `hasIndustryAccess`). The account and billing pages redirect to `/` there.
 `OPEN_HOSTS` (comma-separated) changes the hosts. The main domain is unaffected.
 
+## Relationship match (paid add-on)
+
+From a full report a person orders a couple's report: they give both first names, pay `MATCH_CREDITS` (2), and get a
+private link and QR for the partner (`/m/<token>`). The partner records or uploads on that link with no account,
+sees their own full report there, and both then see the match: a score, a diplomatic verdict with reasons, nine
+areas (romance, warmth, communication, home, providing, ambition, fun, loyalty, optionally family) each with who
+brings what and where the friction is, the roles in the couple, and today's tone. The orderer may instead upload a
+recording of the partner, attesting they agreed. Rules in `lib/match.ts` (the Catalyst compatibility row is AVOCO's
+official table; the rest is the platform's reading), words in `lib/i18n/match-*.ts`, orders in `lib/matches.ts`
+(table `matches`; the partner's recordings live in the gateway under `m:<matchId>`). Both profiles are consensus
+profiles across recordings. Free for admins, on the open host and while billing is off.
+
 ## Industry chapter (paid add-on)
 
 "Narrow it to your industry" at the end of a full report: the person picks one of 24 industries and gets that
