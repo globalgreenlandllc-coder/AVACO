@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 
 export interface MatchAddonProps {
@@ -25,11 +25,12 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
   const [withFamily, setWithFamily] = useState(false);
   const [busy, setBusy] = useState<"upload" | "invite" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const ready = ownerName.trim() && partnerName.trim();
+  const ownerRef = useRef<HTMLInputElement>(null), partnerRef = useRef<HTMLInputElement>(null);
   const who = partnerName.trim() || "…";
 
   /** Both ways in create (and pay for) the match; the match page then opens on the chosen way. */
   async function order(mode: "upload" | "invite") {
+    if (!ownerName.trim() || !partnerName.trim()) { setError(t.namesFirst); (ownerName.trim() ? partnerRef : ownerRef).current?.focus(); return; }
     setBusy(mode); setError(null);
     const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily }) }).catch(() => null);
     if (res?.status === 201) { const { id } = await res.json(); router.push(`/match/${id}?mode=${mode}`); return; }
@@ -61,20 +62,24 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, canOrder, cr
           )}
         </div>
         <form onSubmit={(e) => e.preventDefault()} className="card space-y-3 p-5">
-          <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
-          <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
+          <p className="eyebrow">1 · {t.stepWho}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input ref={ownerRef} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
+            <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input ref={partnerRef} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
+          </div>
           <label className="flex items-center gap-2 text-sm text-ink-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--addon)]" />{t.withFamily}</label>
+          <p className="eyebrow pt-2">2 · {t.stepHow.replace("{name}", who)}</p>
           {canOrder ? (
-            <div className="grid gap-3 pt-1 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-line p-3">
                 <p className="text-sm font-semibold">{t.haveRecording}</p>
                 <p className="mt-1 min-h-16 text-xs leading-relaxed text-ink-2">{t.haveRecordingText.replace("{name}", who)}</p>
-                <button type="button" className="btn addon-btn mt-3 w-full" disabled={Boolean(busy) || !ready} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
+                <button type="button" className="btn addon-btn mt-3 w-full" disabled={Boolean(busy)} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
               </div>
               <div className="rounded-xl border border-line p-3">
                 <p className="text-sm font-semibold">{t.noRecording}</p>
                 <p className="mt-1 min-h-16 text-xs leading-relaxed text-ink-2">{t.noRecordingText.replace("{name}", who)}</p>
-                <button type="button" className="btn btn-quiet mt-3 w-full" disabled={Boolean(busy) || !ready} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta}</button>
+                <button type="button" className="btn btn-quiet mt-3 w-full" disabled={Boolean(busy)} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta.replace("{name}", who)}</button>
               </div>
             </div>
           ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn addon-btn w-full">{t.getCredits} · {t.needCredits.replace("{n}", "2")}</Link>}

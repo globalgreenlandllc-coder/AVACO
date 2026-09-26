@@ -139,6 +139,22 @@ export default async function Home() {
         <Link href={start} className="btn mt-8">{h.typesCta}</Link>
       </Reveal>
 
+      {/* After the report: the two ways it can go deeper, said warmly */}
+      <Reveal as="section" className="soft-panel p-8 sm:p-12">
+        <p className="eyebrow !text-accent-text">{h.deeperEyebrow}</p>
+        <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{h.deeperTitle}</h2>
+        <p className="mt-4 max-w-2xl leading-relaxed text-ink-2">{h.deeperLead}</p>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          {h.deeper.map((d) => (
+            <div key={d.title} className="card overflow-hidden">
+              <p className="tab-title">{d.title}</p>
+              <p className="px-6 pb-6 pt-4 leading-relaxed text-ink-2">{d.text}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-sm text-muted">{h.deeperNote}</p>
+      </Reveal>
+
       {/* Price (not on an open host, where everything is free) */}
       {!open && <Reveal as="section" className="gold-panel p-8 sm:p-12">
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
