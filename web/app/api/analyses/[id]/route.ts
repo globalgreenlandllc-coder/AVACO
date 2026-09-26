@@ -6,6 +6,7 @@
 import { errorResponse, json, previewReport, publicReport, requireUser } from "@/lib/api";
 import { forgetReport, hasFullAccess } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
+import { profileFor } from "@/lib/profile";
 
 type Context = { params: Promise<{ id: string }> };
 const notFound = () => json({ error: "not_found", message: "Report not found" }, 404);
@@ -15,8 +16,9 @@ export async function GET(_req: Request, ctx: Context) {
   if ("denied" in user) return user.denied;
 
   try {
-    const analysis = await gateway.getAnalysisFor(user.userId, (await ctx.params).id);
-    if (!analysis) return notFound();
+    const single = await gateway.getAnalysisFor(user.userId, (await ctx.params).id);
+    if (!single) return notFound();
+    const analysis = { ...single, psytype: (await profileFor(user.userId, single)).psytype }; // the same profile the page shows
     return json((await hasFullAccess(user.userId, analysis.id)) ? publicReport(analysis) : previewReport(analysis));
   } catch (err) {
     return errorResponse(err);

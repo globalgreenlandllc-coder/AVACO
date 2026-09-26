@@ -12,6 +12,8 @@ import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { money } from "@/lib/money";
 import { isOpenVisitor, visitorId } from "@/lib/visitor";
+import { agreementBand } from "@/lib/consensus";
+import { profileFor } from "@/lib/profile";
 
 /** `paid`, `session` and `industry` are what Stripe Checkout sends the buyer back with (see api/billing/checkout). */
 type Query = { paid?: string; session?: string; industry?: string };
@@ -20,8 +22,21 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const [{ id }, userId, { locale, t }, query] = await Promise.all([params, visitorId(), getDict(), searchParams]);
   if (!userId) notFound();
 
-  const analysis = await gateway.getAnalysisFor(userId, id);
-  if (!analysis) notFound();
+  const single = await gateway.getAnalysisFor(userId, id);
+  if (!single) notFound();
+  // The report is about the person's profile across recordings, when they have several (lib/consensus.ts).
+  const profile = await profileFor(userId, single);
+  const analysis = { ...single, psytype: profile.psytype };
+  const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
+  const own = single.psytype?.length ? [...single.psytype].sort((a, b) => b.value - a.value)[0] : null;
+  const takes = profile.consensus ? {
+    n: profile.consensus.n,
+    band: agreementBand(profile.consensus.agreement),
+    pct: Math.round(profile.consensus.agreement * 100),
+    leader: typeName(profile.consensus.leader),
+    thisRecording: own ? { name: typeName(own.key), value: own.value } : null,
+    recordings: profile.consensus.recordings.map((x) => ({ id: x.id, date: formatDate(x.created_at, locale).split(/,| at | в /)[0], name: typeName(x.key), value: x.value, current: x.id === single.id })),
+  } : undefined;
 
   // Back from Stripe: confirm the payment on this very load, so the report and the chapter the buyer came for open
   // now, not whenever the webhook gets round to it. An old-style return (no session) is shown as pending and refreshed.
@@ -67,5 +82,5 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     };
   }
 
-  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} />;
+  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={takes} />;
 }
