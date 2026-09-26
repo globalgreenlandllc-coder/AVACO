@@ -177,7 +177,7 @@ export default async function Home() {
 
       {/* Contact */}
       <Reveal as="section" id="contact" className="card p-8 sm:p-12">
-        <Contact t={t.contact} email={LEGAL.support} site={site} locale={locale} signedIn={!!userId} />
+        <Contact t={t.contact} email={LEGAL.support} site={site} locale={locale} signedIn={!!userId || open} />
       </Reveal>
 
       {/* Closing call */}

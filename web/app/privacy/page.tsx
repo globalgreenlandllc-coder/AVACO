@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { LegalDoc } from "@/components/LegalDoc";
+import { isOpenHost } from "@/lib/visitor";
 import { getDict } from "@/lib/i18n";
 import { fillLegal, legalVars } from "@/lib/legal";
 import { baseUrl } from "@/lib/page";
@@ -12,6 +13,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PrivacyPage() {
-  const [{ locale, t }, { userId }, origin] = await Promise.all([getDict(), auth(), baseUrl()]);
-  return <LegalDoc kind="privacy" t={t} locale={locale} vars={legalVars({ site: new URL(origin).host })} signedIn={!!userId} />;
+  const [{ locale, t }, { userId }, origin, open] = await Promise.all([getDict(), auth(), baseUrl(), isOpenHost()]);
+  return <LegalDoc kind="privacy" t={t} locale={locale} vars={legalVars({ site: new URL(origin).host })} signedIn={!!userId || open} />;
 }
