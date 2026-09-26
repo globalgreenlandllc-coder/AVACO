@@ -2,6 +2,7 @@
  * The partner's private link. First: who invited them, the tracker showing the orderer's voice is done, consent
  * and the recorder. After recording: the couple's report (once AVOCO is done), their own report, the orderer's report.
  */
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MatchRecorder } from "@/components/MatchRecorder";
 import { MatchView } from "@/components/MatchView";
@@ -9,8 +10,16 @@ import { ReportView } from "@/components/ReportView";
 import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
 import { matchByToken, notePartnerOpened } from "@/lib/matches";
+import { ogLine } from "@/lib/og";
 
-export const metadata = { robots: { index: false, follow: false } };
+/** What the link shows before it is opened: who is inviting, and to what, with the picture from opengraph-image.tsx. */
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const [{ token }, { t }] = await Promise.all([params, getDict()]);
+  const match = await matchByToken(token).catch(() => null);
+  const title = match ? `♥ ${t.match.partnerTitle.replace("{a}", match.ownerName)}` : `${t.brand} · ${t.match.title}`;
+  const description = ogLine(match ? t.match.partnerIntro.replace("{a}", match.ownerName) : t.match.lead, 160);
+  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: t.brand, type: "website" }, twitter: { card: "summary_large_image", title, description } };
+}
 
 export default async function PartnerLinkPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ again?: string; deleted?: string }> }) {
   const [{ token }, { again, deleted }, { t, locale }] = await Promise.all([params, searchParams, getDict()]);

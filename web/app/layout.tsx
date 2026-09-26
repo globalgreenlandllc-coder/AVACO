@@ -9,6 +9,7 @@ import { clerkAppearance, clerkLocalization } from "@/lib/clerk-ui";
 import { getDict } from "@/lib/i18n";
 import { directionOf } from "@/lib/i18n/languages";
 import { LEGAL } from "@/lib/legal";
+import { baseUrl } from "@/lib/page";
 import { unseenReadyMatches } from "@/lib/matches";
 import { isOpenHost, visitorId } from "@/lib/visitor";
 import { availableLanguages } from "@/lib/translate";
@@ -19,8 +20,9 @@ const body = Manrope({ subsets: ["latin", "cyrillic"], variable: "--font-body" }
 const display = Cormorant_Garamond({ subsets: ["latin", "cyrillic"], weight: ["500", "600"], variable: "--font-display" });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { t } = await getDict();
-  return { title: `${t.brand} · ${t.home.eyebrow}`, description: t.home.lead };
+  const [{ t }, origin] = await Promise.all([getDict(), baseUrl()]);
+  // metadataBase makes link-preview images absolute on whichever host served the page (www.avocousa.us, the partner host).
+  return { metadataBase: new URL(origin), title: `${t.brand} · ${t.home.eyebrow}`, description: t.home.lead };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

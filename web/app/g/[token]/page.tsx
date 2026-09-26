@@ -2,14 +2,24 @@
  * The recipient's page: who the gift is from, what is inside, and one button to claim it into their own account.
  * Public (only the link opens it). Claiming needs an account, because that is where the report will live.
  */
+import type { Metadata } from "next";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GiftRibbon } from "@/components/GiftRibbon";
 import { claimGift, giftByToken, noteGiftOpened } from "@/lib/gifts";
 import { formatDate, getDict } from "@/lib/i18n";
+import { ogLine } from "@/lib/og";
 
-export const metadata = { robots: { index: false, follow: false } };
+/** What the link shows before it is opened: the giver's name and their message, with the picture from opengraph-image.tsx. */
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const [{ token }, { t }] = await Promise.all([params, getDict()]);
+  const gift = await giftByToken(token).catch(() => null);
+  const g = t.gift.recipient;
+  const title = gift ? `🎁 ${(gift.recipientName ? g.titleNamed.replace("{recipient}", gift.recipientName) : g.title).replace("{giver}", gift.giverName)}` : `${t.brand} · ${t.gift.landing.title}`;
+  const description = gift?.message ? `${ogLine(`“${gift.message}”`, 120)} · ${g.noPay}` : `${g.noPay} ${g.steps[1]}`;
+  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: t.brand, type: "website" }, twitter: { card: "summary_large_image", title, description } };
+}
 
 export default async function GiftRecipientPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ claim?: string }> }) {
   const [{ token }, { claim }, { userId }, { t, locale }] = await Promise.all([params, searchParams, auth(), getDict()]);
