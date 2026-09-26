@@ -6,9 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import { Analysing } from "./Analysing";
 import type { Dict } from "@/lib/i18n";
 import { buildReportFile, saveFile } from "@/lib/export";
-import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines } from "@/lib/report";
+import { emostateRows, failureKind, fitRows, leadingTypes, psytypeRows, summaryLines, type Teaser } from "@/lib/report";
 import { Bars } from "./Bars";
 import { Industry, type IndustryProps } from "./Industry";
+import { LockedPreview, type PreviewTakes } from "./LockedPreview";
 import { MatchAddon, type MatchAddonProps } from "./MatchAddon";
 import { CountUp, Reveal } from "./Motion";
 import { Profile } from "./Profile";
@@ -21,8 +22,9 @@ export interface Report {
   psytype: Array<{ key: string; label: string; value: number; zone: "leading" | "active" | "background" }> | null;
   emostate: Array<{ key: string; label: string; value: number }> | null;
   error: string | null;
-  /** Present on a free preview. */
+  /** Present on a free preview, which carries no result: psytype and emostate are null, the teaser is the outline. */
   locked?: true;
+  teaser?: Teaser;
 }
 
 const POLL_MS = 4000;
@@ -49,11 +51,13 @@ export interface ReportViewProps {
   industry?: Omit<IndustryProps, "t" | "analysisId">;
   /** The relationship-match add-on; absent where it isn't offered. */
   match?: Omit<MatchAddonProps, "t" | "analysisId">;
-  /** A free preview: the cover and the summary, then this (the paywall) in place of everything else. */
+  /** A free preview: the locked outline of the report (LockedPreview), then this, the paywall. */
   locked?: React.ReactNode;
+  /** On a free preview, what may be said about the recordings behind the profile: how many, how settled, when. */
+  previewTakes?: PreviewTakes;
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -159,15 +163,27 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     );
   }
 
+  // A preview stays a preview even in the moment before the server hands over the paywall. It holds no result to show.
+  if (Boolean(locked) || report.locked === true) {
+    return (
+      <article className="space-y-10">
+        {backLink && <Link href={backLink.href} className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
+        <LockedPreview t={t} recordedOn={recordedOn} teaser={report.teaser} takes={previewTakes} hideEmotions={hideEmotions} />
+        {lead}
+        <div id="unlock" className="scroll-mt-24">{locked}</div>
+        <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.disclaimer}</p>
+        {del && <div className="no-print"><button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button></div>}
+      </article>
+    );
+  }
+
   const psy = psytypeRows(report.psytype ?? [], t);
   const emo = hideEmotions ? [] : emostateRows(report.emostate ?? [], t);
   const leaders = leadingTypes(psy);
   const top = psy[0];
   // The types the report is about: up to two leaders, or the strongest one in a balanced profile.
   const profiled = leaders.length > 0 ? leaders.slice(0, 2) : top ? [top] : [];
-  // A preview stays a preview even in the moment before the server hands over the paywall.
-  const isLocked = Boolean(locked) || report.locked === true;
-  const summary = isLocked ? summaryLines(psy, [], t).filter((line) => !line.startsWith(t.deep.fit.summary.split("{")[0])) : summaryLines(psy, emo, t);
+  const summary = summaryLines(psy, emo, t);
   const { ui, method, fit } = t.deep;
   const fits = fitRows(psy, t, emo);
   const podium = fits.slice(0, 3);
@@ -177,8 +193,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
       {/* The industry add-on: sold and shown in this one card above the report, never inside it. */}
-      {industry && psy.length === 8 && !isLocked && <Industry {...industry} analysisId={report.id} t={t.industry} printSlot={slot} />}
-      {match && psy.length === 8 && !isLocked && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
+      {industry && psy.length === 8 && <Industry {...industry} analysisId={report.id} t={t.industry} printSlot={slot} />}
+      {match && psy.length === 8 && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
 
       {top && (
         <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">
@@ -246,9 +262,6 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </Reveal>
       )}
 
-      {locked}
-
-      {!isLocked && (<>
       {profiled.some((type) => type.details.length > 0) && (
         <Reveal as="section" id="profile" className="scroll-mt-24">
           <h2 className="font-display text-4xl font-medium sm:text-5xl">{r.profileTitle}</h2>
@@ -344,33 +357,29 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       </Reveal>
 
       {/* Opened industry chapters, for print and the downloaded file only: the add-on's card copies them here. */}
-      {industry && psy.length === 8 && !isLocked && <div ref={setSlot} data-export-show className="hidden print:block" />}
-
-      </>)}
+      {industry && psy.length === 8 && <div ref={setSlot} data-export-show className="hidden print:block" />}
 
       <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.disclaimer}</p>
 
       <div data-no-export className="no-print">
         <div className="flex flex-wrap gap-3">
-          {!isLocked && <button type="button" className="btn" onClick={() => download("all")} disabled={saving}>{saving ? r.downloading : r.download}</button>}
-          {!isLocked && <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>}
+          <button type="button" className="btn" onClick={() => download("all")} disabled={saving}>{saving ? r.downloading : r.download}</button>
+          <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>
           {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
         </div>
-        {!isLocked && (
-          <div className="card mt-6 p-6">
-            <p className="eyebrow">{r.downloads}</p>
-            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadsHelp}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button type="button" className="pill pill-off" onClick={() => download("type")} disabled={saving}>↓ {r.downloadType}</button>
-              <button type="button" className="pill pill-off" onClick={() => download("industry")} disabled={saving || openChapters === 0} title={openChapters === 0 ? r.downloadIndustryNone : undefined}>↓ {r.downloadIndustry.replace("{n}", String(openChapters))}</button>
-              {match?.existing.filter((m) => m.stage === "ready").map((m) => (
-                <Link key={m.id} href={`/match/${m.id}?download=1`} className="pill pill-off">↓ {r.downloadCouple.replace("{names}", m.partnerName)}</Link>
-              ))}
-              <button type="button" className="pill pill-on" onClick={() => download("all")} disabled={saving}>↓ {r.downloadAll}</button>
-            </div>
-            {openChapters === 0 && <p className="mt-2 text-xs text-muted">{r.downloadIndustryNone}</p>}
+        <div className="card mt-6 p-6">
+          <p className="eyebrow">{r.downloads}</p>
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadsHelp}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" className="pill pill-off" onClick={() => download("type")} disabled={saving}>↓ {r.downloadType}</button>
+            <button type="button" className="pill pill-off" onClick={() => download("industry")} disabled={saving || openChapters === 0} title={openChapters === 0 ? r.downloadIndustryNone : undefined}>↓ {r.downloadIndustry.replace("{n}", String(openChapters))}</button>
+            {match?.existing.filter((m) => m.stage === "ready").map((m) => (
+              <Link key={m.id} href={`/match/${m.id}?download=1`} className="pill pill-off">↓ {r.downloadCouple.replace("{names}", m.partnerName)}</Link>
+            ))}
+            <button type="button" className="pill pill-on" onClick={() => download("all")} disabled={saving}>↓ {r.downloadAll}</button>
           </div>
-        )}
+          {openChapters === 0 && <p className="mt-2 text-xs text-muted">{r.downloadIndustryNone}</p>}
+        </div>
       </div>
     </article>
   );

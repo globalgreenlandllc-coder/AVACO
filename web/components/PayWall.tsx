@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Dict } from "@/lib/i18n";
 
-/** Shown under the free preview: what the full report holds, and the one button that opens it. */
+/** Shown under the free preview, whose locked sections already show what the full report holds: the one button that opens it. */
 export function PayWall({ analysisId, credits, fromPrice, t }: { analysisId: string; credits: number; fromPrice: string; t: Dict["billing"] }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -20,12 +20,9 @@ export function PayWall({ analysisId, credits, fromPrice, t }: { analysisId: str
   }
 
   return (
-    <section className="card border-accent p-8 sm:p-12">
+    <section className="card border-accent p-8 sm:p-12" style={{ boxShadow: "0 18px 50px -24px color-mix(in oklab, var(--accent) 55%, transparent)" }}>
       <h2 className="font-display text-4xl font-medium">{l.title}</h2>
       <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{l.lead}</p>
-      <ul className="mt-6 space-y-2.5">
-        {l.items.map((item) => <li key={item} className="flex gap-3 leading-relaxed"><span className="text-accent-text" aria-hidden>✓</span><span>{item}</span></li>)}
-      </ul>
       <div className="mt-8 flex flex-wrap items-center gap-4">
         {credits > 0
           ? <button type="button" className="btn" onClick={open} disabled={busy}>{busy ? l.unlocking : l.unlock}</button>

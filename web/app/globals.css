@@ -148,9 +148,18 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .heart { animation: pop 0.45s ease-out both; }
 @keyframes sweep { from { stroke-dashoffset: var(--ring-length); } }
 .score-ring { animation: sweep 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s both; }
+/* The free preview (components/LockedPreview.tsx): sections veiled in their own shape. Nothing under a veil is a result. */
+.veil { filter: blur(6px); user-select: none; -webkit-user-select: none; opacity: 0.8; }
+.veil-soft { filter: blur(1.5px); user-select: none; -webkit-user-select: none; opacity: 0.75; }
+.veil-strong { filter: blur(10px); user-select: none; -webkit-user-select: none; }
+@keyframes skeleton { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.skeleton { display: block; background: linear-gradient(90deg, var(--track) 20%, color-mix(in oklab, var(--accent) 45%, var(--track)) 50%, var(--track) 80%); background-size: 250% 100%; animation: skeleton 2.6s ease-in-out infinite; }
+@keyframes locked-glow { 0%, 100% { transform: scale(0.92); opacity: 0.75; } 50% { transform: scale(1.06); opacity: 1; } }
+.locked-glow { animation: locked-glow 4.5s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; }
-  .reveal.in, .rise, .radar-shape, .radar-dot, .heart, .score-ring, .sheen, .drift { animation: none; }
+  .reveal.in, .rise, .radar-shape, .radar-dot, .heart, .score-ring, .sheen, .drift, .skeleton, .locked-glow { animation: none; }
 }
 
 @media print {

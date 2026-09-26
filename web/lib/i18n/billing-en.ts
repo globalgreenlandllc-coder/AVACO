@@ -23,7 +23,7 @@ export const billingEn = {
   pending: "Payment received. Your credits will appear in a moment; refresh this page.",
   lock: {
     title: "Your full report is ready",
-    lead: "You have seen your leading type and your voice signature. The full report goes much further:",
+    lead: "Everything above is already calculated from your voice. One credit opens all of it: your type, every score and every section, in a report you can download, print and keep.",
     items: [
       "The complete profile of your leading type: how you think, work, decide and communicate",
       "Where you can do your best work: 25 fields of work scored for you, with example roles",

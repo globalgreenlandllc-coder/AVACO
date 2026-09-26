@@ -262,7 +262,7 @@ export const legalEn: LegalDict = {
         title: "Credits, prices and refunds",
         paras: [
           "A full report is opened with one credit. Credits are bought in packs at the prices shown at the time of purchase, in the currency shown; taxes are added where they apply. Credits have no cash value, cannot be transferred to another account and do not expire.",
-          "During the launch, full reports may be free; the site says so when that is the case. When paid, you can record for free and see your leading type first, and a credit is used only when you open the full report. A recording that could not be analysed is never charged.",
+          "During the launch, full reports may be free; the site says so when that is the case. When paid, you can record for free and see a preview confirming your report is ready, and a credit is used only when you open the full report. A recording that could not be analysed is never charged.",
           "If you bought credits by mistake, write to {email} within 14 days and we refund the unused ones. A credit that has opened a report is used and cannot be refunded. Promo codes are personal and can be withdrawn if misused. Payments are processed by Stripe under its own terms.",
         ],
       },

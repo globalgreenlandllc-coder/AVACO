@@ -1,6 +1,7 @@
 import "server-only";
 import { visitorId } from "./visitor";
 import { GatewayError, type Analysis } from "./gateway";
+import { teaserOf } from "./report";
 import { BadCode, NoCredits } from "./billing";
 import { Forbidden, Invalid, LimitReached, NotFound } from "./workspaces";
 
@@ -35,7 +36,11 @@ export function publicReport(analysis: Analysis, hideEmotions = false) {
   return hideEmotions ? { ...report, emostate: null } : report;
 }
 
-/** A preview carries the type scores (the cover and the voice signature) and nothing else that is being sold. */
+/**
+ * A free preview carries no result at all: no type, no score, no emotion, since whatever reaches the browser can be read
+ * there, blurred or not. Only the outline travels (lib/report.ts teaserOf), which shows the report is real and finished.
+ */
 export function previewReport(analysis: Analysis) {
-  return { ...publicReport(analysis, true), locked: true as const };
+  const { external_user_id: _owner, psytype, emostate, ...rest } = analysis;
+  return { ...rest, psytype: null, emostate: null, locked: true as const, teaser: teaserOf(psytype, emostate) };
 }

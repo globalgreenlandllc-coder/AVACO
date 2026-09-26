@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Trends } from "@/components/Trends";
+import { fullAccessIds } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { stageOf } from "@/lib/match-stage";
@@ -10,6 +11,9 @@ import { visitorId } from "@/lib/visitor";
 export default async function ReportsPage() {
   const [userId, { locale, t }] = await Promise.all([visitorId(), getDict()]);
   const { data } = userId ? await gateway.listAnalyses(userId) : { data: [] };
+  // A report not opened yet is a preview here too: no type in the list, and no scores in the trends.
+  const open = userId ? await fullAccessIds(userId, data.map((a) => a.id)).catch(() => new Set<string>()) : new Set<string>();
+  const opened = data.filter((a) => open.has(a.id));
 
   // Relationship matches, each with where the partner is; a finished one the person hasn't opened yet is marked new.
   const when = (d: Date | string | null | undefined) => (d ? formatDate(typeof d === "string" ? d : d.toISOString(), locale) : "");
@@ -27,10 +31,6 @@ export default async function ReportsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-display text-5xl font-medium">{t.reports.title}</h1>
-        <Link href="/record" className="btn">{t.nav.record}</Link>
-      </div>
       {/* Paid couple's reports still waiting for the partner come first: nothing paid for should look lost. */}
       {matchRows.some((r) => r.unfinished) && (
         <section className="addon-strip mb-10" aria-label={t.match.unfinishedTitle}>
@@ -45,6 +45,10 @@ export default async function ReportsPage() {
           </ul>
         </section>
       )}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-5xl font-medium">{t.reports.title}</h1>
+        <Link href="/record" className="btn">{t.nav.record}</Link>
+      </div>
 
       {data.length === 0 ? (
         <p className="card mt-10 p-10 text-center text-ink-2">{t.reports.empty}</p>
@@ -54,6 +58,7 @@ export default async function ReportsPage() {
             const rows = psytypeRows(a.psytype ?? [], t);
             const leaders = leadingTypes(rows);
             const summary = a.status !== "completed" || rows.length === 0 ? null
+              : !open.has(a.id) ? t.reports.locked
               : leaders.length > 0 ? `${t.reports.leading}: ${leaders.slice(0, 2).map((l) => l.name).join(", ")}`
               : t.reports.balanced;
             return (
@@ -95,10 +100,10 @@ export default async function ReportsPage() {
 
       <div className="mt-10">
         <Trends
-          analyses={data}
+          analyses={opened}
           names={(key, fallback) => { const all = { ...t.psytypes, ...t.emostate } as Record<string, { name: string }>; return Object.hasOwn(all, key) ? all[key].name : fallback; }}
           title={t.org.person.trend}
-          lead={t.org.person.trendLead.replace("{n}", String(data.filter((a) => a.status === "completed").length))}
+          lead={t.org.person.trendLead.replace("{n}", String(opened.filter((a) => a.status === "completed").length))}
         />
       </div>
     </div>

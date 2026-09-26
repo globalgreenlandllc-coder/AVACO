@@ -5,7 +5,7 @@
  * Billing can be switched off in the admin portal; then every report is free and none of this gates anything.
  */
 import "server-only";
-import { and, count, eq, gte, isNull, sql, sum } from "drizzle-orm";
+import { and, count, eq, gte, inArray, isNull, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
 import { isOpenVisitor } from "./visitor";
 import { retrieveCheckout } from "./stripe";
@@ -201,6 +201,19 @@ export async function hasFullAccess(userId: string, analysisId: string): Promise
   if (!recorded) return true;
   const [open] = await db().select().from(reportAccess).where(and(eq(reportAccess.analysisId, analysisId), eq(reportAccess.ownerId, userId)));
   return Boolean(open);
+}
+
+/** hasFullAccess for a whole list at once (the reports page): the ids of the reports that open in full. */
+export async function fullAccessIds(userId: string, analysisIds: string[]): Promise<Set<string>> {
+  if (analysisIds.length === 0) return new Set();
+  if (isOpenVisitor(userId) || !(await getSettings()).enabled || (await isAdminUser(userId))) return new Set(analysisIds);
+  const [recorded, open] = await Promise.all([
+    db().select({ id: selfRecordings.analysisId }).from(selfRecordings).where(inArray(selfRecordings.analysisId, analysisIds)),
+    db().select({ id: reportAccess.analysisId }).from(reportAccess).where(and(eq(reportAccess.ownerId, userId), inArray(reportAccess.analysisId, analysisIds))),
+  ]);
+  const gated = new Set(recorded.map((r) => r.id));
+  const opened = new Set(open.map((r) => r.id));
+  return new Set(analysisIds.filter((id) => !gated.has(id) || opened.has(id)));
 }
 
 /**

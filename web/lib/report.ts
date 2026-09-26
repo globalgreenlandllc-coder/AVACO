@@ -39,6 +39,19 @@ export const zoneOf = (value: number): Zone => (value >= 50 ? "leading" : value 
 
 const lookup = <T,>(table: Record<string, T>, key: string): T | null => (Object.hasOwn(table, key) ? table[key] : null);
 
+/**
+ * What a free preview may know about a report: that the reading is done and its outline (how many types fall in each
+ * zone, how many emotional scales were measured), never which types, nor any score. Built on the server (lib/api.ts).
+ */
+export interface Teaser { leading: number; active: number; background: number; scales: number }
+
+/** The outline of a result, for a preview. */
+export function teaserOf(psytype: Array<{ value: number }> | null, emostate: unknown[] | null): Teaser {
+  const zones = { leading: 0, active: 0, background: 0 };
+  for (const p of psytype ?? []) zones[zoneOf(p.value)]++;
+  return { ...zones, scales: emostate?.length ?? 0 };
+}
+
 /** Emotional scales have no zones in AVOCO; these bands are this platform's reading of 0 to 100. */
 export const bandOf = (value: number): Band => (value >= 60 ? "high" : value >= 35 ? "mid" : "low");
 

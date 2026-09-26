@@ -144,6 +144,30 @@ describe("locked and unlocked reports", () => {
     expect(await B.hasFullAccess("user_other", A1)).toBe(false); // somebody else's credit doesn't open it for them
   });
 
+  it("tells a whole list apart at once: opened, never gated, and still a preview", async () => {
+    await on();
+    const [open, preview, old] = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+    await B.noteSelfRecording("user_dana", open);
+    await B.noteSelfRecording("user_dana", preview);
+    await B.grant(dana, 1, "admin");
+    await B.unlock("user_dana", open);
+    expect([...(await B.fullAccessIds("user_dana", [open, preview, old]))].sort()).toEqual([open, old].sort());
+    expect(await B.fullAccessIds("user_dana", [])).toEqual(new Set());
+    expect(await B.fullAccessIds("user_boss", [preview])).toEqual(new Set([preview])); // admins see everything
+  });
+
+  it("a preview sends no type, no score and no emotion to the browser, only the outline", async () => {
+    const { previewReport } = await import("@/lib/api");
+    const psytype = [["analyst", 72], ["driver", 55], ["mediator", 41], ["skeptic", 12]].map(([key, value]) => ({ key: key as string, label: key as string, value: value as number, zone: "leading" as const }));
+    const emostate = [{ key: "calm", label: "Calm", value: 60 }, { key: "joy", label: "Joy", value: 40 }];
+    const preview = previewReport({ id: A1, status: "completed", type: "both", external_user_id: "user_dana", created_at: "2026-09-26T10:00:00Z", completed_at: null, psytype, emostate, error: null });
+    expect(preview.psytype).toBeNull();
+    expect(preview.emostate).toBeNull();
+    expect(preview.teaser).toEqual({ leading: 2, active: 1, background: 1, scales: 2 });
+    const wire = JSON.stringify(preview);
+    for (const secret of ["analyst", "driver", "mediator", "72", "55", "calm", "user_dana"]) expect(wire).not.toContain(secret);
+  });
+
   it("keeps reports from before billing open", async () => {
     await on();
     expect(await B.hasFullAccess("user_dana", A2)).toBe(true); // never recorded under billing
