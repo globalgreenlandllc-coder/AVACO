@@ -12,7 +12,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string; ke
     const analysis = await partnerAnalysis(id);
     if (!analysis?.psytype?.length) return json({ error: "not_found", message: "Not found" }, 404);
     const { t, locale } = await getDict();
-    const chapter = industryChapter(key, analysis.psytype, t, locale);
+    const chapter = industryChapter(key, analysis.psytype, t, locale, analysis.emostate);
     return chapter ? json(chapter) : json({ error: "not_found", message: "Not found" }, 404);
   } catch (err) {
     return errorResponse(err);

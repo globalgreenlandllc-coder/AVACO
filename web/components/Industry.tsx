@@ -94,14 +94,14 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
       {/* Every opened chapter stays rendered; only the picked one is visible on screen, all of them in print. */}
       {Object.values(chapters).map((chapter) => (
         <div key={chapter.industry} data-industry-chapter={chapter.industry} className={`rise ${state.kind === "chapter" && state.chapter.industry === chapter.industry ? "" : "hidden print:block"}`}>
-          <Chapter chapter={chapter} />
+          <Chapter chapter={chapter} onPick={setPicked} />
         </div>
       ))}
     </section>
   );
 }
 
-function Chapter({ chapter: c }: { chapter: IndustryChapter }) {
+function Chapter({ chapter: c, onPick }: { chapter: IndustryChapter; onPick?: (key: string) => void }) {
   const top = c.roles.slice(0, 3);
   return (
     <div className="mt-10 space-y-10 break-before-auto">
@@ -112,6 +112,29 @@ function Chapter({ chapter: c }: { chapter: IndustryChapter }) {
           <span className="text-4xl font-semibold tabular-nums">{c.overall} <span className="text-base font-medium opacity-70">/ 100</span></span>
         </div>
         <p className="mt-4 max-w-2xl leading-relaxed">{c.blurb}</p>
+        <p className="mt-4 text-sm font-semibold">{c.rankLine}</p>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="card break-inside-avoid overflow-hidden">
+          <p className="tab-title">{c.pairTitle}</p>
+          <p className="px-6 pb-6 pt-4 text-sm leading-relaxed text-ink-2">{c.pairText}</p>
+        </div>
+        <div className="card break-inside-avoid overflow-hidden">
+          <p className="tab-title">{c.alsoTitle}</p>
+          <div className="px-6 pb-6 pt-4">
+            {c.also.length > 0 ? (
+              <ul className="space-y-2">
+                {c.also.map((i) => (
+                  <li key={i.key} className="flex items-baseline justify-between gap-3 text-sm">
+                    <button type="button" className="font-semibold text-accent-text hover:underline" data-also={i.key} onClick={() => onPick?.(i.key)}>{i.name}</button>
+                    <span className="font-semibold tabular-nums">{i.overall}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm leading-relaxed text-ink-2">{c.alsoNone}</p>}
+          </div>
+        </div>
       </div>
 
       <div>
@@ -139,7 +162,7 @@ function Chapter({ chapter: c }: { chapter: IndustryChapter }) {
                 <span className="font-display text-5xl font-medium text-accent-text">{String(i + 1).padStart(2, "0")}</span>
                 <span className="text-3xl font-semibold tabular-nums">{r.score}</span>
               </div>
-              <p className="eyebrow mt-3">{r.levelLabel}</p>
+              <p className="eyebrow mt-3">{r.levelLabel} · {r.leansOn}</p>
               <p className="mt-1 text-lg font-semibold leading-snug">{r.name}</p>
               <p className="mt-2 text-sm leading-relaxed text-ink-2">{r.text}</p>
               <p className="mt-2 text-xs text-muted">{r.because}</p>
@@ -183,6 +206,15 @@ function Chapter({ chapter: c }: { chapter: IndustryChapter }) {
           </ul>
         </div>
       </div>
+
+      {c.todayTitle && (
+        <div className="soft-panel break-inside-avoid p-6 sm:p-7">
+          <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-accent-text">{c.todayTitle}</p>
+          <ul className="mt-3 space-y-2 text-sm leading-relaxed text-ink-2">
+            {c.today.map((x) => <li key={x.level}>{x.text}</li>)}
+          </ul>
+        </div>
+      )}
 
       <p className="border-t border-line pt-6 text-xs leading-relaxed text-muted">{c.scoreHelp}</p>
     </div>

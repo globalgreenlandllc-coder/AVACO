@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { en } from "../lib/i18n/en";
 import { industriesEn } from "../lib/i18n/industries-en";
 import { industriesRu } from "../lib/i18n/industries-ru";
-import { INDUSTRIES, INDUSTRY_KEYS, industryFit, isIndustry, LEVELS } from "../lib/industries";
+import { INDUSTRIES, INDUSTRY_KEYS, industryFit, industryRanking, isIndustry, LEVELS } from "../lib/industries";
 import { industryChapter, industryNames } from "../lib/industry-chapter";
 
 const TYPES = ["organizer", "driver", "catalyst", "performer", "harmonizer", "analyst", "skeptic", "mediator"];
@@ -51,6 +51,20 @@ describe("industryFit", () => {
   });
 });
 
+describe("industryRanking and the extras", () => {
+  it("ranks every industry and names the strongest pair's roles", () => {
+    const ranking = industryRanking(profile({ analyst: 85, skeptic: 60 }));
+    expect(ranking).toHaveLength(INDUSTRY_KEYS.length);
+    expect(["it", "science", "insurance", "finance"]).toContain(ranking[0].industry);
+    const fit = industryFit("it", profile({ analyst: 85, skeptic: 60 }), [{ key: "authority", value: 40 }, { key: "energy_level", value: 70 }])!;
+    expect(fit.pair.types).toEqual(["analyst", "skeptic"]);
+    expect(fit.pair.roles).toContain("softwareEngineer");
+    expect(fit.today?.start.scales.map((s) => s.key)).toEqual(["energy_level"]);
+    expect(fit.today?.lead.score).toBe(40);
+    expect(industryFit("it", profile({}))!.today).toBeNull();
+  });
+});
+
 describe("industryChapter", () => {
   it("returns everything already in the visitor's language", () => {
     const chapter = industryChapter("construction", profile({ catalyst: 78, driver: 46 }), en, "en")!;
@@ -61,5 +75,11 @@ describe("industryChapter", () => {
     expect(chapter.watch.length).toBeGreaterThan(0);
     expect(chapter.roles[0].because).toMatch(/^Because: /);
     expect(industryNames("ru").find((i) => i.key === "construction")?.name).toBe("Строительство");
+    expect(chapter.rankLine).toMatch(/#\d+ of \d+ industries/);
+    expect(chapter.also.length + (chapter.alsoNone ? 1 : 0)).toBeGreaterThan(0);
+    expect(chapter.pairText).toContain("Catalyst (78)");
+    expect(chapter.todayTitle).toBeNull();
+    const withState = industryChapter("construction", profile({ catalyst: 78 }), en, "en", [{ key: "authority", value: 55 }])!;
+    expect(withState.today.find((x) => x.level === "lead")?.text).toContain("55");
   });
 });

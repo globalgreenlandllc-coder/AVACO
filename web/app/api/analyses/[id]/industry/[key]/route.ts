@@ -16,7 +16,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string; ke
     if (!analysis || analysis.status !== "completed" || !analysis.psytype?.length) return json({ error: "not_found", message: "Report not found" }, 404);
     if (!(await hasFullAccess(user.userId, analysis.id)) || !(await hasIndustryAccess(user.userId, analysis.id, key))) return json({ error: "payment_required", message: "Open this industry first" }, 402);
     const { t, locale } = await getDict();
-    const chapter = industryChapter(key, analysis.psytype, t, locale);
+    const chapter = industryChapter(key, analysis.psytype, t, locale, analysis.emostate);
     return chapter ? json(chapter) : json({ error: "not_found", message: "Report not found" }, 404);
   } catch (err) {
     return errorResponse(err);
