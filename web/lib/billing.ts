@@ -150,7 +150,9 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
   if (p.unlockAnalysisId && owner.kind === "user") {
     // What the buyer came for: the report, then the industry chapter they were looking at. Both cost nothing when already open.
     await unlock(owner.id, p.unlockAnalysisId).catch(() => {});
-    if (p.unlockIndustry) await unlockIndustry(owner.id, p.unlockAnalysisId, p.unlockIndustry).catch(() => {});
+    // The best-industry finder spends the purchase's own credits (its price in credits); a chapter spends one.
+    if (p.unlockIndustry === BEST_KEY) await unlockBest(owner.id, p.unlockAnalysisId, p.credits).catch(() => {});
+    else if (p.unlockIndustry) await unlockIndustry(owner.id, p.unlockAnalysisId, p.unlockIndustry).catch(() => {});
   }
   // Only the call that recorded the payment sends the receipt, so the webhook and the return page never send two.
   if (fresh) sendReceiptLater(p.id);
@@ -255,6 +257,37 @@ export async function chargeIndustry(owner: Owner, analysisId: string, industry:
   if ((await balance(owner)) < 1) return false;
   await post(owner, { delta: -1, reason: "industry", ref });
   return true;
+}
+
+/**
+ * The best-industry finder on one report: every industry compared, the winner opened (lib/industries.ts industryMatches).
+ * Kept in industry_access under this key, beside the chapters; charged once per report, in its own number of credits.
+ */
+export const BEST_KEY = "best";
+
+export async function chargeBest(owner: Owner, analysisId: string, credits: number): Promise<boolean> {
+  const ref = industryRef(analysisId, BEST_KEY);
+  const [already] = await db().select({ id: creditLedger.id }).from(creditLedger)
+    .where(and(eq(creditLedger.ownerKind, owner.kind), eq(creditLedger.ownerId, owner.id), eq(creditLedger.reason, "best"), eq(creditLedger.ref, ref)));
+  if (already) return true;
+  if ((await balance(owner)) < credits) return false;
+  await post(owner, { delta: -credits, reason: "best", ref });
+  return true;
+}
+
+/** Opens the finder on a person's own report: free while charging is off, on the open host and for admins; otherwise `credits`. */
+export async function unlockBest(userId: string, analysisId: string, credits: number): Promise<void> {
+  const free = isOpenVisitor(userId) || !(await getSettings()).enabled;
+  const admin = !free && (await isAdminUser(userId));
+  if (!free && !admin && !(await chargeBest(asUser(userId), analysisId, credits))) throw new NoCredits("No credits");
+  await db().insert(industryAccess).values({ analysisId, industry: BEST_KEY, ownerKind: "user", ownerId: userId, source: free ? "free" : admin ? "admin" : "credit" }).onConflictDoNothing();
+}
+
+/** Whether the finder is open on this report: always asked for once, even where it costs nothing, so it never appears unasked. */
+export async function hasBestAccess(userId: string, analysisId: string): Promise<boolean> {
+  const [row] = await db().select({ industry: industryAccess.industry }).from(industryAccess)
+    .where(and(eq(industryAccess.analysisId, analysisId), eq(industryAccess.industry, BEST_KEY), eq(industryAccess.ownerId, userId)));
+  return Boolean(row);
 }
 
 /** Opens an industry chapter on a person's own report; admins pay nothing. Throws NoCredits when there is nothing to spend. */

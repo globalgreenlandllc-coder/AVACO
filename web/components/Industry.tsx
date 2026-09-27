@@ -6,12 +6,14 @@ import { createPortal } from "react-dom";
 import { buildReportFile, saveFile } from "@/lib/export";
 import type { Dict } from "@/lib/i18n";
 import type { IndustryChapter, IndustryTeaser } from "@/lib/industry-chapter";
+import { SECTOR_KEYS } from "@/lib/industries";
+import { BestResult, BestTile, useBest, type BestProps } from "./BestIndustry";
 import { CoverCapsules } from "./CoverCapsules";
 import { RefreshWhile } from "./RefreshWhile";
 
 export interface IndustryProps {
-  /** The selection bar, in the visitor's language. */
-  industries: Array<{ key: string; name: string }>;
+  /** The selection bar, in the visitor's language; with sectors, grouped by them. */
+  industries: Array<{ key: string; name: string; sector?: string }>;
   /** Where a chapter comes from; {key} is the industry. 402 means it must be opened first. */
   chapterUrl: string;
   /** Where to open an industry for a credit. Absent when chapters are free here (admins, the partner page, billing off). */
@@ -37,6 +39,10 @@ export interface IndustryProps {
   payLabel?: string;
   /** Where opened chapters are copied for print and the downloaded file: the very end of the report. */
   printSlot?: HTMLElement | null;
+  /** The best-industry finder (components/BestIndustry.tsx); absent where it isn't offered. */
+  best?: BestProps;
+  /** The finder's words and the sector names. */
+  finder?: Dict["finder"];
   t: Dict["industry"];
 }
 
@@ -47,7 +53,7 @@ type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kin
  * price and the button that opens or buys, and the chapter itself once it is open. Nothing of it sits inside the
  * report. For print and the downloaded file, every opened chapter is copied to `printSlot`, at the very end.
  */
-export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, payUrl, payLabel, printSlot = null, t }: IndustryProps) {
+export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlocked = [], credits = 0, creditsHref = "/credits", freeUnlock = false, price = null, teaser = null, initialIndustry = null, paid = null, payUrl, payLabel, printSlot = null, best, finder, t }: IndustryProps) {
   const [open, setOpen] = useState<string[]>(unlocked);
   const [picked, setPicked] = useState<string | null>(initialIndustry);
   const [shown, setShown] = useState(true); // the opened chapter can be folded away without closing it
@@ -55,6 +61,8 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
   const [state, setState] = useState<State>({ kind: "idle" });
   const [chapters, setChapters] = useState<Record<string, IndustryChapter>>({});
   const [busy, setBusy] = useState(false);
+  const bestFinder = useBest(best, analysisId);
+  const bestResult = bestFinder.state.kind === "open" ? bestFinder.state.result : null;
 
   async function load(key: string) {
     if (chapters[key]) { setState({ kind: "chapter", chapter: chapters[key] }); return; }
@@ -126,7 +134,7 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
           <div className="relative mt-10 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-start">
             <div>
               <h2 className="gold-text pb-2 font-display text-4xl font-semibold leading-[1.02] sm:text-6xl">{a.title}</h2>
-              <p className="mt-5 max-w-md leading-relaxed text-ink-2 sm:text-lg">{a.text}</p>
+              <p className="mt-5 max-w-md leading-relaxed text-ink-2 sm:text-lg">{a.text.replace("{n}", String(industries.length))}</p>
               <p className="mt-6"><span className="offer-badge">{priceLabel}</span></p>
               {paidState && (
                 <p role="status" className="mt-6 max-w-md rounded-2xl border border-line px-5 py-4 text-sm">
@@ -142,7 +150,13 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
                 <label className="sr-only" htmlFor="industry-select">{t.pick}</label>
                 <select id="industry-select" value={picked ?? ""} onChange={(e) => { setPicked(e.target.value || null); setShown(true); }} className="offer-field w-full px-4 py-3 text-sm font-semibold">
                   <option value="">{a.select}</option>
-                  {industries.map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
+                  {finder && industries.every((i) => i.sector)
+                    ? SECTOR_KEYS.map((sector) => (
+                      <optgroup key={sector} label={finder.sectors[sector]}>
+                        {industries.filter((i) => i.sector === sector).map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
+                      </optgroup>
+                    ))
+                    : industries.map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
                 </select>
                 {state.kind === "locked" && picked && (
                   freeUnlock || credits > 0
@@ -177,7 +191,10 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
               )}
             </div>
           </div>
+          {best && finder && <BestTile best={best} finder={bestFinder} f={finder} credits={credits} creditsHref={creditsHref} />}
         </section>
+
+        {bestResult && bestFinder.shown && <BestResult result={bestResult} onOpenChapter={(key) => { setPicked(key); setShown(true); }} />}
 
         {/* The opened chapter follows its cover, as the report follows its own; only the chosen one is on screen. */}
         {state.kind === "chapter" && shown && (
@@ -187,7 +204,8 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
         )}
       </aside>
 
-      {/* Print and the downloaded file: every opened chapter, at the very end of the report. */}
+      {/* Print and the downloaded file: the best industry first, then every opened chapter, at the very end of the report. */}
+      {printSlot && bestResult && createPortal(<div data-industry-chapter-print="best"><BestResult result={bestResult} /></div>, printSlot)}
       {printSlot && Object.keys(chapters).length > 0 && createPortal(
         <section className="theme-industry space-y-10">
           <p className="addon-badge">{a.badge}</p>

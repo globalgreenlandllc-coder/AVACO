@@ -8,6 +8,7 @@ import { legalEn } from "./legal-en";
 import { giftEn } from "./gift-en";
 import { receiptEn } from "./receipt-en";
 import { peopleEn } from "./people-en";
+import { finderEn } from "./finder-en";
 export const en = {
   brand: "AVOCO",
   nav: { record: "New recording", reports: "My reports", signIn: "Sign in", start: "Get started", sample: "Sample report" },
@@ -57,7 +58,7 @@ export const en = {
     deeperLead: "Your report tells you who you are in your voice. From inside it, when you're ready, the same scores read two more things for you. Nothing to choose up front: you start with your report, and the rest is there when you want it.",
     deeperSteps: ["Your report", "Into your work", "Into your relationship"],
     deeper: [
-      { title: "Into your work", text: "Pick the industry you're in, or the one you're drawn to. Every role in it is ranked for your voice, with your path from the first step to the top, and where that industry stands among 37 for you." },
+      { title: "Into your work", text: "Pick the industry you're in, or the one you're drawn to. Every role in it is ranked for your voice, with your path from the first step to the top, and where that industry stands among {n} for you." },
       { title: "Into your relationship", text: "Invite the person you love to record a minute, or upload a voice message or video of them, and see the two of you together: nine areas of a relationship, who holds which role, where it's easy and where it asks for care. Written kindly, because it's meant to help, not to judge." },
     ],
     deeperExample: "Example from the sample profile",
@@ -254,6 +255,7 @@ export const en = {
   gift: giftEn,
   receipt: receiptEn,
   people: peopleEn,
+  finder: finderEn,
   partners: {
     eyebrow: "Partner access",
     title: "Test the AVOCO report",
@@ -431,7 +433,7 @@ export const en = {
       show: "Show chapter",
       badge: "Add-on · paid chapter",
       title: "Your industry, on top of this report",
-      text: "A separate chapter, not part of the report below: pick one of 37 industries and every role in it is ranked for your voice, with your path in.",
+      text: "A separate chapter, not part of the report below: pick one of {n} industries and every role in it is ranked for your voice, with your path in.",
       cta: "Choose your industry",
       price: "{price} per industry",
       exampleTag: "Example",
@@ -441,8 +443,8 @@ export const en = {
     promo: {
       eyebrow: "Make this report yours",
       title: "Which industry do you want to be in?",
-      text: "Your type is the map. This add-on draws your route through one industry: construction, IT, medicine, sales, real estate, thirty-seven of them. Pick the one you work in, or the one you dream about, and your report narrows to it.",
-      points: ["Every role in that industry ranked for your voice, with the reason", "Your path: where to start, what to grow into, what to aim for", "How you compare across all 37 industries, and the ones that fit you even better", "Your strongest pair of types, and what today's voice says"],
+      text: "Your type is the map. This add-on draws your route through one industry: construction, IT, medicine, sales, real estate, {n} of them. Pick the one you work in, or the one you dream about, and your report narrows to it.",
+      points: ["Every role in that industry ranked for your voice, with the reason", "Your path: where to start, what to grow into, what to aim for", "How you compare across all {n} industries, and the ones that fit you even better", "Your strongest pair of types, and what today's voice says"],
       cta: "Choose your industry",
       price: "{price} per industry, added to this report for good",
       free: "Free on this page",

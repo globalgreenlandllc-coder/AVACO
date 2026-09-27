@@ -11,6 +11,7 @@ import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
 import { giftPrice, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
 import { isOpenHost } from "@/lib/visitor";
 import { industryTeaser } from "@/lib/industry-chapter";
+import { INDUSTRY_KEYS } from "@/lib/industries";
 import { matchFit } from "@/lib/match";
 import { organizationJsonLd } from "@/lib/contact";
 import { getDict } from "@/lib/i18n";
@@ -180,7 +181,7 @@ export default async function Home() {
           {h.deeper.map((d, i) => (
             <div key={d.title} className="card overflow-hidden">
               <p className="tab-title">{d.title}</p>
-              <p className="px-6 pt-4 leading-relaxed text-ink-2">{d.text}</p>
+              <p className="px-6 pt-4 leading-relaxed text-ink-2">{d.text.replace("{n}", String(INDUSTRY_KEYS.length))}</p>
               <div className="mx-6 mb-6 mt-5 rounded-2xl bg-accent-soft p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{h.deeperExample}</p>
                 <p className="mt-2 text-sm leading-relaxed">{i === 0 ? exampleIndustry : exampleMatch}</p>

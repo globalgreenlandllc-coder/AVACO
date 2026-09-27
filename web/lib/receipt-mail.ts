@@ -11,6 +11,7 @@ export type ReceiptItem =
   | { kind: "credits"; n: number }
   | { kind: "company"; n: number }
   | { kind: "industry"; industry: string }
+  | { kind: "best" }
   | { kind: "match"; a: string; b: string }
   | { kind: "gift"; name: string | null; reports: number; industries: number; matches: number };
 
@@ -60,6 +61,7 @@ export function itemLines(item: ReceiptItem, t: ReceiptText): { label: string; d
     case "credits": return { label: fill(t.items.credits, { n: item.n }), details: [] };
     case "company": return { label: fill(t.items.companyCredits, { n: item.n }), details: [] };
     case "industry": return { label: fill(t.items.industry, { industry: item.industry }), details: [] };
+    case "best": return { label: t.items.best, details: [] };
     case "match": return { label: fill(t.items.match, { a: item.a, b: item.b }), details: [] };
     case "gift": {
       const details = [

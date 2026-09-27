@@ -392,7 +392,52 @@ export const INDUSTRIES = {
     emergencyPlanner: role("grow", { organizer: 0.9, analyst: 0.7, skeptic: 0.5 }),
     crisisCounsellor: role("grow", { mediator: 1, harmonizer: 0.9 }),
   },
+  // Faith communities: the Mediator's depth and ideals, the Harmonizer's care and the Performer's presence carry most of it.
+  church: {
+    seniorPastor: role("lead", { performer: 0.8, mediator: 0.7, driver: 0.7, harmonizer: 0.5 }),
+    churchPlanter: role("lead", { driver: 0.9, catalyst: 0.9, performer: 0.5 }),
+    associatePastor: role("grow", { harmonizer: 0.9, mediator: 0.5, organizer: 0.5 }),
+    worshipLeader: role("grow", { performer: 1, mediator: 0.6, harmonizer: 0.3 }),
+    pastoralCare: role("grow", { mediator: 1, harmonizer: 0.9 }),
+    theologian: role("grow", { analyst: 0.9, mediator: 0.6, performer: 0.3 }),
+    chaplain: role("grow", { harmonizer: 0.9, mediator: 0.8, skeptic: 0.2 }),
+    youthWorker: role("start", { catalyst: 0.9, performer: 0.6, harmonizer: 0.6 }),
+    outreach: role("start", { catalyst: 0.8, harmonizer: 0.7, organizer: 0.4 }),
+    administrator: role("start", { organizer: 1, skeptic: 0.6 }),
+  },
+  care: {
+    agencyOwner: role("lead", { driver: 0.9, organizer: 0.6, harmonizer: 0.5 }),
+    serviceManager: role("lead", { organizer: 0.9, harmonizer: 0.7, driver: 0.5 }),
+    familySocialWorker: role("grow", { mediator: 0.9, harmonizer: 0.8, skeptic: 0.3 }),
+    occupationalTherapist: role("grow", { harmonizer: 0.8, analyst: 0.5, organizer: 0.4 }),
+    careCoordinator: role("grow", { organizer: 1, harmonizer: 0.6, skeptic: 0.3 }),
+    caregiver: role("start", { harmonizer: 1, mediator: 0.5, organizer: 0.3 }),
+    earlyYears: role("start", { harmonizer: 0.9, performer: 0.5, catalyst: 0.4 }),
+    activities: role("start", { catalyst: 0.8, performer: 0.7, harmonizer: 0.5 }),
+  },
+  coaching: {
+    practiceOwner: role("lead", { driver: 0.7, mediator: 0.6, catalyst: 0.5 }),
+    coachTrainer: role("lead", { performer: 0.7, organizer: 0.6, analyst: 0.5 }),
+    psychologist: role("grow", { mediator: 1, analyst: 0.6, harmonizer: 0.5 }),
+    lifeCoach: role("grow", { harmonizer: 0.8, catalyst: 0.6, mediator: 0.6 }),
+    executiveCoach: role("grow", { driver: 0.7, analyst: 0.6, performer: 0.4 }),
+    careerCounsellor: role("start", { harmonizer: 0.8, organizer: 0.5, analyst: 0.4 }),
+    workshopLeader: role("start", { performer: 1, catalyst: 0.6, harmonizer: 0.4 }),
+    assessmentSpecialist: role("start", { analyst: 0.8, skeptic: 0.8 }),
+  },
 } as const satisfies Record<string, Record<string, RoleRule>>;
+
+/** The industries in six sectors, so a list of forty reads as six short ones. Every industry is in exactly one (tested). */
+export const SECTORS = {
+  people: ["education", "healthcare", "care", "coaching", "church", "nonprofit", "public", "hr", "sports", "beauty"],
+  business: ["sales", "marketing", "finance", "banking", "insurance", "consulting", "law", "entrepreneurship", "realestate", "retail"],
+  tech: ["it", "telecom", "science", "pharma", "energy", "gaming"],
+  making: ["construction", "architecture", "manufacturing", "trades", "automotive", "agriculture"],
+  creative: ["media", "arts", "fashion"],
+  service: ["hospitality", "logistics", "transport", "security", "emergency"],
+} as const satisfies Record<string, ReadonlyArray<keyof typeof INDUSTRIES>>;
+export type SectorKey = keyof typeof SECTORS;
+export const SECTOR_KEYS = Object.keys(SECTORS) as SectorKey[];
 
 /**
  * What today's voice says about readiness for each career level. Emotional scales describe the day, not the
@@ -471,4 +516,48 @@ export function industryFit(industry: IndustryKey, types: Array<{ key: string; v
 /** Every industry's overall fit for a profile, best first: where a chosen industry stands among all of them. */
 export function industryRanking(types: Array<{ key: string; value: number }>): Array<{ industry: IndustryKey; overall: number }> {
   return INDUSTRY_KEYS.map((industry) => ({ industry, overall: industryFit(industry, types)?.overall ?? 0 })).sort((a, b) => b.overall - a.overall || a.industry.localeCompare(b.industry));
+}
+
+export const sectorOf = (industry: IndustryKey): SectorKey => SECTOR_KEYS.find((s) => (SECTORS[s] as readonly string[]).includes(industry)) ?? "service";
+
+/** What an industry asks of each type across all its roles, as shares that add up to 1. */
+export function industryDemand(industry: IndustryKey): Partial<Record<TypeKey, number>> {
+  const sums: Partial<Record<TypeKey, number>> = {};
+  let total = 0;
+  for (const rule of Object.values(INDUSTRIES[industry]) as RoleRule[]) {
+    for (const [type, weight] of Object.entries(rule.types) as Array<[TypeKey, number]>) { sums[type] = (sums[type] ?? 0) + weight; total += weight; }
+  }
+  for (const type of Object.keys(sums) as TypeKey[]) sums[type] = sums[type]! / total;
+  return sums;
+}
+
+export interface IndustryMatch {
+  industry: IndustryKey;
+  /** 0 to 100: half the best role, three tenths the top three roles, one fifth how the whole industry leans on the person's types. */
+  match: number;
+  /** The best role's score: how far the person can go here at their best. */
+  peak: number;
+  /** The top three roles on average: how many ways in there are (IndustryFit.overall). */
+  depth: number;
+  /** The person's type scores weighted by what the industry as a whole asks of each type. */
+  typeFit: number;
+  best: RoleFit;
+}
+
+/**
+ * Every industry compared for one profile, best match first: the finder behind the "best industry" add-on. The best role
+ * counts most (where the person would do best), the depth of good roles next (more than one way in), and the fit of the
+ * whole industry to their types last (the day-to-day work around the role). Null unless all eight types were scored.
+ */
+export function industryMatches(types: Array<{ key: string; value: number }>): IndustryMatch[] | null {
+  const scores = new Map(types.map((t) => [t.key, t.value]));
+  const out: IndustryMatch[] = [];
+  for (const industry of INDUSTRY_KEYS) {
+    const fit = industryFit(industry, types);
+    if (!fit) return null;
+    const typeFit = round((Object.entries(industryDemand(industry)) as Array<[TypeKey, number]>).reduce((s, [type, share]) => s + share * (scores.get(type) ?? 0), 0));
+    const peak = fit.roles[0].score;
+    out.push({ industry, match: round(0.5 * peak + 0.3 * fit.overall + 0.2 * typeFit), peak, depth: fit.overall, typeFit, best: fit.roles[0] });
+  }
+  return out.sort((a, b) => b.match - a.match || b.peak - a.peak || a.industry.localeCompare(b.industry));
 }

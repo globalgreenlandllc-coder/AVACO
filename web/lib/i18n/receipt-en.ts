@@ -11,13 +11,14 @@ export interface ReceiptText {
   sentTo: string;
   item: string;
   total: string;
-  items: { report: string; credits: string; companyCredits: string; industry: string; match: string; gift: string; giftFor: string };
+  items: { report: string; credits: string; companyCredits: string; industry: string; best: string; match: string; gift: string; giftFor: string };
   giftContents: { reports: string; industries: string; matches: string };
   next: {
     report: { lead: string; cta: string };
     credits: { lead: string; cta: string };
     company: { lead: string; cta: string };
     industry: { lead: string; cta: string };
+    best: { lead: string; cta: string };
     match: { lead: string; cta: string };
     gift: { lead: string; cta: string };
   };
@@ -45,6 +46,7 @@ export const receiptEn: ReceiptText = {
     credits: "Report credits × {n}",
     companyCredits: "Company report credits × {n}",
     industry: "Industry chapter · {industry}",
+    best: "Your best industry · every industry compared",
     match: "Relationship report · {a} & {b}",
     gift: "Gift",
     giftFor: "Gift for {name}",
@@ -55,6 +57,7 @@ export const receiptEn: ReceiptText = {
     credits: { lead: "Your credits are in your account and never expire. Each one opens a full report.", cta: "See your credits" },
     company: { lead: "The credits are in the company workspace. Each one covers one person's recording.", cta: "Open the workspace" },
     industry: { lead: "The chapter is open at the top of your report.", cta: "Open the chapter" },
+    best: { lead: "Your best industry is open at the top of your report, with its best role and full chapter.", cta: "See your best industry" },
     match: { lead: "Your relationship report is paid for. It is ready as soon as both of you have recorded.", cta: "Open the relationship report" },
     gift: { lead: "Your gift is ready. Send its private link whenever you like.", cta: "Get the gift link" },
   },

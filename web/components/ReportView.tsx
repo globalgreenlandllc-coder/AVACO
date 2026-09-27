@@ -50,7 +50,7 @@ export interface ReportViewProps {
   /** The person's profile across several recordings (lib/consensus.ts), when they have them. Names and dates pre-localized. */
   takes?: { n: number; band: "high" | "medium" | "low"; pct: number; leader: string; thisRecording: { name: string; value: number } | null; recordings: Array<{ id: string; date: string; name: string; value: number; current: boolean }> };
   /** The "narrow it to your industry" chapter; absent where it isn't offered. */
-  industry?: Omit<IndustryProps, "t" | "analysisId">;
+  industry?: Omit<IndustryProps, "t" | "analysisId" | "finder">;
   /** The relationship-match add-on; absent where it isn't offered. */
   match?: Omit<MatchAddonProps, "t" | "analysisId">;
   /** A free preview: the locked outline of the report (LockedPreview), then this, the paywall. */
@@ -199,7 +199,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
       {/* The industry add-on: sold and shown in this one card above the report, never inside it. */}
-      {industry && psy.length === 8 && <Industry {...industry} analysisId={report.id} t={t.industry} printSlot={slot} />}
+      {industry && psy.length === 8 && <Industry {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} />}
       {match && psy.length === 8 && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
 
       {top && (

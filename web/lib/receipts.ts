@@ -12,6 +12,7 @@ import { emailConfig, isEmailAddress, sendEmail } from "./email";
 import { dictFor, getLocale } from "./i18n";
 import { industryNames } from "./industry-chapter";
 import { INDUSTRY_PACK } from "./industry-billing";
+import { BEST_PACK } from "./best-billing";
 import { LEGAL } from "./legal";
 import { receiptNumber, renderReceipt, type ReceiptData, type ReceiptItem } from "./receipt-mail";
 import { paymentDetails } from "./stripe";
@@ -61,6 +62,9 @@ async function itemOf(p: Purchase, locale: string, origin: string): Promise<{ it
   if (p.matchId) {
     const [m] = await db().select().from(matches).where(eq(matches.id, p.matchId));
     return { item: { kind: "match", a: m?.ownerName ?? "", b: m?.partnerName ?? "" }, next: { kind: "match", url: `${origin}/match/${p.matchId}` } };
+  }
+  if (p.pack === BEST_PACK && p.unlockAnalysisId) {
+    return { item: { kind: "best" }, next: { kind: "best", url: `${origin}/reports/${p.unlockAnalysisId}` } };
   }
   if (p.pack === INDUSTRY_PACK && p.unlockIndustry && p.unlockAnalysisId) {
     const name = industryNames(await dictFor(locale)).find((i) => i.key === p.unlockIndustry)?.name ?? p.unlockIndustry;

@@ -4,10 +4,11 @@ import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
 import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
-import { asUser, balance, confirmCheckout, getSettings, hasFullAccess, noteResult, openIndustries } from "@/lib/billing";
+import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, noteResult, openIndustries } from "@/lib/billing";
+import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { isAdminUser } from "@/lib/admin";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
-import { isIndustry } from "@/lib/industries";
+import { INDUSTRY_KEYS, industryMatches, isIndustry } from "@/lib/industries";
 import { industryPriceCents } from "@/lib/industry-billing";
 import { fieldFits } from "@/lib/fit";
 import { gateway } from "@/lib/gateway";
@@ -23,8 +24,8 @@ import { stripeReady } from "@/lib/stripe";
 import { matchesFor, partnerAnalyses } from "@/lib/matches";
 import { stageOf } from "@/lib/match-stage";
 
-/** `paid`, `session` and `industry` are what Stripe Checkout sends the buyer back with (see api/billing/checkout). */
-type Query = { paid?: string; session?: string; industry?: string };
+/** `paid`, `session`, `industry` and `best` are what Stripe Checkout sends the buyer back with (see api/billing/checkout and api/billing/best). */
+type Query = { paid?: string; session?: string; industry?: string; best?: string };
 
 export default async function ReportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Query> }) {
   const [{ id }, userId, { locale, t }, query] = await Promise.all([params, visitorId(), getDict(), searchParams]);
@@ -78,16 +79,26 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // The industry chapter: free for admins and while billing is off, otherwise one credit per industry.
   let industry: React.ComponentProps<typeof ReportView>["industry"];
   if (full && analysis.status === "completed") {
-    const [cfg, admin, unlocked, credits, addonCents, canPay] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId)), industryPriceCents(), stripeReady()]);
+    const [cfg, admin, unlocked, credits, addonCents, canPay, bestCents, bestN] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId)), industryPriceCents(), stripeReady(), bestPriceCents(), bestCredits()]);
     // Admins get the same closed chapter and the same button as a client, but opening it costs them nothing.
     const open = isOpenVisitor(userId); // the open host: no payments, every chapter free
     // The add-on has its own price and is paid straight from the card; a report credit can open it too.
     const price = cfg.enabled && !admin && !open ? money(addonCents, cfg.currency, locale) : null;
+    // The best-industry finder: every industry compared and the winner opened, its chapter included. Dearer than one chapter.
+    const bestOpen = unlocked.includes(BEST_KEY);
+    const winner = bestOpen ? industryMatches(analysis.psytype ?? [])?.[0]?.industry : undefined;
+    const bestFree = !cfg.enabled || open, bestMoney = money(bestCents, cfg.currency, locale), f = t.finder.offer;
     industry = {
       industries: industryNames(t), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled && !open ? "/api/billing/unlock-industry" : undefined,
       payUrl: price && canPay ? "/api/billing/checkout" : undefined, payLabel: price ? t.billing.pay.replace("{price}", price) : undefined,
-      unlocked, credits, freeUnlock: admin, price, teaser: industryTeaser("it", analysis.psytype ?? [], t),
-      initialIndustry: wantedIndustry, paid,
+      unlocked: [...unlocked.filter(isIndustry), ...(winner && !unlocked.includes(winner) ? [winner] : [])], credits, freeUnlock: admin, price, teaser: industryTeaser("it", analysis.psytype ?? [], t),
+      initialIndustry: wantedIndustry, paid: query.best ? null : paid,
+      best: {
+        url: `/api/analyses/${analysis.id}/best`, open: bestOpen, total: INDUSTRY_KEYS.length, needed: bestN, free: bestFree, admin,
+        price: bestFree ? f.free : admin ? f.freeAdmin.replace("{n}", String(bestN)) : f.price.replace("{price}", bestMoney).replace("{n}", String(bestN)),
+        payUrl: !bestFree && !admin && canPay ? "/api/billing/best" : undefined, payLabel: t.billing.pay.replace("{price}", bestMoney),
+        paid: query.best ? paid : null,
+      },
     };
   }
 

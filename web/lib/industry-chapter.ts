@@ -4,7 +4,7 @@
  */
 import type { Dict } from "./i18n";
 import type { IndustryText } from "./i18n/industries-en";
-import { industryFit, industryRanking, LEVELS, type IndustryKey, type Level, type TypeKey } from "./industries";
+import { INDUSTRY_KEYS, industryFit, industryMatches, industryRanking, LEVELS, sectorOf, type IndustryKey, type Level, type SectorKey, type TypeKey } from "./industries";
 
 export interface ChapterRole { key: string; name: string; text: string; level: Level; levelLabel: string; score: number; because: string; leansOn: string }
 export interface IndustryChapter {
@@ -35,10 +35,10 @@ export interface IndustryChapter {
   scoreHelp: string;
 }
 
-/** The industry names for the picker, in the dictionary's language (added languages are translated like the rest). */
-export function industryNames(t: Dict): Array<{ key: IndustryKey; name: string }> {
+/** The industry names for the picker, in the dictionary's language (added languages are translated like the rest), each with its sector. */
+export function industryNames(t: Dict): Array<{ key: IndustryKey; name: string; sector: SectorKey }> {
   const texts = textsFor(t);
-  return (Object.keys(texts) as IndustryKey[]).map((key) => ({ key, name: texts[key].name })).sort((a, b) => a.name.localeCompare(b.name));
+  return (Object.keys(texts) as IndustryKey[]).map((key) => ({ key, name: texts[key].name, sector: sectorOf(key) })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 const textsFor = (t: Dict): Record<string, IndustryText> => t.content.industries;
@@ -122,4 +122,69 @@ export function industryTeaser(industry: IndustryKey, types: Array<{ key: string
   if (!fit) return null;
   const text = textsFor(t)[industry];
   return { industry, name: text.name, overall: fit.overall, roles: fit.roles.slice(0, 3).map((r) => ({ name: text.roles[r.key]?.name ?? r.key, score: r.score })), more: Math.max(0, fit.roles.length - 3) };
+}
+
+export interface BestIndustry {
+  /** How many industries were compared. */
+  total: number;
+  eyebrow: string;
+  industry: IndustryKey;
+  name: string;
+  blurb: string;
+  match: number;
+  why: string;
+  roleTitle: string;
+  /** The person's best role in the winning industry, with why and where it sits. */
+  role: ChapterRole;
+  pathTitle: string;
+  path: Array<{ level: Level; label: string; role: ChapterRole }>;
+  scoresTitle: string;
+  scores: Array<{ key: "peak" | "depth" | "typeFit"; label: string; value: number }>;
+  scoresHelp: string;
+  othersTitle: string;
+  /** The next four industries, each with its best role. */
+  others: Array<{ key: IndustryKey; name: string; match: number; role: string }>;
+  openChapter: string;
+  note: string;
+}
+
+/**
+ * The best-industry finder as it leaves the server: every industry compared (lib/industries.ts industryMatches), the
+ * winner explained with its best role and the path to it, and the closest alternatives. The winner's full chapter is
+ * opened by the same purchase and read through the chapter route. Null unless all eight types were scored.
+ */
+export function bestIndustry(types: Array<{ key: string; value: number }>, t: Dict, locale: string): BestIndustry | null {
+  const matches = industryMatches(types);
+  if (!matches?.length) return null;
+  const [top, ...rest] = matches;
+  const chapter = industryChapter(top.industry, types, t, locale);
+  if (!chapter) return null;
+  const texts = textsFor(t);
+  const f = t.finder.result;
+  const n = String(INDUSTRY_KEYS.length);
+  const roleName = (industry: IndustryKey, key: string) => texts[industry]?.roles[key]?.name ?? key;
+  return {
+    total: INDUSTRY_KEYS.length,
+    eyebrow: f.eyebrow.replace("{n}", n),
+    industry: top.industry,
+    name: chapter.name,
+    blurb: chapter.blurb,
+    match: top.match,
+    why: f.why.replace("{n}", n).replace("{industry}", chapter.name).replace("{peak}", String(top.peak)).replace("{depth}", String(top.depth)).replace("{typeFit}", String(top.typeFit)),
+    roleTitle: f.roleTitle,
+    role: chapter.roles[0],
+    pathTitle: f.pathTitle,
+    path: chapter.path,
+    scoresTitle: f.scoresTitle,
+    scores: [
+      { key: "peak", label: f.scores.peak, value: top.peak },
+      { key: "depth", label: f.scores.depth, value: top.depth },
+      { key: "typeFit", label: f.scores.typeFit, value: top.typeFit },
+    ],
+    scoresHelp: f.scoresHelp,
+    othersTitle: f.othersTitle,
+    others: rest.slice(0, 4).map((m) => ({ key: m.industry, name: texts[m.industry]?.name ?? m.industry, match: m.match, role: f.otherRole.replace("{role}", roleName(m.industry, m.best.key)).replace("{score}", String(m.best.score)) })),
+    openChapter: f.openChapter.replace("{industry}", chapter.name),
+    note: f.note,
+  };
 }

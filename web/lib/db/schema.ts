@@ -88,7 +88,7 @@ export type Recording = typeof recordings.$inferSelect;
 
 /** Who holds credits: a person (their Clerk user id) or a company (workspace id). */
 export type OwnerKind = "user" | "workspace";
-export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "match" | "gift" | "refund";
+export type LedgerReason = "purchase" | "grant" | "promo" | "trial" | "report" | "industry" | "best" | "match" | "gift" | "refund";
 
 /**
  * Every movement of credits, and the only source of truth for a balance (the sum of delta).

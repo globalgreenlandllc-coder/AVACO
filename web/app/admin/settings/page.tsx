@@ -11,6 +11,7 @@ import { TRANSLATABLE } from "@/lib/i18n/languages";
 import { LEGAL } from "@/lib/legal";
 import { industryPriceCents } from "@/lib/industry-billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
+import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { baseUrl } from "@/lib/page";
 import { stripeStatus } from "@/lib/stripe";
 import { allProgress, deeplStatus, dictionaryCharacters } from "@/lib/translate";
@@ -22,7 +23,7 @@ const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm";
 const NAMES: Record<string, string> = { one: "Single report", three: "Three reports", ten: "Ten reports", team25: "Team 25", team100: "Team 100", team500: "Team 500" };
 
 export default async function AdminSettings() {
-  const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents, matchCents, matchN, mail] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents(), matchPriceCents(), matchCredits(), emailStatus()]);
+  const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents, matchCents, matchN, mail, bestCents, bestN] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents(), matchPriceCents(), matchCredits(), emailStatus(), bestPriceCents(), bestCredits()]);
   // The personality type report is sold as the one-credit pack for people; its price field edits that pack.
   const typeCents = cfg.packs.find((p) => p.audience === "user" && p.credits === 1)?.amountCents ?? 900;
   const envAdmins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
@@ -123,20 +124,22 @@ export default async function AdminSettings() {
           </table>
         </div>
 
-        {/* The three paid reports side by side: the type report (the Single report pack), then its two add-ons. */}
+        {/* The paid reports side by side: the type report (the Single report pack), then its add-ons. */}
         <div>
-          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-muted">The three paid reports</h3>
-          <div className="mt-3 grid gap-5 sm:grid-cols-3">
+          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-muted">The paid reports</h3>
+          <div className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-sm"><span className="text-ink-2">Personality type report, per report ({cfg.currency.toUpperCase()})</span><input name="typePrice" type="number" min="0.5" step="0.01" defaultValue={(typeCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">The full report on a person's own voice: their type, emotional state and best fields. Same price as the Single report pack above.</span></label>
           <label className="text-sm"><span className="text-ink-2">Industry chapter, per industry ({cfg.currency.toUpperCase()})</span><input name="industryPrice" type="number" min="0.5" step="0.01" defaultValue={(addonCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Paid straight from the card on a report. A report credit can open a chapter too.</span></label>
+          <label className="text-sm"><span className="text-ink-2">Best industry finder, per report ({cfg.currency.toUpperCase()})</span><input name="bestPrice" type="number" min="0.5" step="0.01" defaultValue={(bestCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Compares every industry and opens the winner with its best role and full chapter. Paid straight from the card.</span></label>
           <label className="text-sm"><span className="text-ink-2">Relationship report, per couple ({cfg.currency.toUpperCase()})</span><input name="matchPrice" type="number" min="0.5" step="0.01" defaultValue={(matchCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Paid straight from the card on a report; the partner's own report is included.</span></label>
           </div>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
           <label className="text-sm"><span className="text-ink-2">Currency (3 letters)</span><input name="currency" defaultValue={cfg.currency} maxLength={3} className={`${input} mt-1.5 w-full uppercase`} /></label>
           <label className="text-sm"><span className="text-ink-2">Free previews per person, per 30 days</span><input name="freePreviews" type="number" min="0" max="100" defaultValue={cfg.freePreviewsPer30Days} className={`${input} mt-1.5 w-full`} /></label>
           <label className="text-sm"><span className="text-ink-2">Trial credits for a new company</span><input name="trialCredits" type="number" min="0" max="1000" defaultValue={cfg.workspaceTrialCredits} className={`${input} mt-1.5 w-full`} /></label>
+          <label className="text-sm"><span className="text-ink-2">Best industry finder, in credits</span><input name="bestCredits" type="number" min="1" step="1" defaultValue={bestN} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">What the finder costs someone who pays with report credits.</span></label>
           <label className="text-sm"><span className="text-ink-2">Relationship report, in credits</span><input name="matchCredits" type="number" min="1" step="1" defaultValue={matchN} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">What it costs someone who pays with report credits instead of the card.</span></label>
         </div>
         <p className="text-xs leading-relaxed text-muted">Each free preview costs you one AVOCO analysis, so the preview limit is your protection against people who record and never pay.</p>

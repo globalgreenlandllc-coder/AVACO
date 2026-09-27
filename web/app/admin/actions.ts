@@ -12,6 +12,7 @@ import { getLocale } from "@/lib/i18n";
 import { sendSampleReceipt } from "@/lib/receipts";
 import { saveMatchPricing } from "@/lib/match-billing";
 import { saveIndustryPrice } from "@/lib/industry-billing";
+import { saveBestPricing } from "@/lib/best-billing";
 import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
 
@@ -44,6 +45,8 @@ export async function saveSettingsAction(form: FormData) {
   if (addon > 0) await saveIndustryPrice(Math.round(addon * 100));
   const matchPrice = Number(form.get("matchPrice")), matchN = Number(form.get("matchCredits"));
   await saveMatchPricing({ priceCents: matchPrice > 0 ? Math.round(matchPrice * 100) : undefined, credits: matchN >= 1 ? matchN : undefined });
+  const bestPrice = Number(form.get("bestPrice")), bestN = Number(form.get("bestCredits"));
+  await saveBestPricing({ priceCents: bestPrice > 0 ? Math.round(bestPrice * 100) : undefined, credits: bestN >= 1 ? bestN : undefined });
   revalidatePath("/admin", "layout");
 }
 
