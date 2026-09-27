@@ -279,6 +279,8 @@ export const en = {
     payWithCredits: "Paid with {n} of your {have} credits.",
     payByCard: "Paid by card: {price}. You will be taken to a secure checkout and brought back here.",
     awaitingPayment: "Waiting for the payment to be confirmed…",
+    notPaid: "This couple's report hasn't been paid for yet, so {name}'s link is still closed.",
+    payNow: "Pay {price} and open the link",
     paymentConfirmed: "Payment received. Thank you.",
     free: "Free on this page",
     freeAdmin: "Free for admins · clients pay {n} credits",

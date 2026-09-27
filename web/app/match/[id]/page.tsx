@@ -9,7 +9,11 @@ import { Recorder } from "@/components/Recorder";
 import { ReportView } from "@/components/ReportView";
 import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
-import { markSeen, matchFor } from "@/lib/matches";
+import { isPaid, markSeen, matchFor } from "@/lib/matches";
+import { matchPriceCents } from "@/lib/match-billing";
+import { money } from "@/lib/money";
+import { getSettings } from "@/lib/billing";
+import { PayMatch } from "@/components/PayMatch";
 import { baseUrl } from "@/lib/page";
 import { visitorId } from "@/lib/visitor";
 import { asUser, confirmCheckout } from "@/lib/billing";
@@ -24,17 +28,24 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   if (!match) notFound();
   // Back from Stripe: confirm the payment on this very load, so the link opens now, not whenever the webhook gets round to it.
   let justPaid = false;
-  if (!match.paidAt && typeof session === "string") {
+  if (!isPaid(match) && typeof session === "string") {
     const outcome = await confirmCheckout(asUser(userId), session).catch(() => null);
     if (outcome?.paid) { justPaid = true; match = (await matchFor(userId, id)) ?? match; }
   }
-  if (!match.paidAt) {
+  if (!isPaid(match)) {
+    // Just back from Stripe: the payment is being confirmed, so wait for it. Anywhere else nothing is on its way,
+    // so say so and offer to pay, instead of waiting for a payment that was never made (a checkout left half-way).
+    const confirming = typeof session === "string";
+    const [cents, cfg] = confirming ? [0, null] : await Promise.all([matchPriceCents(), getSettings()]);
     return (
-      <div className="mx-auto max-w-lg space-y-6 pt-10 text-center">
-        <RefreshWhile />
-        <div className="relative mx-auto grid h-20 w-20 place-items-center"><span className="breathe absolute inset-0 rounded-full bg-accent" aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
-        <p className="leading-relaxed text-ink-2">{t.match.awaitingPayment}</p>
-        <Link href={`/reports/${match.analysisId}`} className="text-sm font-semibold text-accent-text hover:underline">← {t.match.backToReport}</Link>
+      <div className="theme-match mx-auto max-w-lg space-y-6 pt-10 text-center">
+        {confirming && <RefreshWhile />}
+        <div className="relative mx-auto grid h-20 w-20 place-items-center"><span className={`${confirming ? "breathe " : ""}absolute inset-0 rounded-full bg-accent`} aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
+        <p className="leading-relaxed text-ink-2">{confirming ? t.match.awaitingPayment : t.match.notPaid.replace("{name}", match.partnerName)}</p>
+        {!confirming && cfg && (
+          <PayMatch analysisId={match.analysisId} ownerName={match.ownerName} partnerName={match.partnerName} withFamily={match.withFamily} label={t.match.payNow.replace("{price}", money(cents, cfg.currency, locale))} />
+        )}
+        <Link href={`/reports/${match.analysisId}`} className="block text-sm font-semibold text-accent-text hover:underline">← {t.match.backToReport}</Link>
       </div>
     );
   }

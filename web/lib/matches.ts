@@ -39,7 +39,7 @@ export async function createMatch(userId: string, input: { analysisId: unknown; 
   for (const m of same) {
     const partner = await partnerAnalyses(m).catch(() => []);
     if (partner.some((a) => a.status === "completed")) continue;
-    return { match: m, purchase: m.paidAt ? null : await startMatchPurchase(asUser(userId), analysisId, m.id), reused: true };
+    return { match: m, purchase: isPaid(m) ? null : await startMatchPurchase(asUser(userId), analysisId, m.id), reused: true };
   }
 
   const id = crypto.randomUUID();
@@ -52,6 +52,9 @@ export async function createMatch(userId: string, input: { analysisId: unknown; 
   }).returning();
   return { match, purchase: paid ? null : await startMatchPurchase(asUser(userId), analysisId, id) };
 }
+
+/** Paid: the payment landed, or none was ever needed (made by an admin, or while billing was off). */
+export const isPaid = (m: Pick<Match, "paidAt" | "source">): boolean => m.paidAt !== null || m.source === "admin" || m.source === "free";
 
 export async function matchesFor(userId: string, analysisId?: string): Promise<Match[]> {
   const where = analysisId ? and(eq(matches.ownerId, userId), eq(matches.analysisId, analysisId)) : eq(matches.ownerId, userId);
@@ -68,7 +71,7 @@ export async function matchFor(userId: string, id: string): Promise<Match | null
 export async function matchByToken(token: string): Promise<Match | null> {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return null;
   const [m] = await db().select().from(matches).where(eq(matches.partnerToken, token));
-  return m?.paidAt ? m : null;
+  return m && isPaid(m) ? m : null;
 }
 
 /** The partner's recordings, newest first. */
