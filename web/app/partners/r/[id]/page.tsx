@@ -5,6 +5,7 @@ import { PartnerRemember } from "@/components/PartnerHistory";
 import { ReportView } from "@/components/ReportView";
 import { publicReport } from "@/lib/api";
 import { formatDate, getDict } from "@/lib/i18n";
+import { INDUSTRY_KEYS } from "@/lib/industries";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
 import { partnerAnalysis } from "@/lib/partners";
 
@@ -27,7 +28,11 @@ export default async function PartnerReportPage({ params }: { params: Promise<{ 
         deleteUrl={`/api/partners/r/${analysis.id}`}
         afterDeleteHref={`/partners?forget=${encodeURIComponent(analysis.id)}`}
         back={{ href: "/partners", label: p.back }}
-        industry={{ industries: industryNames(t), chapterUrl: `/api/partners/r/${analysis.id}/industry/{key}`, teaser: industryTeaser("it", analysis.psytype ?? [], t) }}
+        industry={{
+          industries: industryNames(t), chapterUrl: `/api/partners/r/${analysis.id}/industry/{key}`, teaser: industryTeaser("it", analysis.psytype ?? [], t),
+          // The best-match finder too, free like the chapters here, and still asked for with a click so it never appears unasked.
+          best: { url: `/api/partners/r/${analysis.id}/best`, open: false, total: INDUSTRY_KEYS.length, needed: 0, free: true, admin: false, price: t.finder.offer.free, payLabel: "" },
+        }}
         lead={<p className="no-print text-sm leading-relaxed text-ink-2">{p.note} <Link href="/partners" className="font-semibold text-accent-text hover:underline">{p.another}</Link></p>}
       />
     </>
