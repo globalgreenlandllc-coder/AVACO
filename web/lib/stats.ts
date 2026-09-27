@@ -29,14 +29,13 @@ export interface Statistics {
   insights: string[];
 }
 
-const since = (days: number) => new Date(Date.now() - days * DAY);
 
 /** New accounts in the last 60 days, from Clerk, newest first; null total when Clerk can't be asked. */
-async function signups(): Promise<{ total: number | null; created: number[]; capped: boolean }> {
+async function signups(now: number): Promise<{ total: number | null; created: number[]; capped: boolean }> {
   try {
     const client = await clerkClient();
     const [total, list] = await Promise.all([client.users.getCount(), client.users.getUserList({ orderBy: "-created_at", limit: 500 })]);
-    const floor = Date.now() - 60 * DAY;
+    const floor = now - 60 * DAY;
     return { total, created: list.data.map((u) => u.createdAt).filter((c) => c >= floor), capped: list.data.length >= 500 && (list.data.at(-1)?.createdAt ?? 0) >= floor };
   } catch (err) {
     console.error("Sign-ups unavailable", err);
@@ -46,11 +45,12 @@ async function signups(): Promise<{ total: number | null; created: number[]; cap
 
 export async function statistics(now = new Date()): Promise<Statistics> {
   const d = db();
+  const since = (days: number) => new Date(now.getTime() - days * DAY);
   const [rows, first, clerk, recordedRows, paid, chapters, couples] = await Promise.all([
     d.select({ at: visits.at, site: visits.site, path: visits.path, visitor: visits.visitor, session: visits.session, userId: visits.userId, landing: visits.landing, source: visits.source, country: visits.country, device: visits.device, locale: visits.locale })
       .from(visits).where(gte(visits.at, since(60))).orderBy(desc(visits.at)).limit(60000),
     d.select({ at: sql<Date | null>`min(${visits.at})` }).from(visits),
-    signups(),
+    signups(now.getTime()),
     d.select({ userId: selfRecordings.userId }).from(selfRecordings).where(gte(selfRecordings.createdAt, since(30))).groupBy(selfRecordings.userId),
     d.select({ n: countDistinct(creditLedger.ownerId) }).from(creditLedger).where(and(eq(creditLedger.reason, "purchase"), gte(creditLedger.createdAt, since(30)))),
     d.select({ n: countDistinct(industryAccess.ownerId) }).from(industryAccess).where(and(eq(industryAccess.source, "credit"), gte(industryAccess.unlockedAt, since(30)))),
