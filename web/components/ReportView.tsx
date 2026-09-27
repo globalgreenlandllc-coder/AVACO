@@ -11,6 +11,8 @@ import { Bars } from "./Bars";
 import { Industry, type IndustryProps } from "./Industry";
 import { LockedPreview, type PreviewTakes } from "./LockedPreview";
 import { MatchAddon, type MatchAddonProps } from "./MatchAddon";
+import { nameSlug } from "@/lib/person";
+import { PersonName } from "./PersonName";
 import { CountUp, Reveal } from "./Motion";
 import { Profile } from "./Profile";
 import { Radar } from "./Radar";
@@ -55,9 +57,11 @@ export interface ReportViewProps {
   locked?: React.ReactNode;
   /** On a free preview, what may be said about the recordings behind the profile: how many, how settled, when. */
   previewTakes?: PreviewTakes;
+  /** Whose voice this is (lib/people.ts), with the names already used on the account; passed where the report can be renamed. */
+  person?: { name: string | null; known: string[] };
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes, person }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -102,15 +106,17 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     if (!root) return;
     setSaving(true);
     const day = report.created_at.slice(0, 10);
+    // Someone else's report carries their name in the file name and title, so a folder of reports stays readable.
+    const who = person?.name ? `-${nameSlug(person.name)}` : "", whoTitle = person?.name ? ` · ${person.name}` : "";
     try {
       if (what === "industry") {
         const slot = root.querySelector<HTMLElement>("[data-export-show]");
         if (!slot) return;
-        saveFile(await buildReportFile(slot, `${t.brand} · ${t.industry.title} · ${recordedOn}`, { heading: t.industry.title }), `avoco-industry-${day}.html`);
+        saveFile(await buildReportFile(slot, `${t.brand} · ${t.industry.title}${whoTitle} · ${recordedOn}`, { heading: t.industry.title }), `avoco-industry${who}-${day}.html`);
       } else {
-        const title = `${t.brand} · ${t.report.title} · ${recordedOn}`;
+        const title = `${t.brand} · ${t.report.title}${whoTitle} · ${recordedOn}`;
         const exclude = what === "type" ? ["[data-export-show]", "[data-industry]", "[data-match]"] : [];
-        saveFile(await buildReportFile(root, title, { exclude }), `avoco-${what === "type" ? "type-report" : "report-all"}-${day}.html`);
+        saveFile(await buildReportFile(root, title, { exclude }), `avoco-${what === "type" ? "type-report" : "report-all"}${who}-${day}.html`);
       }
     } finally {
       setSaving(false);
@@ -205,6 +211,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
           <span className="cover-capsule drift" style={{ bottom: -90, left: "47%", width: 44, height: 150, borderRadius: "999px 999px 0 0", background: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", animationDelay: "-7s" }} aria-hidden />
 
           <p className="cover-eyebrow relative"><span className="font-display text-xl font-semibold tracking-[0.2em]">{t.brand}</span><span className="mx-3 opacity-50">·</span>{r.title} · {recordedOn}</p>
+          {person && <PersonName analysisId={report.id} name={person.name} known={person.known} t={t.people} />}
 
           <div className="relative mt-10 grid items-center gap-10 lg:grid-cols-[1fr_1.15fr] print:mt-6 print:grid-cols-[1fr_1.2fr] print:gap-4">
             <div>

@@ -2,9 +2,13 @@ import { auth } from "@clerk/nextjs/server";
 import { Recorder } from "@/components/Recorder";
 import { activeGift } from "@/lib/gifts";
 import { getDict } from "@/lib/i18n";
+import { cleanName, knownNames } from "@/lib/people";
+import { visitorId } from "@/lib/visitor";
 
-export default async function RecordPage() {
-  const [{ t }, { userId }] = await Promise.all([getDict(), auth()]);
+export default async function RecordPage({ searchParams }: { searchParams: Promise<{ person?: string }> }) {
+  const [{ t }, { userId }, visitor, query] = await Promise.all([getDict(), auth(), visitorId(), searchParams]);
+  // Whose voice: "me", or a name used before, one click each; "Record Anna" on My reports arrives with ?person=Anna.
+  const whose = visitor ? { known: await knownNames(visitor), initial: cleanName(query.person), t: t.people } : undefined;
   // Someone holding a gift: say so, and that the report opens by itself.
   const gift = userId ? await activeGift(userId).catch(() => null) : null;
   return (
@@ -18,7 +22,7 @@ export default async function RecordPage() {
             <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.gift.record.text} {t.gift.record.left.replace("{n}", String(gift.reports - gift.reportsUsed))}.</p>
           </div>
         )}
-        <div className="mt-8"><Recorder t={t.record} payText={t.billing.cap} /></div>
+        <div className="mt-8"><Recorder t={t.record} payText={t.billing.cap} whose={whose} /></div>
       </div>
       <aside className="lg:pt-32">
         <p className="eyebrow">{t.record.promptsTitle}</p>

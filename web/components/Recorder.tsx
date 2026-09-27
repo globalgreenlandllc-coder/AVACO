@@ -4,6 +4,7 @@ import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { cleanName, MAX_NAME, personKey } from "@/lib/person";
 import { AudioError, MAX_SECONDS, MIN_SECONDS, toAnalysisWav } from "@/lib/wav";
 import { Thinking } from "./Thinking";
 
@@ -43,9 +44,14 @@ export interface RecorderProps {
   payText?: string;
   /** Called once the microphone is live or a file was chosen: the moment "recording" begins, for pages that show progress to someone else. */
   onStart?: () => void;
+  /**
+   * Asks whose voice this is before it is sent (the account holder's own recorder): "me", a name already used, or someone
+   * new. Someone else's recording needs their agreement, so the consent sentence names them. `initial` preselects a person.
+   */
+  whose?: { known: string[]; initial?: string | null; t: Dict["people"] };
 }
 
-export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText, onStart }: RecorderProps) {
+export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText, onStart, whose }: RecorderProps) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -55,7 +61,14 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const [consent, setConsent] = useState(false);
   const [extra, setExtra] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const agreed = consent && (!extraConsent || extra);
+  const [other, setOther] = useState(Boolean(cleanName(whose?.initial)));
+  const [person, setPerson] = useState(cleanName(whose?.initial) ?? "");
+  const otherName = whose && other ? cleanName(person) : null;
+  // Someone else's voice goes nowhere without a name: the consent sentence is about them.
+  const agreed = consent && (!extraConsent || extra) && (!whose || !other || Boolean(otherName));
+  const consentLabel = whose && otherName ? whose.t.consentOther.replace("{name}", otherName) : consentText ?? t.consent;
+  /** A different person means a different consent sentence, so the box has to be ticked again. */
+  const choose = (isOther: boolean, name: string) => { setOther(isOther); setPerson(name); setConsent(false); };
   const [progress, setProgress] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [uploaded, setUploaded] = useState(0);
@@ -183,7 +196,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
 
       setStep(2);
       setProgress(t.starting);
-      const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined }) });
+      const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined, person: otherName ?? undefined }) });
       if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
       if (res.status === 402 && (payText || limitText)) { setMessage(payText ?? limitText ?? null); setProgress(null); setPhase("recorded"); return; }
       if (res.status === 502 || res.status === 503) { setError("unavailable"); setProgress(null); setPhase("recorded"); return; }
@@ -255,9 +268,24 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       {(phase === "recorded" || phase === "sending") && clip && (
         <div className="mt-8 space-y-6 border-t border-line pt-8">
           <audio controls src={clip.url} className="w-full" />
+          {whose && (
+            <fieldset disabled={phase === "sending"}>
+              <legend className="eyebrow">{whose.t.whoseTitle}</legend>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className={`pill ${!other ? "pill-on" : "pill-off"}`} onClick={() => choose(false, "")}>{whose.t.me}</button>
+                {whose.known.map((n) => <button key={n} type="button" className={`pill ${other && personKey(person) === personKey(n) ? "pill-on" : "pill-off"}`} onClick={() => choose(true, n)}>{n}</button>)}
+                <button type="button" className={`pill ${other && !whose.known.some((n) => personKey(n) === personKey(person)) ? "pill-on" : "pill-off"}`} onClick={() => choose(true, "")}>{whose.t.someoneElse}</button>
+              </div>
+              {other && (
+                <input value={person} onChange={(e) => { setPerson(e.target.value); setConsent(false); }} maxLength={MAX_NAME} placeholder={whose.t.namePlaceholder} aria-label={whose.t.namePlaceholder} autoComplete="off" autoFocus={!person}
+                  className="mt-3 w-full max-w-sm rounded-lg border border-line bg-surface px-3 py-2.5 text-sm" />
+              )}
+              <p className="mt-2 text-xs leading-relaxed text-muted">{whose.t.whoseHelp}</p>
+            </fieldset>
+          )}
           <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-ink-2">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={phase === "sending"} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
-            <span>{consentText ?? t.consent}</span>
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={phase === "sending" || (Boolean(whose) && other && !otherName)} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
+            <span>{consentLabel}</span>
           </label>
           <p className="-mt-3 pl-7 text-xs"><a href="/privacy" target="_blank" rel="noopener" className="text-accent-text hover:underline">{t.privacyLink}</a></p>
           {extraConsent && (
@@ -288,7 +316,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             </div>
           )}
           <div className="flex flex-wrap gap-3">
-            <button type="button" className="btn" onClick={analyse} disabled={!agreed || phase === "sending"}>{phase === "sending" ? progress : t.analyse}</button>
+            <button type="button" className="btn" onClick={analyse} disabled={!agreed || phase === "sending"}>{phase === "sending" ? progress : whose && otherName ? whose.t.analyseFor.replace("{name}", otherName) : t.analyse}</button>
             <button type="button" className="btn btn-quiet" onClick={reset} disabled={phase === "sending"}>{t.again}</button>
           </div>
         </div>

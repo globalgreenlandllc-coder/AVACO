@@ -17,13 +17,15 @@ export interface MatchAddonProps {
   canOrder: boolean;
   creditsHref?: string;
   existing: Array<{ id: string; partnerName: string; stage: "invited" | "opened" | "recording" | "analysing" | "ready" }>;
+  /** "Your first name" to start with: whoever the report is about. */
+  defaultOwnerName?: string;
   t: Dict["match"];
 }
 
 /** The relationship add-on at the top of a report, in a cover of its own (rose gold): order a couple's report, and the matches already ordered. */
-export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, t }: MatchAddonProps) {
+export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, defaultOwnerName, t }: MatchAddonProps) {
   const router = useRouter();
-  const [ownerName, setOwnerName] = useState("");
+  const [ownerName, setOwnerName] = useState(defaultOwnerName ?? "");
   const [partnerName, setPartnerName] = useState("");
   const [withFamily, setWithFamily] = useState(false);
   const [busy, setBusy] = useState<"upload" | "invite" | null>(null);

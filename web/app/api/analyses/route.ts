@@ -1,8 +1,9 @@
-/** POST /api/analyses { audioUrl, consent: true } — starts an analysis for the signed-in user. */
+/** POST /api/analyses { audioUrl, consent: true, person? } — starts an analysis for the signed-in user; `person` names whose voice it is. */
 import { errorResponse, json, requireUser } from "@/lib/api";
 import { asUser, balance, noteSelfRecording, previewsLeft } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
 import { coverWithGift } from "@/lib/gifts";
+import { cleanName, setPerson } from "@/lib/people";
 
 export async function POST(req: Request) {
   const user = await requireUser();
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
 
     const created = await gateway.createAnalysis({ audioUrl: body.audioUrl, owner: user.userId });
     await noteSelfRecording(user.userId, created.id);
+    // Someone else's voice, named when it was recorded: their reports are read together, never mixed with the account holder's.
+    if (cleanName(body.person)) await setPerson(user.userId, created.id, body.person).catch((err) => console.error("Could not name the report", err));
     // Someone holding a gift never meets the paywall: the gift's credit opens this report right away.
     await coverWithGift(user.userId, created.id).catch(() => null);
     return json({ id: created.id }, 202);

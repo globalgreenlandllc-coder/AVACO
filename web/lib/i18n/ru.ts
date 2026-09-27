@@ -5,6 +5,7 @@ import { deepRu } from "./deep-ru";
 import { legalRu } from "./legal-ru";
 import { giftRu } from "./gift-ru";
 import { receiptRu } from "./receipt-ru";
+import { peopleRu } from "./people-ru";
 import type { Dict } from "./en";
 
 export const ru: Dict = {
@@ -250,6 +251,7 @@ export const ru: Dict = {
   legal: legalRu,
   gift: giftRu,
   receipt: receiptRu,
+  people: peopleRu,
   partners: {
     eyebrow: "Доступ для партнёров",
     title: "Попробуйте отчёт AVOCO",

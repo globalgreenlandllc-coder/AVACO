@@ -6,6 +6,7 @@
 import { errorResponse, json, previewReport, publicReport, requireUser } from "@/lib/api";
 import { forgetReport, hasFullAccess } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
+import { forgetPeople } from "@/lib/people";
 import { profileFor } from "@/lib/profile";
 
 type Context = { params: Promise<{ id: string }> };
@@ -34,6 +35,7 @@ export async function DELETE(_req: Request, ctx: Context) {
     if (!(await gateway.getAnalysisFor(user.userId, id))) return notFound();
     await gateway.deleteAnalysis(id);
     await forgetReport(id);
+    await forgetPeople([id]).catch((err) => console.error("Could not remove the report's name", err));
     return json({ deleted: true });
   } catch (err) {
     return errorResponse(err);

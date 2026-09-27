@@ -1,3 +1,4 @@
+import { currentUser } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
@@ -15,6 +16,7 @@ import { money } from "@/lib/money";
 import { isOpenVisitor, visitorId } from "@/lib/visitor";
 import { agreementBand } from "@/lib/consensus";
 import { profileFor } from "@/lib/profile";
+import { knownNames } from "@/lib/people";
 import { matchIsFree } from "@/lib/billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { stripeReady } from "@/lib/stripe";
@@ -96,10 +98,14 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     // The couple's report has its own price: the card, or the person's report credits when they have enough.
     const price = free ? null : t.match.priceCard.replace("{price}", money(cents, cfg.currency, locale)).replace("{n}", String(needed));
     const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
-    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses };
+    // "Your first name" in the order form starts as whoever this report is about: the named person, or the account holder.
+    const ownerName = profile.person ?? (isOpenVisitor(userId) ? null : (await currentUser().catch(() => null))?.firstName) ?? undefined;
+    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses, defaultOwnerName: ownerName };
   }
 
   // A preview gets no result: not the type, not the per-recording types, only how many recordings and when.
   const previewTakes = !full && takes ? { n: takes.n, band: takes.band, pct: takes.pct, dates: takes.recordings.map(({ id, date, current }) => ({ id, date, current })) } : undefined;
-  return <ReportView key={`${locale}-${full}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} />;
+  // Whose voice this is, with the names already used on the account as one-click choices.
+  const person = { name: profile.person, known: await knownNames(userId) };
+  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} person={person} />;
 }

@@ -159,6 +159,16 @@ export const selfRecordings = pgTable(
   (t) => [index("self_recordings_user_idx").on(t.userId, t.createdAt.desc())],
 );
 
+/**
+ * Whose voice a report is (lib/people.ts): the name the account holder gave it. No row: their own voice. One person's
+ * reports are read together, as their type across recordings, and never mixed with anyone else's.
+ */
+export const reportPeople = pgTable(
+  "report_people",
+  { analysisId: uuid("analysis_id").primaryKey(), ownerId: text("owner_id").notNull(), name: text("name").notNull(), updatedAt: ts("updated_at").notNull().defaultNow() },
+  (t) => [index("report_people_owner_idx").on(t.ownerId)],
+);
+
 /** Reports whose full version is open. */
 export const reportAccess = pgTable("report_access", {
   analysisId: uuid("analysis_id").primaryKey(),
