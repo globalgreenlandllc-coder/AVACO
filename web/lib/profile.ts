@@ -24,3 +24,14 @@ export async function profileFor(owner: string, analysis: Analysis): Promise<Pro
   if (!c) return { psytype: analysis.psytype, consensus: null, person };
   return { psytype: c.scores.map((s) => ({ key: s.key, label: s.label, value: s.value, zone: s.zone })), consensus: c, person };
 }
+
+/**
+ * Every report of the same person as `analysisId` under `owner`, itself included. The industry chapters and couple's
+ * reports read the person's profile across recordings, so what was opened or ordered on one of their reports belongs
+ * on all of them.
+ */
+export async function samePersonIds(owner: string, analysisId: string): Promise<string[]> {
+  const [all, names] = await Promise.all([gateway.listAllFor(owner).catch(() => [] as Analysis[]), namesFor(owner)]);
+  const ids = reportsOf(all, names, personKey(names.get(analysisId) ?? null)).map((a) => a.id);
+  return ids.includes(analysisId) ? ids : [...ids, analysisId];
+}

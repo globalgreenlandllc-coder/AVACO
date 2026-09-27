@@ -4,10 +4,11 @@ import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
 import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
-import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, noteResult, openIndustries } from "@/lib/billing";
+import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, noteResult } from "@/lib/billing";
 import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { isAdminUser } from "@/lib/admin";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
+import Link from "next/link";
 import { INDUSTRY_KEYS, industryMatches, isIndustry } from "@/lib/industries";
 import { industryPriceCents } from "@/lib/industry-billing";
 import { fieldFits } from "@/lib/fit";
@@ -16,7 +17,7 @@ import { formatDate, getDict } from "@/lib/i18n";
 import { money } from "@/lib/money";
 import { isOpenVisitor, visitorId } from "@/lib/visitor";
 import { agreementBand } from "@/lib/consensus";
-import { profileFor } from "@/lib/profile";
+import { profileFor, samePersonIds } from "@/lib/profile";
 import { knownNames } from "@/lib/people";
 import { matchIsFree } from "@/lib/billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
@@ -57,6 +58,10 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     paid = "pending";
   }
   const wantedIndustry = isIndustry(query.industry) ? query.industry : null;
+  // What this person has opened or ordered on any of their reports shows here too (lib/profile.ts, samePersonIds).
+  const sameIds = await samePersonIds(userId, analysis.id);
+  const personIndustries = async () => { const byReport = await industriesByReport(userId); return [...new Set(sameIds.flatMap((id) => byReport.get(id) ?? []))]; };
+  const personMatches = async () => (await matchesFor(userId)).filter((m) => sameIds.includes(m.analysisId));
 
   const full = await hasFullAccess(userId, analysis.id);
   if (analysis.status === "completed" && analysis.psytype?.length) {
@@ -79,7 +84,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // The industry chapter: free for admins and while billing is off, otherwise one credit per industry.
   let industry: React.ComponentProps<typeof ReportView>["industry"];
   if (full && analysis.status === "completed") {
-    const [cfg, admin, unlocked, credits, addonCents, canPay, bestCents, bestN] = await Promise.all([getSettings(), isAdminUser(userId), openIndustries(analysis.id), balance(asUser(userId)), industryPriceCents(), stripeReady(), bestPriceCents(), bestCredits()]);
+    const [cfg, admin, unlocked, credits, addonCents, canPay, bestCents, bestN] = await Promise.all([getSettings(), isAdminUser(userId), personIndustries(), balance(asUser(userId)), industryPriceCents(), stripeReady(), bestPriceCents(), bestCredits()]);
     // Admins get the same closed chapter and the same button as a client, but opening it costs them nothing.
     const open = isOpenVisitor(userId); // the open host: no payments, every chapter free
     // The add-on has its own price and is paid straight from the card; a report credit can open it too.
@@ -105,7 +110,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // The relationship match add-on: the couple's report, ordered from this report.
   let match: React.ComponentProps<typeof ReportView>["match"];
   if (full && analysis.status === "completed") {
-    const [free, existing, cfg, credits, needed, cents, card] = await Promise.all([matchIsFree(userId), matchesFor(userId, analysis.id), getSettings(), balance(asUser(userId)), matchCredits(), matchPriceCents(), stripeReady()]);
+    const [free, existing, cfg, credits, needed, cents, card] = await Promise.all([matchIsFree(userId), personMatches(), getSettings(), balance(asUser(userId)), matchCredits(), matchPriceCents(), stripeReady()]);
     // The couple's report has its own price: the card, or the person's report credits when they have enough.
     const price = free ? null : t.match.priceCard.replace("{price}", money(cents, cfg.currency, locale)).replace("{n}", String(needed));
     const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
@@ -118,5 +123,17 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const previewTakes = !full && takes ? { n: takes.n, band: takes.band, pct: takes.pct, dates: takes.recordings.map(({ id, date, current }) => ({ id, date, current })) } : undefined;
   // Whose voice this is, with the names already used on the account as one-click choices.
   const person = { name: profile.person, known: await knownNames(userId) };
-  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} person={person} />;
+  // A line at the top: the industry chapters and couple's reports this person already has, each one click away.
+  const opened = full && analysis.status === "completed" ? await personIndustries().catch(() => [] as string[]) : [];
+  const couples = full && analysis.status === "completed" ? await personMatches().catch(() => []) : [];
+  const names = new Map<string, string>(industryNames(t).map((i) => [i.key, i.name]));
+  const extras = opened.length + couples.length > 0 ? (
+    <nav className="no-print flex flex-wrap items-center gap-2" aria-label={t.reports.extrasTitle} data-no-export>
+      <span className="eyebrow mr-1">{t.reports.extrasTitle}</span>
+      {opened.map((key) => <Link key={key} href={`/reports/${analysis.id}?industry=${key}`} className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", names.get(key) ?? key)} →</Link>)}
+      {couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className="pill pill-off !py-1.5 text-xs">♥ {t.reports.extraCouple.replace("{name}", m.partnerName)} →</Link>)}
+    </nav>
+  ) : null;
+
+  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} lead={extras} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} person={person} />;
 }

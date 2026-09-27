@@ -3,6 +3,8 @@ import type { PeopleText } from "./people-en";
 export const peopleRu: PeopleText = {
   whoseTitle: "Чей это голос?",
   me: "Я",
+  meNamed: "{name} (я)",
+  askFirst: "Перед записью: чей это будет голос? Отчёт сохранится под этим именем.",
   someoneElse: "Другой человек",
   namePlaceholder: "Его или её имя",
   whoseHelp: "Записи одного человека читаются вместе, и его тип со временем уточняется. Разные люди никогда не смешиваются.",

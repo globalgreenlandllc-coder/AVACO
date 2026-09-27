@@ -2,6 +2,9 @@
 export interface PeopleText {
   whoseTitle: string;
   me: string;
+  /** "Dmitriy (me)" */
+  meNamed: string;
+  askFirst: string;
   someoneElse: string;
   namePlaceholder: string;
   whoseHelp: string;
@@ -24,6 +27,8 @@ export interface PeopleText {
 export const peopleEn: PeopleText = {
   whoseTitle: "Whose voice is this?",
   me: "Me",
+  meNamed: "{name} (me)",
+  askFirst: "Before you record: whose voice will this be? The report is filed under that name.",
   someoneElse: "Someone else",
   namePlaceholder: "Their first name",
   whoseHelp: "Each person's recordings are read together, so their type settles over time. Different people are never mixed.",

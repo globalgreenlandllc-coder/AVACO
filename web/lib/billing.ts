@@ -298,6 +298,14 @@ export async function unlockIndustry(userId: string, analysisId: string, industr
 }
 
 /** Industries already open on a report. */
+/** Every industry chapter an account opened, report by report (for My reports and for a person's other reports). */
+export async function industriesByReport(userId: string): Promise<Map<string, string[]>> {
+  const rows = await db().select({ analysisId: industryAccess.analysisId, industry: industryAccess.industry }).from(industryAccess).where(eq(industryAccess.ownerId, userId));
+  const out = new Map<string, string[]>();
+  for (const r of rows) out.set(r.analysisId, [...(out.get(r.analysisId) ?? []), r.industry]);
+  return out;
+}
+
 export async function openIndustries(analysisId: string): Promise<string[]> {
   const rows = await db().select({ industry: industryAccess.industry }).from(industryAccess).where(eq(industryAccess.analysisId, analysisId));
   return rows.map((r) => r.industry);

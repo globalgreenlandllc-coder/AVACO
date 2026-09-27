@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { Recorder } from "@/components/Recorder";
 import { activeGift } from "@/lib/gifts";
 import { getDict } from "@/lib/i18n";
@@ -8,7 +8,8 @@ import { visitorId } from "@/lib/visitor";
 export default async function RecordPage({ searchParams }: { searchParams: Promise<{ person?: string }> }) {
   const [{ t }, { userId }, visitor, query] = await Promise.all([getDict(), auth(), visitorId(), searchParams]);
   // Whose voice: "me", or a name used before, one click each; "Record Anna" on My reports arrives with ?person=Anna.
-  const whose = visitor ? { known: await knownNames(visitor), initial: cleanName(query.person), t: t.people } : undefined;
+  const me = userId ? await currentUser().catch(() => null) : null;
+  const whose = visitor ? { known: await knownNames(visitor), initial: cleanName(query.person), t: t.people, myName: me?.firstName ?? null } : undefined;
   // Someone holding a gift: say so, and that the report opens by itself.
   const gift = userId ? await activeGift(userId).catch(() => null) : null;
   return (

@@ -143,6 +143,13 @@ export const en = {
     leading: "Leading type",
     balanced: "Balanced profile",
     locked: "Ready · preview, open it to see your type",
+    extrasTitle: "In this report",
+    extraIndustry: "Industry chapter: {name}",
+    extraCouple: "Couple's report with {name}",
+    extraCoupleWaiting: "Couple's report with {name} · waiting",
+    attentionTitle: "Waiting to finish",
+    analysing: "Being analysed · {when}",
+    readyToOpen: "Ready · {when} · open it to see your type",
   },
   status: { queued: "Waiting for the service", processing: "In progress", completed: "Ready", failed: "Failed" },
   report: {

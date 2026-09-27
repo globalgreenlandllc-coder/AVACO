@@ -48,7 +48,7 @@ export interface RecorderProps {
    * Asks whose voice this is before it is sent (the account holder's own recorder): "me", a name already used, or someone
    * new. Someone else's recording needs their agreement, so the consent sentence names them. `initial` preselects a person.
    */
-  whose?: { known: string[]; initial?: string | null; t: Dict["people"] };
+  whose?: { known: string[]; initial?: string | null; t: Dict["people"]; /** The account holder's first name, shown on the "me" choice. */ myName?: string | null };
 }
 
 export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText, onStart, whose }: RecorderProps) {
@@ -216,6 +216,23 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const enough = seconds >= MIN_SECONDS;
   const ring = recording ? Math.min(1, seconds / MIN_SECONDS) : 0;
 
+  // Whose voice: asked before recording (and still changeable before sending), with the account holder's own name on "me".
+  const whoseBlock = whose ? (
+            <fieldset disabled={phase === "sending"}>
+              <legend className="eyebrow">{whose.t.whoseTitle}</legend>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className={`pill ${!other ? "pill-on" : "pill-off"}`} onClick={() => choose(false, "")}>{whose.myName ? whose.t.meNamed.replace("{name}", whose.myName) : whose.t.me}</button>
+                {whose.known.map((n) => <button key={n} type="button" className={`pill ${other && personKey(person) === personKey(n) ? "pill-on" : "pill-off"}`} onClick={() => choose(true, n)}>{n}</button>)}
+                <button type="button" className={`pill ${other && !whose.known.some((n) => personKey(n) === personKey(person)) ? "pill-on" : "pill-off"}`} onClick={() => choose(true, "")}>{whose.t.someoneElse}</button>
+              </div>
+              {other && (
+                <input value={person} onChange={(e) => { setPerson(e.target.value); setConsent(false); }} maxLength={MAX_NAME} placeholder={whose.t.namePlaceholder} aria-label={whose.t.namePlaceholder} autoComplete="off" autoFocus={!person}
+                  className="mt-3 w-full max-w-sm rounded-lg border border-line bg-surface px-3 py-2.5 text-sm" />
+              )}
+              <p className="mt-2 text-xs leading-relaxed text-muted">{whose.t.whoseHelp}</p>
+            </fieldset>
+  ) : null;
+
   return (
     <div className="card p-7 sm:p-10">
       <div className="flex flex-col items-center text-center">
@@ -232,6 +249,12 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             </div>
           </div>
         )}
+        {whose && phase === "idle" && (
+          <div className="mb-8 w-full max-w-md text-left">
+            <p className="mb-3 text-sm leading-relaxed text-ink-2">{whose.t.askFirst}</p>
+            {whoseBlock}
+          </div>
+        )}
         <div className="relative grid h-44 w-44 place-items-center">
           {recording && <span className="breathe absolute inset-3 rounded-full bg-accent" style={{ scale: String(1 + level * 0.25) }} aria-hidden />}
           <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90" aria-hidden>
@@ -239,7 +262,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             <circle cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round"
               strokeDasharray={RING} strokeDashoffset={RING * (1 - ring)} style={{ transition: "stroke-dashoffset 0.25s linear" }} />
           </svg>
-          <button type="button" onClick={recording ? stop : start} disabled={phase === "sending"}
+          <button type="button" onClick={recording ? stop : start} disabled={phase === "sending" || (!recording && Boolean(whose) && other && !otherName)}
             aria-label={recording ? t.stop : phase === "recorded" ? t.again : t.start}
             className="relative grid h-28 w-28 place-items-center rounded-full bg-accent text-accent-ink shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-50">
             {recording
@@ -281,21 +304,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       {(phase === "recorded" || phase === "sending") && clip && (
         <div className="mt-8 space-y-6 border-t border-line pt-8">
           <audio controls src={clip.url} className="w-full" />
-          {whose && (
-            <fieldset disabled={phase === "sending"}>
-              <legend className="eyebrow">{whose.t.whoseTitle}</legend>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" className={`pill ${!other ? "pill-on" : "pill-off"}`} onClick={() => choose(false, "")}>{whose.t.me}</button>
-                {whose.known.map((n) => <button key={n} type="button" className={`pill ${other && personKey(person) === personKey(n) ? "pill-on" : "pill-off"}`} onClick={() => choose(true, n)}>{n}</button>)}
-                <button type="button" className={`pill ${other && !whose.known.some((n) => personKey(n) === personKey(person)) ? "pill-on" : "pill-off"}`} onClick={() => choose(true, "")}>{whose.t.someoneElse}</button>
-              </div>
-              {other && (
-                <input value={person} onChange={(e) => { setPerson(e.target.value); setConsent(false); }} maxLength={MAX_NAME} placeholder={whose.t.namePlaceholder} aria-label={whose.t.namePlaceholder} autoComplete="off" autoFocus={!person}
-                  className="mt-3 w-full max-w-sm rounded-lg border border-line bg-surface px-3 py-2.5 text-sm" />
-              )}
-              <p className="mt-2 text-xs leading-relaxed text-muted">{whose.t.whoseHelp}</p>
-            </fieldset>
-          )}
+          {whoseBlock}
           <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-ink-2">
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={phase === "sending" || (Boolean(whose) && other && !otherName)} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
             <span>{consentLabel}</span>
