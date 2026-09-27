@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/admin";
 
 export const metadata = { title: "AVOCO · Admin", robots: { index: false, follow: false } };
 
-const TABS = [["/admin", "Overview"], ["/admin/users", "People"], ["/admin/companies", "Companies"], ["/admin/transactions", "Transactions"], ["/admin/settings", "Pricing and settings"]] as const;
+const TABS = [["/admin", "Overview"], ["/admin/stats", "Statistics"], ["/admin/users", "People"], ["/admin/companies", "Companies"], ["/admin/transactions", "Transactions"], ["/admin/settings", "Pricing and settings"]] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();

@@ -4,6 +4,7 @@ import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { MatchReadyNotice } from "@/components/MatchReadyNotice";
+import { VisitBeacon } from "@/components/VisitBeacon";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk-ui";
 import { getDict } from "@/lib/i18n";
@@ -32,6 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const page = (
       <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
         <body className="flex flex-col">
+          <VisitBeacon />
           <Header locale={locale} t={t} alerts={ready.length} />
           <MatchReadyNotice matches={ready} t={t.match} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>

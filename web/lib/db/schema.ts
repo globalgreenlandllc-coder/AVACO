@@ -282,3 +282,33 @@ export const translations = pgTable(
 
 /** Platform admins, by email. ADMIN_EMAILS in the environment always counts too, so nobody can lock themselves out. */
 export const admins = pgTable("admins", { email: text("email").primaryKey(), addedBy: text("added_by"), createdAt: ts("created_at").notNull().defaultNow() });
+
+/**
+ * One page view (components/VisitBeacon.tsx → /api/visit): the numbers behind Admin → Statistics. Nothing that
+ * identifies a person is kept: no address, no browser description. The visitor is a random id in a first-party
+ * cookie, the session the tab's visit, the account only when someone is signed in. Admins' own views are left out.
+ */
+export const visits = pgTable(
+  "visits",
+  {
+    id: uuid("id").primaryKey(),
+    at: ts("at").notNull().defaultNow(),
+    /** Which site: the main domain, the partner page hosts, or the open host (lib/visitor.ts). */
+    site: text("site").$type<"main" | "partner" | "open">().notNull(),
+    /** The page with its ids taken out: /reports/[id]. */
+    path: text("path").notNull(),
+    visitor: text("visitor").notNull(),
+    session: text("session").notNull(),
+    userId: text("user_id"),
+    /** The first page of the session. */
+    landing: boolean("landing").notNull().default(false),
+    /** Where the session came from: a campaign's utm_source, or the referring site in a word (google, instagram, direct…). */
+    source: text("source"),
+    campaign: text("campaign"),
+    /** Two-letter country from the edge, when known. */
+    country: text("country"),
+    device: text("device").$type<"phone" | "tablet" | "desktop">().notNull().default("desktop"),
+    locale: text("locale"),
+  },
+  (t) => [index("visits_at_idx").on(t.at.desc()), index("visits_visitor_idx").on(t.visitor, t.at.desc())],
+);

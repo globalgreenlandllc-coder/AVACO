@@ -1,0 +1,218 @@
+/**
+ * The numbers behind Admin → Statistics, computed from plain visit rows (lib/db/schema.ts `visits`) so they can be
+ * tested without a database. Days are UTC like the rest of the admin; the busiest weekdays and hours are shown in
+ * New York time, where the company is.
+ */
+export type Site = "main" | "partner" | "open";
+export type Device = "phone" | "tablet" | "desktop";
+export interface VisitRow {
+  at: Date; site: Site; path: string; visitor: string; session: string; userId: string | null; landing: boolean;
+  source: string | null; country: string | null; device: Device; locale: string | null;
+}
+
+const DAY = 86_400_000;
+export const ZONE = "America/New_York";
+export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** A page with its ids taken out, so /reports/abc and /reports/def count as one page. */
+export function normalizePath(raw: string): string {
+  const path = (raw.split(/[?#]/)[0] ?? "").replace(/\/+$/, "") || "/";
+  if (!path.startsWith("/")) return "/";
+  return path.split("/").map((seg) => (isId(seg) ? "[id]" : seg)).join("/").slice(0, 120);
+}
+const isId = (seg: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg) || (/^[A-Za-z0-9_-]{16,}$/.test(seg) && /\d/.test(seg));
+
+/** Where a session came from: the campaign's own word (utm_source) when there is one, otherwise the referring site. */
+export function sourceOf(utmSource: string | null | undefined, referrer: string | null | undefined, ownHosts: string[]): string {
+  const utm = (utmSource ?? "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 40);
+  if (utm) return utm;
+  let host = "";
+  try { host = referrer ? new URL(referrer).hostname.toLowerCase() : ""; } catch { host = ""; }
+  if (!host) return "direct";
+  const h = host.replace(/^(www|m|l|lm|mobile|out|away|amp)\./, "");
+  const own = ownHosts.map((o) => o.toLowerCase().replace(/^www\./, "")).filter(Boolean);
+  if (own.some((o) => h === o || h.endsWith(`.${o}`))) return "direct";
+  const known: Array<[RegExp, string]> = [
+    [/(^|\.)google\./, "google"], [/(^|\.)instagram\.com$/, "instagram"], [/(^|\.)(facebook\.com|fb\.com|fb\.me|messenger\.com)$/, "facebook"],
+    [/(^|\.)(twitter\.com|x\.com|t\.co)$/, "x"], [/(^|\.)tiktok\.com$/, "tiktok"], [/(^|\.)(youtube\.com|youtu\.be)$/, "youtube"],
+    [/(^|\.)linkedin\.com$/, "linkedin"], [/(^|\.)bing\.com$/, "bing"], [/(^|\.)yandex\./, "yandex"], [/(^|\.)duckduckgo\.com$/, "duckduckgo"],
+    [/(^|\.)(t\.me|telegram\.(org|me))$/, "telegram"], [/(^|\.)(whatsapp\.com|wa\.me)$/, "whatsapp"], [/(^|\.)reddit\.com$/, "reddit"], [/(^|\.)pinterest\./, "pinterest"],
+  ];
+  for (const [re, name] of known) if (re.test(h)) return name;
+  return h.slice(0, 60);
+}
+
+/** Phone, tablet or desktop: from the browser's own description, and failing that from the window width. */
+export function deviceOf(userAgent: string | null | undefined, width: number | null | undefined): Device {
+  const ua = userAgent ?? "";
+  if (/iPad|Tablet|Silk|Kindle|PlayBook/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return "tablet";
+  if (/Mobi|iPhone|iPod|Android|Windows Phone/i.test(ua)) return "phone";
+  if (width && width > 0) return width < 640 ? "phone" : width < 1024 ? "tablet" : "desktop";
+  return "desktop";
+}
+
+export interface Period { views: number; visitors: number; sessions: number; accounts: number }
+export interface Stats {
+  today: Period; week: Period; month: Period; prevWeek: Period; prevMonth: Period;
+  series: Array<{ day: string; views: number; visitors: number }>;
+  pages: Array<{ path: string; views: number; visitors: number }>;
+  /** Where sessions start, and how many of them end there (one page and gone). */
+  landings: Array<{ path: string; sessions: number; bounce: number }>;
+  /** Per source: sessions, visitors, and how many of those visitors went on to record with an account. */
+  sources: Array<{ source: string; sessions: number; visitors: number; recorded: number }>;
+  countries: Array<{ country: string; visitors: number }>;
+  /** Per device: visitors, sessions that opened the recorder, and of those the ones that reached a report. */
+  devices: Array<{ device: Device; visitors: number; reached: number; finished: number }>;
+  languages: Array<{ locale: string; visitors: number }>;
+  sites: Array<{ site: Site; views: number; visitors: number }>;
+  weekdays: Array<{ day: string; views: number }>;
+  hours: Array<{ hour: number; views: number }>;
+  /** Visitors of the last 30 days seen on two or more different days. */
+  returning: { visitors: number; of: number };
+  recording: { reached: number; finished: number };
+  accounts: Array<{ userId: string; views: number; sessions: number; days: number; last: Date }>;
+}
+
+const isRecordPage = (r: VisitRow) => r.path === "/record" || (r.site === "partner" && (r.path === "/" || r.path === "/partners"));
+const isReportPage = (r: VisitRow) => r.path === "/reports/[id]" || r.path === "/partners/r/[id]";
+const uniq = <T>(list: T[], key: (x: T) => string) => new Set(list.map(key)).size;
+const dayOf = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Everything the statistics page shows from the visits alone. `recordedUsers`: accounts that recorded in the period. */
+export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set<string> = new Set()): Stats {
+  const t = now.getTime();
+  const between = (from: number, to: number) => rows.filter((r) => { const a = r.at.getTime(); return a >= from && a < to; });
+  const period = (list: VisitRow[]): Period => ({ views: list.length, visitors: uniq(list, (r) => r.visitor), sessions: uniq(list, (r) => r.session), accounts: uniq(list.filter((r) => r.userId), (r) => r.userId!) });
+  const month = between(t - 30 * DAY, Infinity);
+  const startOfToday = new Date(new Date(t).setUTCHours(0, 0, 0, 0)).getTime();
+
+  // Sessions: what they saw, where they started, whether they opened the recorder and then a report.
+  const sessions = new Map<string, VisitRow[]>();
+  for (const r of month) sessions.set(r.session, [...(sessions.get(r.session) ?? []), r]);
+  const sessionInfo = [...sessions.values()].map((list) => {
+    const sorted = [...list].sort((a, b) => a.at.getTime() - b.at.getTime());
+    const first = sorted.find((r) => r.landing) ?? sorted[0];
+    return { first, pages: uniq(sorted, (r) => r.path), reached: sorted.some(isRecordPage), finished: sorted.some(isRecordPage) && sorted.some(isReportPage), visitor: first.visitor, device: first.device, source: first.source ?? "direct" };
+  });
+  const visitorUsers = new Map<string, Set<string>>();
+  for (const r of month) if (r.userId) visitorUsers.set(r.visitor, new Set([...(visitorUsers.get(r.visitor) ?? []), r.userId]));
+  const recordedVisitor = (visitor: string) => [...(visitorUsers.get(visitor) ?? [])].some((u) => recordedUsers.has(u));
+
+  const top = <K extends string>(items: Array<{ key: K; visitor: string }>, n: number) => {
+    const by = new Map<K, Set<string>>();
+    for (const i of items) by.set(i.key, (by.get(i.key) ?? new Set()).add(i.visitor));
+    return [...by].map(([key, v]) => ({ key, visitors: v.size })).sort((a, b) => b.visitors - a.visitors).slice(0, n);
+  };
+  const pagesBy = new Map<string, { views: number; visitors: Set<string> }>();
+  for (const r of month) { const p = pagesBy.get(r.path) ?? { views: 0, visitors: new Set() }; p.views++; p.visitors.add(r.visitor); pagesBy.set(r.path, p); }
+  const landBy = new Map<string, { sessions: number; bounced: number }>();
+  for (const s of sessionInfo) { const l = landBy.get(s.first.path) ?? { sessions: 0, bounced: 0 }; l.sessions++; if (s.pages === 1) l.bounced++; landBy.set(s.first.path, l); }
+  const srcBy = new Map<string, { sessions: number; visitors: Set<string> }>();
+  for (const s of sessionInfo) { const x = srcBy.get(s.source) ?? { sessions: 0, visitors: new Set() }; x.sessions++; x.visitors.add(s.visitor); srcBy.set(s.source, x); }
+  const devBy = new Map<Device, { visitors: Set<string>; reached: number; finished: number }>();
+  for (const s of sessionInfo) { const x = devBy.get(s.device) ?? { visitors: new Set(), reached: 0, finished: 0 }; x.visitors.add(s.visitor); if (s.reached) x.reached++; if (s.finished) x.finished++; devBy.set(s.device, x); }
+  const siteBy = new Map<Site, { views: number; visitors: Set<string> }>();
+  for (const r of month) { const x = siteBy.get(r.site) ?? { views: 0, visitors: new Set() }; x.views++; x.visitors.add(r.visitor); siteBy.set(r.site, x); }
+
+  // Busiest weekdays and hours, in New York time.
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: ZONE, weekday: "short", hour: "numeric", hourCycle: "h23" });
+  const weekdays = WEEKDAYS.map((day) => ({ day, views: 0 }));
+  const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, views: 0 }));
+  for (const r of month) {
+    const parts = fmt.formatToParts(r.at);
+    const wd = weekdays.find((w) => w.day === parts.find((p) => p.type === "weekday")?.value);
+    if (wd) wd.views++;
+    const h = Number(parts.find((p) => p.type === "hour")?.value);
+    if (h >= 0 && h < 24) hours[h].views++;
+  }
+
+  const daysBy = new Map<string, Set<string>>();
+  for (const r of month) daysBy.set(r.visitor, (daysBy.get(r.visitor) ?? new Set()).add(dayOf(r.at)));
+  const accBy = new Map<string, { views: number; sessions: Set<string>; days: Set<string>; last: Date }>();
+  for (const r of month) {
+    if (!r.userId) continue;
+    const a = accBy.get(r.userId) ?? { views: 0, sessions: new Set(), days: new Set(), last: r.at };
+    a.views++; a.sessions.add(r.session); a.days.add(dayOf(r.at)); if (r.at > a.last) a.last = r.at; accBy.set(r.userId, a);
+  }
+
+  const days = Array.from({ length: 30 }, (_, i) => dayOf(new Date(t - (29 - i) * DAY)));
+  return {
+    today: period(between(startOfToday, Infinity)),
+    week: period(between(t - 7 * DAY, Infinity)), prevWeek: period(between(t - 14 * DAY, t - 7 * DAY)),
+    month: period(month), prevMonth: period(between(t - 60 * DAY, t - 30 * DAY)),
+    series: days.map((day) => { const list = month.filter((r) => dayOf(r.at) === day); return { day, views: list.length, visitors: uniq(list, (r) => r.visitor) }; }),
+    pages: [...pagesBy].map(([path, p]) => ({ path, views: p.views, visitors: p.visitors.size })).sort((a, b) => b.views - a.views).slice(0, 10),
+    landings: [...landBy].map(([path, l]) => ({ path, sessions: l.sessions, bounce: l.sessions ? l.bounced / l.sessions : 0 })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
+    sources: [...srcBy].map(([source, x]) => ({ source, sessions: x.sessions, visitors: x.visitors.size, recorded: [...x.visitors].filter(recordedVisitor).length })).sort((a, b) => b.sessions - a.sessions).slice(0, 10),
+    countries: top(month.filter((r) => r.country).map((r) => ({ key: r.country!, visitor: r.visitor })), 8).map((c) => ({ country: c.key, visitors: c.visitors })),
+    devices: [...devBy].map(([device, x]) => ({ device, visitors: x.visitors.size, reached: x.reached, finished: x.finished })).sort((a, b) => b.visitors - a.visitors),
+    languages: top(month.filter((r) => r.locale).map((r) => ({ key: r.locale!, visitor: r.visitor })), 6).map((l) => ({ locale: l.key, visitors: l.visitors })),
+    sites: [...siteBy].map(([site, x]) => ({ site, views: x.views, visitors: x.visitors.size })).sort((a, b) => b.views - a.views),
+    weekdays,
+    hours,
+    returning: { visitors: [...daysBy.values()].filter((d) => d.size >= 2).length, of: daysBy.size },
+    recording: { reached: sessionInfo.filter((s) => s.reached).length, finished: sessionInfo.filter((s) => s.finished).length },
+    accounts: [...accBy].map(([userId, a]) => ({ userId, views: a.views, sessions: a.sessions.size, days: a.days.size, last: a.last })).sort((a, b) => b.views - a.views).slice(0, 10),
+  };
+}
+
+export interface Extra { signups: number; prevSignups: number; recorded: number; languageName?: (code: string) => string }
+
+const pct = (a: number, b: number) => Math.round((a / b) * 100);
+const hourLabel = (h: number) => (h === 0 ? "midnight" : h === 12 ? "noon" : h < 12 ? `${h} am` : `${h - 12} pm`);
+const sourceName = (s: string) => (s === "direct" ? "direct visits (typed address, saved link or an ad without a tracking link)" : s);
+
+/** What stands out, in sentences: only claims the numbers can carry, so nothing is said on a handful of visits. */
+export function insightsFor(s: Stats, x: Extra): string[] {
+  const out: string[] = [];
+  if (s.month.views === 0) return ["No visits recorded yet. Numbers appear as soon as people open the site."];
+  const m = s.month, p = s.prevMonth;
+  if (p.visitors >= 10) {
+    const change = Math.round(((m.visitors - p.visitors) / p.visitors) * 100);
+    if (Math.abs(change) >= 10) out.push(`Visitors are ${change > 0 ? "up" : "down"} ${Math.abs(change)}% on the previous 30 days (${m.visitors} vs ${p.visitors}).`);
+    else out.push(`Visitors are steady: ${m.visitors} in the last 30 days, ${p.visitors} in the 30 before.`);
+  }
+  if (m.visitors >= 20) {
+    const parts = [`Of ${m.visitors} visitors, ${x.signups} signed up (${pct(x.signups, m.visitors)}%)`];
+    if (x.recorded > 0) parts.push(`${x.recorded} recorded (${pct(x.recorded, m.visitors)}%)`);
+    out.push(parts.join(" and ") + ".");
+    if (x.prevSignups >= 10) {
+      const change = Math.round(((x.signups - x.prevSignups) / x.prevSignups) * 100);
+      if (Math.abs(change) >= 15) out.push(`Sign-ups are ${change > 0 ? "up" : "down"} ${Math.abs(change)}% on the previous 30 days.`);
+    }
+  }
+  if (m.sessions >= 20 && s.sources[0]) {
+    const [first] = s.sources;
+    out.push(`Most sessions start from ${sourceName(first.source)}: ${pct(first.sessions, m.sessions)}%.`);
+    const rated = s.sources.filter((r) => r.visitors >= 20).map((r) => ({ ...r, rate: r.recorded / r.visitors })).sort((a, b) => b.rate - a.rate);
+    if (rated.length >= 2 && rated[0].recorded >= 3 && rated[0].rate >= 2 * rated[1].rate) {
+      const worst = rated.at(-1)!;
+      out.push(`Visitors from ${rated[0].source} go on to record ${Math.round(rated[0].rate / Math.max(worst.rate, 0.005))}× as often as visitors from ${worst.source} (${pct(rated[0].recorded, rated[0].visitors)}% vs ${pct(worst.recorded, worst.visitors)}%).`);
+    }
+  }
+  if (s.recording.reached >= 20) {
+    const phone = s.devices.find((d) => d.device === "phone"), desk = s.devices.find((d) => d.device === "desktop");
+    if (phone && desk && phone.reached >= 15 && desk.reached >= 15 && desk.finished / desk.reached >= 1.5 * (phone.finished / phone.reached)) {
+      out.push(`On phones, ${pct(phone.finished, phone.reached)}% of people who open the recorder reach a report; on desktop ${pct(desk.finished, desk.reached)}%. Phone recording is where people drop off.`);
+    } else {
+      out.push(`${pct(s.recording.finished, s.recording.reached)}% of people who open the recorder go on to a report.`);
+    }
+  }
+  if (m.visitors >= 20) {
+    const share = pct(s.returning.visitors, s.returning.of);
+    out.push(share < 10 ? `Almost nobody comes back yet: ${share}% of visitors returned on another day.` : `${share}% of visitors came back on another day.`);
+  }
+  const land = s.landings.find((l) => l.sessions >= 20 && l.bounce >= 0.6);
+  if (land) out.push(`${Math.round(land.bounce * 100)}% of people landing on ${land.path} leave after that one page.`);
+  if (m.views >= 50) {
+    const day = [...s.weekdays].sort((a, b) => b.views - a.views)[0];
+    const hour = [...s.hours].sort((a, b) => b.views - a.views)[0];
+    if (day && hour && day.views > 0) out.push(`Busiest: ${day.day}, around ${hourLabel(hour.hour)} New York time.`);
+  }
+  if (m.visitors >= 20) {
+    const lang = s.languages.find((l) => l.locale !== "en" && l.visitors / m.visitors >= 0.1);
+    if (lang) out.push(`${pct(lang.visitors, m.visitors)}% of visitors read the site in ${x.languageName?.(lang.locale) ?? lang.locale}.`);
+  }
+  if (out.length === 0) out.push(`${m.visitors} visitors and ${m.views} page views in 30 days. Comparisons appear once there are more.`);
+  return out;
+}
