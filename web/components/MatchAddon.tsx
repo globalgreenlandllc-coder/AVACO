@@ -19,7 +19,7 @@ export interface MatchAddonProps {
   t: Dict["match"];
 }
 
-/** The add-on card in a report: order a couple's report by inviting the partner, and the matches already ordered. */
+/** The relationship add-on at the top of a report, in a dusty-rose panel: order a couple's report, and the matches already ordered. */
 export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, t }: MatchAddonProps) {
   const router = useRouter();
   const [ownerName, setOwnerName] = useState("");
@@ -29,6 +29,8 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
   const [error, setError] = useState<string | null>(null);
   const ownerRef = useRef<HTMLInputElement>(null), partnerRef = useRef<HTMLInputElement>(null);
   const who = partnerName.trim() || t.partnerFallback;
+  // "…a private link. {name} records…": when no name is typed yet, the fallback ("your partner") starts a sentence.
+  const withName = (text: string) => text.replace(/\{name\}/g, (_, at: number) => (at === 0 || /[.!?]\s+$/.test(text.slice(0, at)) ? who.charAt(0).toUpperCase() + who.slice(1) : who));
 
   /** Both ways in create (and pay for) the match; the match page then opens on the chosen way. */
   async function order(mode: "upload" | "invite") {
@@ -45,71 +47,85 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
     setBusy(null);
   }
 
-  return (
-    <section className="addon-strip theme-match" data-no-export>
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
-        <div>
-          <div className="addon-head">
-            <span className="addon-icon" aria-hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z" /></svg></span>
-            <p className="addon-badge">{t.eyebrow}</p>
-          </div>
-          <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{t.title}</h2>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-2">{t.lead}</p>
-          <p className="mt-4"><span className="addon-pill">{price ?? freeLabel}</span></p>
-          {existing.some((m) => m.stage !== "ready") && (
-            <div className="mt-6 rounded-2xl border border-[var(--addon)] bg-surface p-4">
-              <p className="addon-badge">{t.inProgressTitle}</p>
-              <ul className="mt-3 space-y-3">
-                {existing.filter((m) => m.stage !== "ready").map((m) => (
-                  <li key={m.id} className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="text-sm"><span className="font-semibold">{t.inProgressFor.replace("{name}", m.partnerName)}</span> <span className="text-ink-2">· {t.stages[m.stage].replace(" {when}", "").replace("{when}", "").replace(" · {type} {value}", "")}</span></span>
-                    <Link href={`/match/${m.id}`} className="btn addon-btn !px-5 !py-2 text-sm">{t.continue} →</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {existing.some((m) => m.stage === "ready") && (
-            <div className="mt-6">
-              <p className="eyebrow">{t.existing}</p>
-              <ul className="mt-2 divide-y divide-line">
-                {existing.filter((m) => m.stage === "ready").map((m) => (
-                  <li key={m.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                    <span>{m.partnerName} <span className="text-muted">· {m.stage === "ready" ? t.ready : t.stages[m.stage].replace(" {when}", "").replace("{when}", "")}</span></span>
-                    <Link href={`/match/${m.id}`} className="font-semibold text-accent-text hover:underline">{t.open} →</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+  const inProgress = existing.filter((m) => m.stage !== "ready");
+  const ready = existing.filter((m) => m.stage === "ready");
+  const stageText = (stage: MatchAddonProps["existing"][number]["stage"]) => t.stages[stage].replace(" {when}", "").replace("{when}", "").replace(" · {type} {value}", "");
+
+  // The order, in two white cards with a tab, as on the landing page: who the two are, then how the partner's voice arrives.
+  const form = (
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+      <div className="card overflow-hidden">
+        <p className="tab-title">1 · {t.stepWho}</p>
+        <div className="grid gap-4 px-5 pb-6 pt-5 sm:grid-cols-2 sm:px-7 sm:pb-7">
+          <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input ref={ownerRef} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
+          <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input ref={partnerRef} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
+          <label className="flex items-center gap-2 text-sm text-ink-2 sm:col-span-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />{t.withFamily}</label>
         </div>
-        {(() => { const busyWithOne = existing.some((m) => m.stage !== "ready"); const form = (
-        <form onSubmit={(e) => e.preventDefault()} className="card space-y-3 p-5">
-          <p className="eyebrow">1 · {t.stepWho}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input ref={ownerRef} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
-            <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input ref={partnerRef} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2.5" /></label>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--addon)]" />{t.withFamily}</label>
-          <p className="eyebrow pt-2">2 · {t.stepHow.replace("{name}", who)}</p>
+      </div>
+      <div className="card overflow-hidden">
+        <p className="tab-title">2 · {t.stepHow.replace("{name}", who)}</p>
+        <div className="px-5 pb-6 pt-5 sm:px-7 sm:pb-7">
           {canOrder ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-line p-3">
-                <p className="text-sm font-semibold">{t.haveRecording}</p>
-                <p className="mt-1 min-h-16 text-xs leading-relaxed text-ink-2">{t.haveRecordingText.replace("{name}", who)}</p>
-                <button type="button" className="btn addon-btn mt-3 w-full" disabled={Boolean(busy)} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col rounded-2xl bg-accent-soft p-5">
+                <p className="font-semibold">{t.haveRecording}</p>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-2">{withName(t.haveRecordingText)}</p>
+                <button type="button" className="btn mt-5 w-full max-sm:!px-4 max-sm:!text-sm sm:w-auto sm:self-start" disabled={Boolean(busy)} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
               </div>
-              <div className="rounded-xl border border-line p-3">
-                <p className="text-sm font-semibold">{t.noRecording}</p>
-                <p className="mt-1 min-h-16 text-xs leading-relaxed text-ink-2">{t.noRecordingText.replace("{name}", who)}</p>
-                <button type="button" className="btn btn-quiet mt-3 w-full" disabled={Boolean(busy)} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta.replace("{name}", who)}</button>
+              <div className="flex flex-col rounded-2xl border border-line p-5">
+                <p className="font-semibold">{t.noRecording}</p>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-2">{withName(t.noRecordingText)}</p>
+                <button type="button" className="btn btn-quiet mt-5 w-full max-sm:!px-4 max-sm:!text-sm sm:w-auto sm:self-start" disabled={Boolean(busy)} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta.replace("{name}", who)}</button>
               </div>
             </div>
-          ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn addon-btn w-full">{t.getCredits} · {t.needCredits.replace("{n}", String(needed))}</Link>}
-          {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-          {canOrder && price && <p className="text-xs text-muted">{credits >= needed ? t.payWithCredits.replace("{n}", String(needed)).replace("{have}", String(credits)) : t.payByCard.replace("{price}", price.split(" ·")[0])}</p>}
-        </form>
-        ); return busyWithOne ? <details className="card p-5"><summary className="cursor-pointer text-sm font-semibold text-accent-text">{t.startAnother}</summary><div className="mt-4">{form}</div></details> : form; })()}
+          ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn">{t.getCredits} · {t.needCredits.replace("{n}", String(needed))}</Link>}
+          {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
+          {canOrder && price && <p className="mt-4 text-xs text-muted">{credits >= needed ? t.payWithCredits.replace("{n}", String(needed)).replace("{have}", String(credits)) : t.payByCard.replace("{price}", price.split(" ·")[0])}</p>}
+        </div>
+      </div>
+    </form>
+  );
+
+  return (
+    <section className="offer offer-match" data-no-export aria-label={t.eyebrow}>
+      <p className="eyebrow !text-accent-text">{t.eyebrow}</p>
+      <h2 className="mt-3 font-display text-3xl font-medium leading-tight sm:text-4xl">{t.title}</h2>
+      <p className="mt-3 max-w-3xl leading-relaxed text-ink-2">{t.lead}</p>
+      <p className="mt-5"><span className="inline-block rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">{price ?? freeLabel}</span></p>
+
+      {inProgress.length > 0 && (
+        <div className="card mt-7 overflow-hidden">
+          <p className="tab-title">{t.inProgressTitle}</p>
+          <ul className="divide-y divide-line px-5 pb-2 pt-2 sm:px-7">
+            {inProgress.map((m) => (
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <span className="text-sm"><span className="font-semibold">{t.inProgressFor.replace("{name}", m.partnerName)}</span> <span className="text-ink-2">· {stageText(m.stage)}</span></span>
+                <Link href={`/match/${m.id}`} className="btn !px-5 !py-2">{t.continue} →</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {ready.length > 0 && (
+        <div className="card mt-7 overflow-hidden">
+          <p className="tab-title">{t.existing}</p>
+          <ul className="divide-y divide-line px-5 pb-2 pt-2 sm:px-7">
+            {ready.map((m) => (
+              <li key={m.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <span><span className="font-semibold">{m.partnerName}</span> <span className="text-ink-2">· {t.ready}</span></span>
+                <Link href={`/match/${m.id}`} className="font-semibold text-accent-text hover:underline">{t.open} →</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* With a couple's report already under way, a new one is one click away instead of a whole form. */}
+      <div className="mt-7">
+        {inProgress.length > 0
+          ? <details><summary className="btn btn-quiet cursor-pointer">{t.startAnother}</summary><div className="mt-5">{form}</div></details>
+          : form}
       </div>
     </section>
   );

@@ -229,3 +229,19 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .addon-tag { display: inline-block; margin-right: 0.4rem; border-radius: 999px; background: var(--addon); color: var(--addon-ink); padding: 0.05rem 0.5rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
 .addon-select { border-color: var(--addon); background: var(--surface); color: var(--ink); }
 .addon-select:focus-visible { outline-color: var(--addon); }
+
+/* The two add-ons offered at the top of a report (components/Industry.tsx, MatchAddon.tsx), in the landing page's own
+   shapes: a solid panel holding white cards with a tab, pills and the example box. Each panel re-defines the accent
+   tokens, so everything inside takes its colour: apricot for the industry chapter, dusty rose for the relationship
+   match, each a step away from the report's gold. Solid fills with dark ink, like the gold tabs; checked for 4.5:1.
+   The chapter opened inside the industry panel keeps its own .theme-industry colours. */
+.offer { border-radius: 28px; padding: 1.75rem 1.25rem; background: var(--accent-soft); }
+@media (min-width: 640px) { .offer { padding: 2.75rem 3rem; } }
+.offer-industry { --accent: #e39a62; --accent-ink: #2b1405; --accent-text: #93441a; --accent-soft: #f6e4d4; }
+.offer-match { --accent: #de8f8d; --accent-ink: #2b0f13; --accent-text: #963a4c; --accent-soft: #f6e0de; }
+@media (prefers-color-scheme: dark) {
+  .offer-industry { --accent-ink: #231003; --accent-text: #f0ae82; --accent-soft: #2b1d13; }
+  .offer-match { --accent: #e0908e; --accent-ink: #25090e; --accent-text: #f2a8aa; --accent-soft: #2c1a1b; }
+}
+.offer-field { border-radius: 0.75rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.offer-field:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }

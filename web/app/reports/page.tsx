@@ -33,16 +33,18 @@ export default async function ReportsPage() {
     <div>
       {/* Paid couple's reports still waiting for the partner come first: nothing paid for should look lost. */}
       {matchRows.some((r) => r.unfinished) && (
-        <section className="addon-strip theme-match mb-10" aria-label={t.match.unfinishedTitle}>
-          <p className="addon-badge">{t.match.unfinishedTitle}</p>
-          <ul className="mt-3 space-y-3">
-            {matchRows.filter((r) => r.unfinished).map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm"><span className="font-semibold">{r.title}</span> <span className="text-ink-2">· {t.match.unfinishedText.replace("{stage}", r.text)}</span></span>
-                <Link href={`/match/${r.id}`} className="btn addon-btn !px-5 !py-2 text-sm">{t.match.continue} →</Link>
-              </li>
-            ))}
-          </ul>
+        <section className="offer offer-match mb-10" aria-label={t.match.unfinishedTitle}>
+          <div className="card overflow-hidden">
+            <p className="tab-title">{t.match.unfinishedTitle}</p>
+            <ul className="divide-y divide-line px-5 pb-2 pt-2 sm:px-7">
+              {matchRows.filter((r) => r.unfinished).map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <span className="text-sm"><span className="font-semibold">{r.title}</span> <span className="text-ink-2">· {t.match.unfinishedText.replace("{stage}", r.text)}</span></span>
+                  <Link href={`/match/${r.id}`} className="btn !px-5 !py-2">{t.match.continue} →</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       )}
       <div className="flex flex-wrap items-end justify-between gap-4">
