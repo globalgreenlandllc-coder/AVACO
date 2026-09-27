@@ -8,6 +8,8 @@ export type Device = "phone" | "tablet" | "desktop";
 export interface VisitRow {
   at: Date; site: Site; path: string; visitor: string; session: string; userId: string | null; landing: boolean;
   source: string | null; country: string | null; device: Device; locale: string | null;
+  /** A tagged link's campaign, medium and content; the referring page. Absent on rows from before they were kept. */
+  campaign?: string | null; medium?: string | null; content?: string | null; referrer?: string | null;
 }
 
 const DAY = 86_400_000;
@@ -42,6 +44,49 @@ export function sourceOf(utmSource: string | null | undefined, referrer: string 
   return h.slice(0, 60);
 }
 
+const KNOWN_REFERRERS = ["google", "instagram", "facebook", "x", "tiktok", "youtube", "linkedin", "bing", "yandex", "duckduckgo", "telegram", "whatsapp", "reddit", "pinterest"];
+const SEARCH = new Set(["google", "bing", "yandex", "duckduckgo", "yahoo", "baidu", "ecosia", "brave"]);
+const SOCIAL = new Set(["instagram", "facebook", "x", "tiktok", "youtube", "linkedin", "reddit", "pinterest", "threads", "snapchat"]);
+const MESSAGING = new Set(["telegram", "whatsapp", "messenger", "viber", "signal"]);
+
+/**
+ * The kind of door a session came in through. Links people share on the site are doors of their own (a gift, a
+ * partner's invitation, a company's link), then tagged links (a campaign), then search, social networks, messaging
+ * apps, other sites, and direct.
+ */
+export type Channel = "gift" | "invite" | "company" | "campaign" | "search" | "social" | "messaging" | "referral" | "direct";
+export const CHANNEL_NAMES: Record<Channel, string> = {
+  gift: "Gift links", invite: "Partner invitations", company: "Company links", campaign: "Tagged links and ads",
+  search: "Search engines", social: "Social networks", messaging: "Messaging apps", referral: "Other sites", direct: "Direct",
+};
+export function channelOf(r: { source: string | null; campaign?: string | null; medium?: string | null; path: string }): Channel {
+  if (/^\/g\/\[id\]/.test(r.path)) return "gift";
+  if (/^\/m\/\[id\]/.test(r.path)) return "invite";
+  if (/^\/(r|s)\/\[id\]/.test(r.path) || r.path.startsWith("/w/")) return "company";
+  const s = r.source ?? "direct";
+  if (r.campaign || r.medium) return "campaign";
+  if (s === "direct") return "direct";
+  if (SEARCH.has(s)) return "search";
+  if (SOCIAL.has(s)) return "social";
+  if (MESSAGING.has(s)) return "messaging";
+  // A referring site always has a dot in its name; a bare word came from a tagged link's utm_source.
+  return s.includes(".") || KNOWN_REFERRERS.includes(s) ? "referral" : "campaign";
+}
+
+/** The referring page as host and path, for the statistics; nothing for our own pages, and only the host for the big sites. */
+export function referrerPage(referrer: string | null | undefined, ownHosts: string[]): string | null {
+  let url: URL;
+  try { url = new URL(referrer ?? ""); } catch { return null; }
+  const host = url.hostname.toLowerCase().replace(/^(www|m|l|lm|mobile|out|away|amp)\./, "");
+  if (!host) return null;
+  const own = ownHosts.map((o) => o.toLowerCase().replace(/^www\./, "")).filter(Boolean);
+  if (own.some((o) => host === o || host.endsWith(`.${o}`))) return null;
+  const known = sourceOf(null, referrer, ownHosts);
+  if (KNOWN_REFERRERS.includes(known)) return host;
+  const path = url.pathname.replace(/\/+$/, "");
+  return `${host}${path}`.slice(0, 160);
+}
+
 /** Phone, tablet or desktop: from the browser's own description, and failing that from the window width. */
 export function deviceOf(userAgent: string | null | undefined, width: number | null | undefined): Device {
   const ua = userAgent ?? "";
@@ -58,8 +103,16 @@ export interface Stats {
   pages: Array<{ path: string; views: number; visitors: number }>;
   /** Where sessions start, and how many of them end there (one page and gone). */
   landings: Array<{ path: string; sessions: number; bounce: number }>;
-  /** Per source: sessions, visitors, and how many of those visitors went on to record with an account. */
-  sources: Array<{ source: string; sessions: number; visitors: number; recorded: number }>;
+  /**
+   * Where people come from. Sessions are counted where each one came from; visitors, sign-ups, recordings and
+   * payments are counted by the visitor's FIRST session in the period, so each person is credited to one source.
+   */
+  sources: Array<{ source: string; channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; paid: number }>;
+  channels: Array<{ channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; paid: number }>;
+  /** Tagged links: utm_campaign with its source and medium. */
+  campaigns: Array<{ campaign: string; source: string; medium: string | null; sessions: number; visitors: number; signups: number }>;
+  /** The pages on other sites that sent people here. */
+  referrers: Array<{ referrer: string; sessions: number; visitors: number }>;
   countries: Array<{ country: string; visitors: number }>;
   /** Per device: visitors, sessions that opened the recorder, and of those the ones that reached a report. */
   devices: Array<{ device: Device; visitors: number; reached: number; finished: number }>;
@@ -78,8 +131,13 @@ const isReportPage = (r: VisitRow) => r.path === "/reports/[id]" || r.path === "
 const uniq = <T>(list: T[], key: (x: T) => string) => new Set(list.map(key)).size;
 const dayOf = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Everything the statistics page shows from the visits alone. `recordedUsers`: accounts that recorded in the period. */
-export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set<string> = new Set()): Stats {
+export interface People { signedUp?: Set<string>; paid?: Set<string> }
+
+/**
+ * Everything the statistics page shows from the visits alone. `recordedUsers`: accounts that recorded in the period;
+ * `people.signedUp` / `people.paid`: accounts created, and accounts that bought credits, in the period.
+ */
+export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set<string> = new Set(), people: People = {}): Stats {
   const t = now.getTime();
   const between = (from: number, to: number) => rows.filter((r) => { const a = r.at.getTime(); return a >= from && a < to; });
   const period = (list: VisitRow[]): Period => ({ views: list.length, visitors: uniq(list, (r) => r.visitor), sessions: uniq(list, (r) => r.session), accounts: uniq(list.filter((r) => r.userId), (r) => r.userId!) });
@@ -92,11 +150,19 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
   const sessionInfo = [...sessions.values()].map((list) => {
     const sorted = [...list].sort((a, b) => a.at.getTime() - b.at.getTime());
     const first = sorted.find((r) => r.landing) ?? sorted[0];
-    return { first, pages: uniq(sorted, (r) => r.path), reached: sorted.some(isRecordPage), finished: sorted.some(isRecordPage) && sorted.some(isReportPage), visitor: first.visitor, device: first.device, source: first.source ?? "direct" };
+    return { first, pages: uniq(sorted, (r) => r.path), reached: sorted.some(isRecordPage), finished: sorted.some(isRecordPage) && sorted.some(isReportPage), visitor: first.visitor, device: first.device, source: first.source ?? "direct", channel: channelOf(first) };
   });
   const visitorUsers = new Map<string, Set<string>>();
   for (const r of month) if (r.userId) visitorUsers.set(r.visitor, new Set([...(visitorUsers.get(r.visitor) ?? []), r.userId]));
-  const recordedVisitor = (visitor: string) => [...(visitorUsers.get(visitor) ?? [])].some((u) => recordedUsers.has(u));
+  const isOneOf = (visitor: string, users: Set<string>) => [...(visitorUsers.get(visitor) ?? [])].some((u) => users.has(u));
+  const recordedVisitor = (visitor: string) => isOneOf(visitor, recordedUsers);
+
+  // Each visitor's first session in the period: the door they came in through, credited with whatever they did later.
+  const firstSession = new Map<string, (typeof sessionInfo)[number]>();
+  for (const s of [...sessionInfo].sort((a, b) => a.first.at.getTime() - b.first.at.getTime())) if (!firstSession.has(s.visitor)) firstSession.set(s.visitor, s);
+  type Outcome = { visitors: Set<string>; signups: number; recorded: number; paid: number };
+  const outcome = (): Outcome => ({ visitors: new Set(), signups: 0, recorded: 0, paid: 0 });
+  const credit = (o: Outcome, visitor: string) => { o.visitors.add(visitor); if (isOneOf(visitor, people.signedUp ?? new Set())) o.signups++; if (recordedVisitor(visitor)) o.recorded++; if (isOneOf(visitor, people.paid ?? new Set())) o.paid++; };
 
   const top = <K extends string>(items: Array<{ key: K; visitor: string }>, n: number) => {
     const by = new Map<K, Set<string>>();
@@ -107,8 +173,24 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
   for (const r of month) { const p = pagesBy.get(r.path) ?? { views: 0, visitors: new Set() }; p.views++; p.visitors.add(r.visitor); pagesBy.set(r.path, p); }
   const landBy = new Map<string, { sessions: number; bounced: number }>();
   for (const s of sessionInfo) { const l = landBy.get(s.first.path) ?? { sessions: 0, bounced: 0 }; l.sessions++; if (s.pages === 1) l.bounced++; landBy.set(s.first.path, l); }
-  const srcBy = new Map<string, { sessions: number; visitors: Set<string> }>();
-  for (const s of sessionInfo) { const x = srcBy.get(s.source) ?? { sessions: 0, visitors: new Set() }; x.sessions++; x.visitors.add(s.visitor); srcBy.set(s.source, x); }
+  const srcBy = new Map<string, { sessions: number; channels: Map<Channel, number> } & Outcome>();
+  for (const s of sessionInfo) { const x = srcBy.get(s.source) ?? { sessions: 0, channels: new Map(), ...outcome() }; x.sessions++; x.channels.set(s.channel, (x.channels.get(s.channel) ?? 0) + 1); srcBy.set(s.source, x); }
+  const chanBy = new Map<Channel, { sessions: number } & Outcome>();
+  for (const s of sessionInfo) { const x = chanBy.get(s.channel) ?? { sessions: 0, ...outcome() }; x.sessions++; chanBy.set(s.channel, x); }
+  const campBy = new Map<string, { campaign: string; source: string; medium: string | null; sessions: number; visitors: Set<string>; signups: number }>();
+  for (const s of sessionInfo) {
+    if (!s.first.campaign) continue;
+    const key = `${s.first.campaign}|${s.source}|${s.first.medium ?? ""}`;
+    const x = campBy.get(key) ?? { campaign: s.first.campaign, source: s.source, medium: s.first.medium ?? null, sessions: 0, visitors: new Set(), signups: 0 };
+    x.sessions++; x.visitors.add(s.visitor); campBy.set(key, x);
+  }
+  const refBy = new Map<string, { sessions: number; visitors: Set<string> }>();
+  for (const s of sessionInfo) { if (!s.first.referrer) continue; const x = refBy.get(s.first.referrer) ?? { sessions: 0, visitors: new Set() }; x.sessions++; x.visitors.add(s.visitor); refBy.set(s.first.referrer, x); }
+  for (const [visitor, s] of firstSession) {
+    credit(srcBy.get(s.source)!, visitor);
+    credit(chanBy.get(s.channel)!, visitor);
+    if (s.first.campaign) { const c = campBy.get(`${s.first.campaign}|${s.source}|${s.first.medium ?? ""}`); if (c && isOneOf(visitor, people.signedUp ?? new Set())) c.signups++; }
+  }
   const devBy = new Map<Device, { visitors: Set<string>; reached: number; finished: number }>();
   for (const s of sessionInfo) { const x = devBy.get(s.device) ?? { visitors: new Set(), reached: 0, finished: 0 }; x.visitors.add(s.visitor); if (s.reached) x.reached++; if (s.finished) x.finished++; devBy.set(s.device, x); }
   const siteBy = new Map<Site, { views: number; visitors: Set<string> }>();
@@ -143,7 +225,10 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     series: days.map((day) => { const list = month.filter((r) => dayOf(r.at) === day); return { day, views: list.length, visitors: uniq(list, (r) => r.visitor) }; }),
     pages: [...pagesBy].map(([path, p]) => ({ path, views: p.views, visitors: p.visitors.size })).sort((a, b) => b.views - a.views).slice(0, 10),
     landings: [...landBy].map(([path, l]) => ({ path, sessions: l.sessions, bounce: l.sessions ? l.bounced / l.sessions : 0 })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
-    sources: [...srcBy].map(([source, x]) => ({ source, sessions: x.sessions, visitors: x.visitors.size, recorded: [...x.visitors].filter(recordedVisitor).length })).sort((a, b) => b.sessions - a.sessions).slice(0, 10),
+    sources: [...srcBy].map(([source, x]) => ({ source, channel: [...x.channels].sort((a, b) => b[1] - a[1])[0][0], sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, paid: x.paid })).sort((a, b) => b.sessions - a.sessions).slice(0, 12),
+    channels: [...chanBy].map(([channel, x]) => ({ channel, sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, paid: x.paid })).sort((a, b) => b.visitors - a.visitors || b.sessions - a.sessions),
+    campaigns: [...campBy.values()].map((c) => ({ campaign: c.campaign, source: c.source, medium: c.medium, sessions: c.sessions, visitors: c.visitors.size, signups: c.signups })).sort((a, b) => b.sessions - a.sessions).slice(0, 10),
+    referrers: [...refBy].map(([referrer, x]) => ({ referrer, sessions: x.sessions, visitors: x.visitors.size })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
     countries: top(month.filter((r) => r.country).map((r) => ({ key: r.country!, visitor: r.visitor })), 8).map((c) => ({ country: c.key, visitors: c.visitors })),
     devices: [...devBy].map(([device, x]) => ({ device, visitors: x.visitors.size, reached: x.reached, finished: x.finished })).sort((a, b) => b.visitors - a.visitors),
     languages: top(month.filter((r) => r.locale).map((r) => ({ key: r.locale!, visitor: r.visitor })), 6).map((l) => ({ locale: l.key, visitors: l.visitors })),
@@ -189,6 +274,10 @@ export function insightsFor(s: Stats, x: Extra): string[] {
       const worst = rated.at(-1)!;
       out.push(`Visitors from ${rated[0].source} go on to record ${Math.round(rated[0].rate / Math.max(worst.rate, 0.005))}× as often as visitors from ${worst.source} (${pct(rated[0].recorded, rated[0].visitors)}% vs ${pct(worst.recorded, worst.visitors)}%).`);
     }
+  }
+  if (m.visitors >= 20) {
+    const shared = s.channels.filter((c) => c.channel === "gift" || c.channel === "invite").reduce((n, c) => n + c.visitors, 0);
+    if (shared / m.visitors >= 0.1) out.push(`${pct(shared, m.visitors)}% of visitors arrived through a link someone shared with them: a gift or a partner's invitation.`);
   }
   if (s.recording.reached >= 20) {
     const phone = s.devices.find((d) => d.device === "phone"), desk = s.devices.find((d) => d.device === "desktop");

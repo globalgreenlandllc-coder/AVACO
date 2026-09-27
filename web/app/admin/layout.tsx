@@ -1,5 +1,8 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
+import { after } from "next/server";
 import { requireAdmin } from "@/lib/admin";
+import { excludeVisitor } from "@/lib/visit-exclusions";
 
 export const metadata = { title: "AVOCO · Admin", robots: { index: false, follow: false } };
 
@@ -7,6 +10,9 @@ const TABS = [["/admin", "Overview"], ["/admin/stats", "Statistics"], ["/admin/u
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
+  // This browser belongs to an admin: its page views are taken out of the statistics, past and future.
+  const vid = (await cookies()).get("avoco_vid")?.value;
+  if (vid && /^[a-f0-9-]{36}$/.test(vid)) after(() => excludeVisitor(vid, admin.userId).catch((err) => console.error("Admin browser not excluded", err)));
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deviceOf, insightsFor, normalizePath, sourceOf, summarize, type VisitRow } from "@/lib/visits-math";
+import { channelOf, deviceOf, insightsFor, normalizePath, referrerPage, sourceOf, summarize, type VisitRow } from "@/lib/visits-math";
 
 const NOW = new Date("2026-09-27T15:00:00Z");
 const H = 3_600_000, D = 24 * H;
@@ -25,6 +25,31 @@ describe("visit maths", () => {
     expect(sourceOf(null, "", own)).toBe("direct");
     expect(sourceOf(null, "not a url", own)).toBe("direct");
     expect(sourceOf(null, "https://blog.example.org/post", own)).toBe("blog.example.org");
+  });
+
+  it("names the door a session came in through", () => {
+    const at = (o: { source: string | null; campaign?: string | null; medium?: string | null; path?: string }) => channelOf({ path: "/", ...o });
+    expect(at({ source: "google" })).toBe("search");
+    expect(at({ source: "instagram" })).toBe("social");
+    expect(at({ source: "whatsapp" })).toBe("messaging");
+    expect(at({ source: "direct" })).toBe("direct");
+    expect(at({ source: null })).toBe("direct");
+    expect(at({ source: "blog.example.org" })).toBe("referral");
+    expect(at({ source: "instagram", campaign: "launch" })).toBe("campaign");
+    expect(at({ source: "ig_story" })).toBe("campaign"); // a bare word only comes from a tagged link
+    expect(at({ source: "google", path: "/g/[id]" })).toBe("gift");
+    expect(at({ source: "direct", path: "/m/[id]" })).toBe("invite");
+    expect(at({ source: "direct", path: "/r/[id]" })).toBe("company");
+    expect(at({ source: "direct", path: "/w/acme/g/sales" })).toBe("company");
+  });
+
+  it("keeps the referring page, but only the host of the big sites and nothing of our own", () => {
+    const own = ["www.avocousa.us"];
+    expect(referrerPage("https://blog.example.org/posts/voice-tests/?ref=x", own)).toBe("blog.example.org/posts/voice-tests");
+    expect(referrerPage("https://www.google.com/search?q=avoco", own)).toBe("google.com");
+    expect(referrerPage("https://www.avocousa.us/reports", own)).toBeNull();
+    expect(referrerPage("", own)).toBeNull();
+    expect(referrerPage(null, own)).toBeNull();
   });
 
   it("tells phones, tablets and desktops apart", () => {
@@ -57,7 +82,9 @@ describe("visit maths", () => {
     expect(s.today.visitors).toBe(1);
     expect(s.series).toHaveLength(30);
     expect(s.series.at(-1)).toEqual({ day: "2026-09-27", views: 2, visitors: 1 });
-    expect(s.sources.map((r) => [r.source, r.sessions, r.visitors, r.recorded])).toEqual([["google", 2, 2, 0], ["instagram", 1, 1, 1], ["direct", 1, 1, 1]]);
+    // Anna came from instagram first, so she, her recording and her later direct visit are credited to instagram.
+    expect(s.sources.map((r) => [r.source, r.channel, r.sessions, r.visitors, r.recorded])).toEqual([["google", "search", 2, 2, 0], ["instagram", "social", 1, 1, 1], ["direct", "direct", 1, 0, 0]]);
+    expect(s.channels.map((c) => [c.channel, c.visitors, c.recorded])).toEqual([["search", 2, 0], ["social", 1, 1], ["direct", 0, 0]]);
     expect(s.landings.find((l) => l.path === "/")).toEqual({ path: "/", sessions: 3, bounce: 1 / 3 });
     expect(s.recording).toEqual({ reached: 2, finished: 1 });
     expect(s.devices.find((d) => d.device === "phone")).toEqual({ device: "phone", visitors: 1, reached: 1, finished: 1 });
@@ -66,6 +93,22 @@ describe("visit maths", () => {
     expect(s.accounts).toEqual([{ userId: "user_anna", views: 3, sessions: 2, days: 2, last: new Date(NOW.getTime() - 1 * D) }]);
     expect(s.weekdays.reduce((n, w) => n + w.views, 0)).toBe(7);
     expect(s.hours.reduce((n, h) => n + h.views, 0)).toBe(7);
+  });
+
+  it("credits sign-ups and payments to the first door, and lists tagged links and referring pages", () => {
+    const rows: VisitRow[] = [
+      row({ at: new Date(NOW.getTime() - 3 * D), visitor: "dee", session: "d1", landing: true, source: "instagram", campaign: "launch", medium: "bio" }),
+      row({ at: new Date(NOW.getTime() - 2 * D), visitor: "dee", session: "d2", landing: true, source: "google", userId: "user_dee" }),
+      row({ at: new Date(NOW.getTime() - 1 * D), visitor: "eve", session: "e1", landing: true, source: "blog.example.org", referrer: "blog.example.org/post", userId: "user_eve" }),
+      row({ at: new Date(NOW.getTime() - 1 * D), visitor: "fay", session: "f1", landing: true, path: "/g/[id]", source: "direct" }),
+    ];
+    const s = summarize(rows, NOW, new Set(["user_eve"]), { signedUp: new Set(["user_dee", "user_eve"]), paid: new Set(["user_dee"]) });
+    expect(s.sources.find((x) => x.source === "instagram")).toEqual({ source: "instagram", channel: "campaign", sessions: 1, visitors: 1, signups: 1, recorded: 0, paid: 1 });
+    expect(s.sources.find((x) => x.source === "google")).toEqual({ source: "google", channel: "search", sessions: 1, visitors: 0, signups: 0, recorded: 0, paid: 0 });
+    expect(s.channels.find((c) => c.channel === "gift")).toEqual({ channel: "gift", sessions: 1, visitors: 1, signups: 0, recorded: 0, paid: 0 });
+    expect(s.channels.find((c) => c.channel === "referral")).toEqual({ channel: "referral", sessions: 1, visitors: 1, signups: 1, recorded: 1, paid: 0 });
+    expect(s.campaigns).toEqual([{ campaign: "launch", source: "instagram", medium: "bio", sessions: 1, visitors: 1, signups: 1 }]);
+    expect(s.referrers).toEqual([{ referrer: "blog.example.org/post", sessions: 1, visitors: 1 }]);
   });
 
   it("counts the partner page's own front page as its recorder", () => {

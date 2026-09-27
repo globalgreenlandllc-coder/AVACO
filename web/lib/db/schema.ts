@@ -305,6 +305,11 @@ export const visits = pgTable(
     /** Where the session came from: a campaign's utm_source, or the referring site in a word (google, instagram, direct…). */
     source: text("source"),
     campaign: text("campaign"),
+    /** A tagged link's utm_medium and utm_content, when the link carried them. */
+    medium: text("medium"),
+    content: text("content"),
+    /** The referring page (host and path, no query), when another site linked here. */
+    referrer: text("referrer"),
     /** Two-letter country from the edge, when known. */
     country: text("country"),
     device: text("device").$type<"phone" | "tablet" | "desktop">().notNull().default("desktop"),
@@ -312,3 +317,14 @@ export const visits = pgTable(
   },
   (t) => [index("visits_at_idx").on(t.at.desc()), index("visits_visitor_idx").on(t.visitor, t.at.desc())],
 );
+
+/**
+ * Browsers whose views never count: an admin's. The visitor cookie is noted the moment an admin is recognised in it
+ * (a signed-in page view, or opening the admin), its earlier views are deleted, and its later views, signed in or
+ * not, are dropped on arrival. So testing the site from one's own phone or laptop leaves the numbers alone.
+ */
+export const visitExclusions = pgTable("visit_exclusions", {
+  visitor: text("visitor").primaryKey(),
+  userId: text("user_id"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});

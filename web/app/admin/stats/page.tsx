@@ -1,4 +1,5 @@
 import { DailyBars, Kpi, RankBars } from "@/components/AdminCharts";
+import { SourcesReport } from "@/components/SourcesReport";
 import { Funnel, HourBars, KpiDelta } from "@/components/StatsCharts";
 import { statistics } from "@/lib/stats";
 
@@ -6,7 +7,6 @@ export const dynamic = "force-dynamic";
 
 const SITES: Record<string, string> = { main: "Main site (avocousa.us)", partner: "Partner page", open: "Open site (no accounts)" };
 const DEVICES: Record<string, string> = { phone: "Phone", tablet: "Tablet", desktop: "Desktop" };
-const SOURCES: Record<string, string> = { direct: "Direct (typed, saved link, or an ad without a tracking link)" };
 
 export default async function AdminStats() {
   const s = await statistics();
@@ -24,7 +24,7 @@ export default async function AdminStats() {
           {s.insights.map((line) => <li key={line} className="flex gap-2"><span className="text-accent-text" aria-hidden>·</span><span>{line}</span></li>)}
         </ul>
         <p className="mt-4 text-xs text-muted">
-          Counted on the site itself, first-party and without addresses or browser details; admins' own visits are left out.
+          Counted on the site itself, first-party and without addresses or browser details. Admins' own browsers and accounts are left out: of the visits, and of the sign-ups.
           {s.since ? ` Tracking since ${day(s.since)}.` : " Nothing tracked yet."} Days are UTC; busiest hours are New York time.
         </p>
       </section>
@@ -32,7 +32,7 @@ export default async function AdminStats() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiDelta label="Visitors, 30 days" value={v.month.visitors} previous={v.prevMonth.visitors} sub={`${v.week.visitors} in 7 days · ${v.today.visitors} today`} />
         <KpiDelta label="Page views, 30 days" value={v.month.views} previous={v.prevMonth.views} sub={`${v.month.sessions} sessions · ${v.month.sessions ? (v.month.views / v.month.sessions).toFixed(1) : "0"} pages per session`} />
-        <KpiDelta label="Sign-ups, 30 days" value={s.users.month} previous={s.users.prevMonth} sub={`${s.users.week} in 7 days${s.users.capped ? " · at least" : ""} · ${s.users.total ?? "?"} accounts in all`} />
+        <KpiDelta label="Sign-ups, 30 days" value={s.users.month} previous={s.users.prevMonth} sub={`new accounts, admins left out · ${s.users.week} in 7 days${s.users.capped ? " · at least" : ""} · ${s.users.total ?? "?"} accounts in all`} />
         <KpiDelta label="Signed-in visitors, 30 days" value={s.users.active} previous={v.prevMonth.accounts} sub={`${v.week.accounts} in 7 days · accounts that opened the site`} />
         <Kpi label="Came back" value={rate(v.returning.visitors, v.returning.of)} sub={`${v.returning.visitors} of ${v.returning.of} visitors returned on another day`} />
         <Kpi label="Recorder → report" value={rate(v.recording.finished, v.recording.reached)} sub={`${v.recording.finished} of ${v.recording.reached} sessions that opened the recorder reached a report`} />
@@ -51,21 +51,18 @@ export default async function AdminStats() {
           <p className="mb-5 text-xs text-muted">Last 30 days, each step in people.</p>
           <Funnel steps={[
             { label: "Visitors", value: s.funnel.visitors },
-            { label: "Signed up", value: s.funnel.signups, note: s.users.capped ? "at least" : undefined },
+            { label: "Signed up", value: s.funnel.signups, note: s.users.capped ? "at least" : "new accounts" },
             { label: "Recorded", value: s.funnel.recorded, note: "accounts that recorded" },
             { label: "Paid", value: s.funnel.paid, note: "bought credits" },
             { label: "Bought an add-on", value: s.funnel.addons, note: "industry chapter or couple's report" },
           ]} />
         </div>
-        <div className="card p-7">
-          <h2 className="mb-1 text-lg font-semibold">Where people come from</h2>
-          <p className="mb-5 text-xs text-muted">Sessions by source; "recorded" is how many of that source's visitors went on to record with an account.</p>
-          <RankBars rows={v.sources.map((r) => ({ label: SOURCES[r.source] ?? r.source, value: r.sessions, note: `${r.visitors} visitors · ${r.recorded} recorded` }))} empty="No sessions yet." />
-        </div>
+        <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Most viewed pages</h2><RankBars rows={v.pages.map((r) => ({ label: r.path, value: r.views, note: `${r.visitors} visitors` }))} empty="No views yet." /></div>
       </section>
 
+      <SourcesReport v={v} />
+
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Most viewed pages</h2><RankBars rows={v.pages.map((r) => ({ label: r.path, value: r.views, note: `${r.visitors} visitors` }))} empty="No views yet." /></div>
         <div className="card p-7">
           <h2 className="mb-1 text-lg font-semibold">Landing pages</h2>
           <p className="mb-5 text-xs text-muted">Where sessions start; "leave at once" is the share that saw only that page.</p>
