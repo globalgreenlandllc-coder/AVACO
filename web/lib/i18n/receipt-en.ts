@@ -12,7 +12,7 @@ export interface ReceiptText {
   item: string;
   total: string;
   items: { report: string; credits: string; companyCredits: string; industry: string; best: string; match: string; gift: string; giftFor: string };
-  giftContents: { reports: string; industries: string; matches: string };
+  giftContents: { reports: string; industries: string; best: string; matches: string };
   next: {
     report: { lead: string; cta: string };
     credits: { lead: string; cta: string };
@@ -51,7 +51,7 @@ export const receiptEn: ReceiptText = {
     gift: "Gift",
     giftFor: "Gift for {name}",
   },
-  giftContents: { reports: "Personality type reports × {n}", industries: "Industry chapters × {n}", matches: "Relationship reports × {n}" },
+  giftContents: { reports: "Personality type reports × {n}", industries: "Industry chapters × {n}", best: "Best-match industry × {n}", matches: "Relationship reports × {n}" },
   next: {
     report: { lead: "Your full report is open and stays in your account.", cta: "Open your report" },
     credits: { lead: "Your credits are in your account and never expire. Each one opens a full report.", cta: "See your credits" },

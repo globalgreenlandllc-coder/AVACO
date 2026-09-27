@@ -4,7 +4,7 @@
  */
 import type { Dict } from "./i18n";
 import type { IndustryText } from "./i18n/industries-en";
-import { INDUSTRY_KEYS, industryFit, industryMatches, industryRanking, LEVELS, sectorOf, type IndustryKey, type Level, type SectorKey, type TypeKey } from "./industries";
+import { INDUSTRY_KEYS, industryFit, industryRanking, LEVELS, sectorOf, topIndustries, type IndustryKey, type Level, type SectorKey, type TypeKey } from "./industries";
 
 export interface ChapterRole { key: string; name: string; text: string; level: Level; levelLabel: string; score: number; because: string; leansOn: string }
 export interface IndustryChapter {
@@ -141,9 +141,12 @@ export interface BestIndustry {
   scoresTitle: string;
   scores: Array<{ key: "peak" | "depth" | "typeFit"; label: string; value: number }>;
   scoresHelp: string;
-  othersTitle: string;
-  /** The next four industries, each with its best role. */
-  others: Array<{ key: IndustryKey; name: string; match: number; role: string }>;
+  topTitle: string;
+  topNote: string;
+  bestTag: string;
+  explore: string;
+  /** The five best industries from different fields, the winner first, each with its field and its strongest role. */
+  top: Array<{ key: IndustryKey; name: string; sector: string; blurb: string; match: number; role: string }>;
   openChapter: string;
   note: string;
 }
@@ -154,9 +157,9 @@ export interface BestIndustry {
  * opened by the same purchase and read through the chapter route. Null unless all eight types were scored.
  */
 export function bestIndustry(types: Array<{ key: string; value: number }>, t: Dict, locale: string): BestIndustry | null {
-  const matches = industryMatches(types);
-  if (!matches?.length) return null;
-  const [top, ...rest] = matches;
+  const five = topIndustries(types);
+  if (!five?.length) return null;
+  const [top] = five;
   const chapter = industryChapter(top.industry, types, t, locale);
   if (!chapter) return null;
   const texts = textsFor(t);
@@ -182,8 +185,14 @@ export function bestIndustry(types: Array<{ key: string; value: number }>, t: Di
       { key: "typeFit", label: f.scores.typeFit, value: top.typeFit },
     ],
     scoresHelp: f.scoresHelp,
-    othersTitle: f.othersTitle,
-    others: rest.slice(0, 4).map((m) => ({ key: m.industry, name: texts[m.industry]?.name ?? m.industry, match: m.match, role: f.otherRole.replace("{role}", roleName(m.industry, m.best.key)).replace("{score}", String(m.best.score)) })),
+    topTitle: f.topTitle,
+    topNote: f.topNote,
+    bestTag: f.bestTag,
+    explore: f.explore,
+    top: five.map((m) => ({
+      key: m.industry, name: texts[m.industry]?.name ?? m.industry, sector: t.finder.sectors[sectorOf(m.industry)], blurb: texts[m.industry]?.blurb ?? "", match: m.match,
+      role: f.otherRole.replace("{role}", roleName(m.industry, m.best.key)).replace("{score}", String(m.best.score)),
+    })),
     openChapter: f.openChapter.replace("{industry}", chapter.name),
     note: f.note,
   };

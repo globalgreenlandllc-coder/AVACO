@@ -6,7 +6,7 @@ import { GiftForm } from "@/components/GiftForm";
 import { GiftRibbon } from "@/components/GiftRibbon";
 import { isAdminUser } from "@/lib/admin";
 import { getSettings } from "@/lib/billing";
-import { giftPrice, giftsFor, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS, type Gift } from "@/lib/gifts";
+import { giftPrice, giftsFor, MAX_BEST, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS, type Gift } from "@/lib/gifts";
 import { formatDate, getDict } from "@/lib/i18n";
 
 export default async function GiftPage() {
@@ -32,7 +32,7 @@ export default async function GiftPage() {
         </div>
       </div>
 
-      <GiftForm t={g.form} defaultName={user?.firstName ?? ""} reportCents={price.reportCents} industryCents={price.industryCents} matchCents={price.matchCents} currency={price.currency} locale={locale} free={!cfg.enabled || admin} signedIn signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} draftOwner={userId} />
+      <GiftForm t={g.form} defaultName={user?.firstName ?? ""} reportCents={price.reportCents} industryCents={price.industryCents} matchCents={price.matchCents} bestCents={price.bestCents} maxBest={MAX_BEST} currency={price.currency} locale={locale} free={!cfg.enabled || admin} signedIn signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} draftOwner={userId} />
 
       <section>
         <h2 className="font-display text-3xl font-medium">{g.form.given}</h2>
@@ -43,7 +43,7 @@ export default async function GiftPage() {
                 <Link href={`/gift/${x.id}`} className="card flex flex-wrap items-center justify-between gap-4 p-6 transition-colors hover:border-ink-2">
                   <div>
                     <p className="font-medium">{x.recipientName ?? g.giver.someone} · {formatDate(x.createdAt.toISOString(), locale)}</p>
-                    <p className="mt-1 text-sm text-ink-2">{g.giver.contents.replace("{reports}", String(x.reports)).replace("{industries}", x.industries ? ` + ${x.industries} × ${g.form.industries}` : "").replace("{matches}", x.matches ? ` + ${x.matches} × ${g.form.matches}` : "")}</p>
+                    <p className="mt-1 text-sm text-ink-2">{g.giver.contents.replace("{reports}", String(x.reports)).replace("{industries}", x.industries ? ` + ${x.industries} × ${g.form.industries}` : "").replace("{matches}", `${x.best ? ` + ${x.best} × ${g.form.best}` : ""}${x.matches ? ` + ${x.matches} × ${g.form.matches}` : ""}`)}</p>
                   </div>
                   <span className="text-sm text-muted">{statusOf(x)} →</span>
                 </Link>

@@ -43,6 +43,7 @@ export default async function GiftRecipientPage({ params, searchParams }: { para
   const contents = [
     gift.reports === 1 ? g.reportItem : g.reportsItem.replace("{n}", String(gift.reports)),
     ...(gift.industries === 0 ? [] : [gift.industries === 1 ? g.industryItem : g.industriesItem.replace("{n}", String(gift.industries))]),
+    ...(gift.best === 0 ? [] : [gift.best === 1 ? g.bestItem : g.bestsItem.replace("{n}", String(gift.best))]),
     ...(gift.matches === 0 ? [] : [gift.matches === 1 ? g.matchItem : g.matchesItem.replace("{n}", String(gift.matches))]),
   ];
 

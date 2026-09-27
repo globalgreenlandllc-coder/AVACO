@@ -237,6 +237,8 @@ export const gifts = pgTable(
     industries: integer("industries").notNull().default(0),
     /** Relationship matches (lib/matches.ts, MATCH_CREDITS each): the recipient invites their partner with the gifted credits. */
     matches: integer("matches").notNull().default(0),
+    /** Best-match industry finders (lib/best-billing.ts, its credits each): the recipient finds their best industry with the gifted credits. */
+    best: integer("best").notNull().default(0),
     reportsUsed: integer("reports_used").notNull().default(0),
     amountCents: integer("amount_cents").notNull(),
     currency: text("currency").notNull().default("usd"),

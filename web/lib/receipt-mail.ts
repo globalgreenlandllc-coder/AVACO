@@ -13,7 +13,7 @@ export type ReceiptItem =
   | { kind: "industry"; industry: string }
   | { kind: "best" }
   | { kind: "match"; a: string; b: string }
-  | { kind: "gift"; name: string | null; reports: number; industries: number; matches: number };
+  | { kind: "gift"; name: string | null; reports: number; industries: number; matches: number; best?: number };
 
 export interface ReceiptData {
   /** Short and quotable: AV- and the start of the purchase id. */
@@ -67,6 +67,7 @@ export function itemLines(item: ReceiptItem, t: ReceiptText): { label: string; d
       const details = [
         item.reports ? fill(t.giftContents.reports, { n: item.reports }) : "",
         item.industries ? fill(t.giftContents.industries, { n: item.industries }) : "",
+        item.best ? fill(t.giftContents.best, { n: item.best }) : "",
         item.matches ? fill(t.giftContents.matches, { n: item.matches }) : "",
       ].filter(Boolean);
       return { label: item.name ? fill(t.items.giftFor, { name: item.name }) : t.items.gift, details };

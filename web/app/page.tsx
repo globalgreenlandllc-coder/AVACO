@@ -8,7 +8,7 @@ import { Reveal } from "@/components/Motion";
 import { Radar } from "@/components/Radar";
 import { isAdminUser } from "@/lib/admin";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
-import { giftPrice, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
+import { giftPrice, MAX_BEST, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
 import { isOpenHost } from "@/lib/visitor";
 import { industryTeaser } from "@/lib/industry-chapter";
 import { INDUSTRY_KEYS } from "@/lib/industries";
@@ -100,7 +100,7 @@ export default async function Home() {
           </div>
         </div>
         <div className="p-8 sm:p-12">
-          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} draftOwner={userId ?? "guest"} />
+          <GiftForm t={t.gift.form} defaultName="" reportCents={giftUnits.reportCents} industryCents={giftUnits.industryCents} matchCents={giftUnits.matchCents} bestCents={giftUnits.bestCents} maxBest={MAX_BEST} currency={giftUnits.currency} locale={locale} free={!billing.enabled || giftFree} signedIn={Boolean(userId)} signInHref="/sign-up?redirect_url=%2Fgift" maxReports={MAX_REPORTS} maxIndustries={MAX_INDUSTRIES} maxMatches={MAX_MATCHES} draftOwner={userId ?? "guest"} />
         </div>
       </Reveal>
       )}

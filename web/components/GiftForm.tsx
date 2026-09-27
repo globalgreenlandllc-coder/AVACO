@@ -11,21 +11,21 @@ import type { Dict } from "@/lib/i18n";
  */
 const LEGACY_KEY = "avoco-gift-draft";
 const draftKey = (owner: string) => `avoco-gift-draft:${owner}`;
-interface Draft { giverName: string; recipientName: string; message: string; reports: number; industries: number; matches: number }
+interface Draft { giverName: string; recipientName: string; message: string; reports: number; industries: number; matches: number; best: number }
 
 /**
- * The gift builder: names, a message, how many voice reports, industry chapters and relationship matches, the live
+ * The gift builder: names, a message, how many voice reports, industry chapters, best-match industries and relationship matches, the live
  * total, and the button that pays. It lives on the landing page too, where a visitor may not be signed in yet: the
  * draft is kept in the browser, so after signing in the form on /gift is exactly as they left it.
  */
-export function GiftForm({ t, defaultName, reportCents, industryCents, matchCents, currency, locale, free, signedIn, signInHref, maxReports, maxIndustries, maxMatches, draftOwner }: {
-  t: Dict["gift"]["form"]; defaultName: string; reportCents: number; industryCents: number; matchCents: number; currency: string; locale: string;
-  free: boolean; signedIn: boolean; signInHref: string; maxReports: number; maxIndustries: number; maxMatches: number;
+export function GiftForm({ t, defaultName, reportCents, industryCents, matchCents, bestCents, currency, locale, free, signedIn, signInHref, maxReports, maxIndustries, maxMatches, maxBest, draftOwner }: {
+  t: Dict["gift"]["form"]; defaultName: string; reportCents: number; industryCents: number; matchCents: number; bestCents: number; currency: string; locale: string;
+  free: boolean; signedIn: boolean; signInHref: string; maxReports: number; maxIndustries: number; maxMatches: number; maxBest: number;
   /** Whose draft this is: the signed-in user's id, or "guest". */
   draftOwner: string;
 }) {
   const key = draftKey(draftOwner);
-  const [draft, setDraft] = useState<Draft>({ giverName: defaultName, recipientName: "", message: "", reports: 1, industries: 0, matches: 0 });
+  const [draft, setDraft] = useState<Draft>({ giverName: defaultName, recipientName: "", message: "", reports: 1, industries: 0, matches: 0, best: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +48,7 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
   });
 
   const fmt = (cents: number) => { try { return new Intl.NumberFormat(locale, { style: "currency", currency: currency.toUpperCase() }).format(cents / 100); } catch { return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`; } };
-  const total = draft.reports * reportCents + draft.industries * industryCents + draft.matches * matchCents;
+  const total = draft.reports * reportCents + draft.industries * industryCents + draft.best * bestCents + draft.matches * matchCents;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,7 +61,7 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
     setBusy(false);
   }
 
-  const counter = (label: string, help: string, key: "reports" | "industries" | "matches", min: number, max: number, unit: number) => {
+  const counter = (label: string, help: string, key: "reports" | "industries" | "best" | "matches", min: number, max: number, unit: number) => {
     const value = draft[key];
     return (
       <div className="card flex flex-col p-5">
@@ -89,9 +89,10 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
       </div>
       <label className="block text-sm"><span className="text-ink-2">{t.message}</span><textarea value={draft.message} onChange={(e) => update({ message: e.target.value })} maxLength={300} rows={3} placeholder={t.messagePlaceholder} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /></label>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {counter(t.reports, t.reportsHelp, "reports", 1, maxReports, reportCents)}
         {counter(t.industries, t.industriesHelp, "industries", 0, maxIndustries, industryCents)}
+        {counter(t.best, t.bestHelp, "best", 0, maxBest, bestCents)}
         {counter(t.matches, t.matchesHelp, "matches", 0, maxMatches, matchCents)}
       </div>
 

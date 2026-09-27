@@ -4,7 +4,7 @@ export interface GiftText {
   landing: { eyebrow: string; title: string; text: string; points: string[]; cta: string; from: string };
   form: {
     title: string; lead: string; yourName: string; recipientName: string; recipientHelp: string; message: string; messagePlaceholder: string;
-    reports: string; reportsHelp: string; industries: string; industriesHelp: string; matches: string; matchesHelp: string; total: string; pay: string; create: string; creating: string;
+    reports: string; reportsHelp: string; industries: string; industriesHelp: string; matches: string; matchesHelp: string; best: string; bestHelp: string; total: string; pay: string; create: string; creating: string;
     signIn: string; signInFree: string; freeNote: string; secure: string; given: string; none: string;
   };
   status: { pending: string; paid: string; opened: string; claimed: string; recorded: string };
@@ -14,7 +14,7 @@ export interface GiftText {
     contents: string; back: string; another: string;
   };
   recipient: {
-    eyebrow: string; title: string; titleNamed: string; message: string; contentsTitle: string; reportItem: string; reportsItem: string; industryItem: string; industriesItem: string; matchItem: string; matchesItem: string;
+    eyebrow: string; title: string; titleNamed: string; message: string; contentsTitle: string; reportItem: string; reportsItem: string; industryItem: string; industriesItem: string; matchItem: string; matchesItem: string; bestItem: string; bestsItem: string;
     noPay: string; stepsTitle: string; steps: string[]; claim: string; claimSignedIn: string; claimNote: string; claimedByYou: string; goRecord: string; myReports: string;
     claimedByOther: string; notReady: string; giverPreview: string; given: string; footer: string;
   };
@@ -45,6 +45,8 @@ export const giftEn: GiftText = {
     industriesHelp: "Each opens one industry of their choice on top of a report: the roles ranked for them, and their path in.",
     matches: "Relationship matches",
     matchesHelp: "Each lets them invite their partner with a private link: the partner records too, and both get a couple's report on how the two of them fit.",
+    best: "Best-match industry",
+    bestHelp: "We assess their profile against every industry and show where they are most likely to excel, with their strongest role and the path to it.",
     total: "Total",
     pay: "Pay {price} and create the link",
     create: "Create the link",
@@ -98,6 +100,8 @@ export const giftEn: GiftText = {
     industriesItem: "{n} industry chapters: pick any industries, and their roles are ranked for your voice, with your path in",
     matchItem: "1 relationship match: invite your partner with a private link; they record too, and you both get a couple's report on how the two of you fit",
     matchesItem: "{n} relationship matches: invite a partner with a private link; they record too, and you both get a couple's report on how the two of you fit",
+    bestItem: "Your best-match industry: your profile assessed against every industry, with your strongest role and the path to it",
+    bestsItem: "{n} best-match industry assessments: each finds, for one report, the industry and the role where you are most likely to excel",
     noPay: "Everything is paid for. You will never be asked for a card.",
     stepsTitle: "How it works",
     steps: [

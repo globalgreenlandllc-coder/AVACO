@@ -63,6 +63,9 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
   const [busy, setBusy] = useState(false);
   const bestFinder = useBest(best, analysisId);
   const bestResult = bestFinder.state.kind === "open" ? bestFinder.state.result : null;
+  // Two offers where the finder is sold here; otherwise the one picker, as on the partner page.
+  const fc = best && finder ? finder : undefined;
+  const two = Boolean(fc);
 
   async function load(key: string) {
     if (chapters[key]) { setState({ kind: "chapter", chapter: chapters[key] }); return; }
@@ -129,24 +132,31 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
         {/* The offer, dressed as the report's own cover in a shade of amber; the picker sits where the report has its radar. */}
         <section className="cover offer-cover offer-industry px-7 py-10 sm:px-12 sm:py-14">
           <CoverCapsules />
-          <p className="cover-eyebrow relative"><span className="font-display text-xl font-semibold tracking-[0.2em]">AVOCO</span><span className="mx-3 opacity-50">·</span>{a.badge}</p>
+          <p className="cover-eyebrow relative"><span className="font-display text-xl font-semibold tracking-[0.2em]">AVOCO</span><span className="mx-3 opacity-50">·</span>{fc ? fc.cover.badge : a.badge}</p>
 
-          <div className="relative mt-10 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-            <div>
-              <h2 className="gold-text pb-2 font-display text-4xl font-semibold leading-[1.02] sm:text-6xl">{a.title}</h2>
-              <p className="mt-5 max-w-md leading-relaxed text-ink-2 sm:text-lg">{a.text.replace("{n}", String(industries.length))}</p>
-              <p className="mt-6"><span className="offer-badge">{priceLabel}</span></p>
-              {paidState && (
-                <p role="status" className="mt-6 max-w-md rounded-2xl border border-line px-5 py-4 text-sm">
-                  {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
-                </p>
+          <div className="relative mt-8 max-w-3xl">
+            <h2 className="gold-text pb-2 font-display text-4xl font-semibold leading-[1.02] sm:text-6xl">{fc ? fc.cover.title : a.title}</h2>
+            <p className="mt-5 leading-relaxed text-ink-2 sm:text-lg">{fc ? fc.cover.lead : a.text.replace("{n}", String(industries.length))}</p>
+            {paidState && (
+              <p role="status" className="mt-6 max-w-xl rounded-2xl border border-line px-5 py-4 text-sm">
+                {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
+              </p>
+            )}
+            {paidState === "pending" && <RefreshWhile />}
+          </div>
+
+          {/* The two offers side by side: an industry of the person's choice at the chapter price, or the best-match finder. */}
+          <div className={`relative mt-10 grid gap-6 ${two ? "lg:grid-cols-2" : ""}`}>
+            <div className="offer-tile flex flex-col p-6 sm:p-8">
+              {fc && (
+                <>
+                  <p className="cover-eyebrow">{fc.cover.choose.eyebrow}</p>
+                  <h3 className="mt-2 font-display text-3xl font-semibold">{fc.cover.choose.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-ink-2 sm:text-base">{fc.cover.choose.text}</p>
+                </>
               )}
-              {paidState === "pending" && <RefreshWhile />}
-            </div>
-
-            <div>
-              <p className="cover-eyebrow">{a.cta}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              <p className={two ? "mt-4" : ""}><span className="offer-badge">{priceLabel}</span></p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <label className="sr-only" htmlFor="industry-select">{t.pick}</label>
                 <select id="industry-select" value={picked ?? ""} onChange={(e) => { setPicked(e.target.value || null); setShown(true); }} className="offer-field w-full px-4 py-3 text-sm font-semibold">
                   <option value="">{a.select}</option>
@@ -178,23 +188,30 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
 
               {/* Until an industry is chosen: a live example from this person's own scores, shown the way the cover shows a score. */}
               {example && teaser?.roles[0] && (
-                <div className="mt-8 border-t border-line pt-6">
+                <div className="mt-6 border-t border-line pt-5">
                   <p className="text-sm font-semibold text-ink-2">{a.exampleTag} · {teaser.name}</p>
-                  <p className="mt-2 flex items-baseline gap-3"><span className="text-4xl font-semibold tabular-nums">{teaser.roles[0].score}</span><span className="text-sm text-ink-2">/ 100</span></p>
-                  <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-2">{example}</p>
+                  <p className="mt-1 flex items-baseline gap-3"><span className="text-3xl font-semibold tabular-nums">{teaser.roles[0].score}</span><span className="text-sm text-ink-2">/ 100</span></p>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-2">{example}</p>
                 </div>
               )}
               {state.kind === "loading" && <p className="mt-5 text-sm text-ink-2" aria-live="polite">{t.loading}</p>}
               {state.kind === "error" && <p className="mt-5 text-sm text-danger" aria-live="polite">{t.error}</p>}
               {state.kind === "locked" && picked && (
-                <p className="mt-5 max-w-md text-sm leading-relaxed text-ink-2">{t.lock.text} {freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
+                <p className="mt-5 text-sm leading-relaxed text-ink-2">{t.lock.text} {freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
               )}
             </div>
+            {fc && best && <BestTile best={best} finder={bestFinder} f={fc} credits={credits} creditsHref={creditsHref} />}
           </div>
-          {best && finder && <BestTile best={best} finder={bestFinder} f={finder} credits={credits} creditsHref={creditsHref} />}
         </section>
 
-        {bestResult && bestFinder.shown && <BestResult result={bestResult} onOpenChapter={(key) => { setPicked(key); setShown(true); }} />}
+        {bestResult && bestFinder.shown && (
+          <BestResult
+            result={bestResult}
+            onOpenChapter={(key) => { setPicked(key); setShown(true); }}
+            // Another of the top five: chosen in the picker above, where it opens or can be bought on its own.
+            onExplore={(key) => { setPicked(key); setShown(true); document.getElementById("industry-select")?.scrollIntoView({ behavior: "smooth", block: "center" }); }}
+          />
+        )}
 
         {/* The opened chapter follows its cover, as the report follows its own; only the chosen one is on screen. */}
         {state.kind === "chapter" && shown && (

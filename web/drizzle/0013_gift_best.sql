@@ -1,0 +1,1 @@
+ALTER TABLE "gifts" ADD COLUMN "best" integer DEFAULT 0 NOT NULL;

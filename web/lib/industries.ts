@@ -561,3 +561,23 @@ export function industryMatches(types: Array<{ key: string; value: number }>): I
   }
   return out.sort((a, b) => b.match - a.match || b.peak - a.peak || a.industry.localeCompare(b.industry));
 }
+
+/**
+ * The best industries for a profile, from different fields: in match order, but no more than `perSector` from one
+ * sector, so five results are five real alternatives, not five shades of one field. The first is always the best
+ * match overall. Null unless all eight types were scored.
+ */
+export function topIndustries(types: Array<{ key: string; value: number }>, count = 5, perSector = 2): IndustryMatch[] | null {
+  const all = industryMatches(types);
+  if (!all) return null;
+  const used = new Map<SectorKey, number>();
+  const out: IndustryMatch[] = [];
+  for (const m of all) {
+    const sector = sectorOf(m.industry);
+    if ((used.get(sector) ?? 0) >= perSector) continue;
+    used.set(sector, (used.get(sector) ?? 0) + 1);
+    out.push(m);
+    if (out.length === count) break;
+  }
+  return out;
+}

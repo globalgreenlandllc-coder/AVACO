@@ -55,7 +55,7 @@ async function itemOf(p: Purchase, locale: string, origin: string): Promise<{ it
   if (p.giftId) {
     const [g] = await db().select().from(gifts).where(eq(gifts.id, p.giftId));
     return {
-      item: { kind: "gift", name: g?.recipientName ?? null, reports: g?.reports ?? 0, industries: g?.industries ?? 0, matches: g?.matches ?? 0 },
+      item: { kind: "gift", name: g?.recipientName ?? null, reports: g?.reports ?? 0, industries: g?.industries ?? 0, best: g?.best ?? 0, matches: g?.matches ?? 0 },
       next: { kind: "gift", url: `${origin}/gift/${p.giftId}` },
     };
   }

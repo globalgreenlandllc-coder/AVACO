@@ -66,7 +66,7 @@ export function useBest(best: BestProps | undefined, analysisId: string) {
 
 type Finder = ReturnType<typeof useBest>;
 
-/** The offer inside the industry cover: what the finder does, its price, and the one button that fits this person. */
+/** The second offer inside the industry cover: what the finder does, its price, and the one button that fits this person. */
 export function BestTile({ best, finder, f, credits, creditsHref }: { best: BestProps; finder: Finder; f: Dict["finder"]; credits: number; creditsHref: string }) {
   const { state } = finder;
   const o = f.offer;
@@ -75,28 +75,24 @@ export function BestTile({ best, finder, f, credits, creditsHref }: { best: Best
   const paying = !best.free && !best.admin;
   const enough = credits >= best.needed;
   return (
-    <div className="relative mt-10 rounded-3xl border border-line p-6 sm:p-8" style={{ background: "color-mix(in oklab, var(--cover-gold) 7%, transparent)" }}>
-      <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
-          <p className="cover-eyebrow">✦ {o.eyebrow}</p>
-          <h3 className="gold-text mt-2 pb-1 font-display text-3xl font-semibold sm:text-4xl">{o.title}</h3>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-2 sm:text-base">{o.text.replace("{n}", String(best.total))}</p>
-          <p className="mt-4"><span className="offer-badge">{result ? `✓ ${o.open} · ${result.name} · ${result.match}` : best.price}</span></p>
-        </div>
-        <div className="flex flex-wrap gap-3 lg:justify-end">
-          {result ? (
-            <button type="button" className="btn btn-quiet" onClick={() => finder.setShown((v) => !v)}>{finder.shown ? o.hide : o.show}</button>
-          ) : !paying || enough ? (
-            <>
-              <button type="button" className="btn" onClick={finder.find} disabled={busy}>{busy ? o.finding : best.free ? o.find : best.admin ? o.findAdmin : o.findCredits.replace("{n}", String(best.needed))}</button>
-              {paying && best.payUrl && <button type="button" className="btn btn-quiet" onClick={finder.pay} disabled={busy}>{best.payLabel}</button>}
-            </>
-          ) : best.payUrl ? (
-            <button type="button" className="btn" onClick={finder.pay} disabled={busy}>{busy ? o.finding : best.payLabel}</button>
-          ) : (
-            <Link href={creditsHref} className="btn">{o.getCredits}</Link>
-          )}
-        </div>
+    <div className="offer-tile flex flex-col p-6 sm:p-8" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 60%, transparent)", background: "color-mix(in oklab, var(--cover-gold) 9%, transparent)" }}>
+      <p className="cover-eyebrow">✦ {o.eyebrow}</p>
+      <h3 className="gold-text mt-2 pb-1 font-display text-3xl font-semibold">{o.title}</h3>
+      <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-2 sm:text-base">{o.text.replace("{n}", String(best.total))}</p>
+      <p className="mt-4"><span className="offer-badge">{result ? `✓ ${o.open} · ${result.name} · ${result.match}` : best.price}</span></p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        {result ? (
+          <button type="button" className="btn btn-quiet" onClick={() => finder.setShown((v) => !v)}>{finder.shown ? o.hide : o.show}</button>
+        ) : !paying || enough ? (
+          <>
+            <button type="button" className="btn" onClick={finder.find} disabled={busy}>{busy ? o.finding : best.free ? o.find : best.admin ? o.findAdmin : o.findCredits.replace("{n}", String(best.needed))}</button>
+            {paying && best.payUrl && <button type="button" className="btn btn-quiet" onClick={finder.pay} disabled={busy}>{best.payLabel}</button>}
+          </>
+        ) : best.payUrl ? (
+          <button type="button" className="btn" onClick={finder.pay} disabled={busy}>{busy ? o.finding : `${o.find} · ${best.payLabel}`}</button>
+        ) : (
+          <Link href={creditsHref} className="btn">{o.getCredits}</Link>
+        )}
       </div>
       {!result && paying && (state.kind === "short" || !enough) && <p className="mt-4 text-sm text-ink-2">{o.need.replace("{n}", String(best.needed))} {o.youHave.replace("{have}", String(credits))}</p>}
       {best.paid && !result && <p role="status" className="mt-4 text-sm">{best.paid === "confirmed" ? o.paid : o.paidPending}</p>}
@@ -105,8 +101,9 @@ export function BestTile({ best, finder, f, credits, creditsHref }: { best: Best
   );
 }
 
-/** The winner, laid out like a report chapter: why it wins, the best role and the way to it, the closest alternatives. */
-export function BestResult({ result: r, onOpenChapter }: { result: BestIndustry; onOpenChapter?: (key: string) => void }) {
+/** The winner, laid out like a report chapter: why it wins, the best role and the way to it, then the top five from different fields. */
+/** `onExplore` opens one of the other four in the industry picker, where it can be bought on its own. */
+export function BestResult({ result: r, onOpenChapter, onExplore }: { result: BestIndustry; onOpenChapter?: (key: string) => void; onExplore?: (key: string) => void }) {
   return (
     <section className="theme-industry mt-10 space-y-8" data-best>
       <div className="gold-panel p-7 sm:p-9">
@@ -159,15 +156,28 @@ export function BestResult({ result: r, onOpenChapter }: { result: BestIndustry;
       </div>
 
       <div className="card break-inside-avoid overflow-hidden">
-        <p className="tab-title">{r.othersTitle}</p>
-        <ol className="divide-y divide-line px-6 pb-3 pt-2">
-          {r.others.map((o, i) => (
-            <li key={o.key} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
-              <span><span className="font-semibold">{i + 2}. {o.name}</span> <span className="text-sm text-ink-2">· {o.role}</span></span>
-              <span className="font-semibold tabular-nums">{o.match}</span>
+        <p className="tab-title">{r.topTitle}</p>
+        <ol className="divide-y divide-line px-6 pt-2">
+          {r.top.map((o, i) => (
+            <li key={o.key} className="grid gap-x-5 gap-y-2 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-start">
+              <span className="font-display text-3xl leading-none text-accent-text">{String(i + 1).padStart(2, "0")}</span>
+              <div>
+                <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-lg font-semibold">{o.name}</span>
+                  {i === 0 && <span className="rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent-ink">{r.bestTag}</span>}
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{o.sector}</span>
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-2">{o.blurb}</p>
+                <p className="mt-1 text-sm font-medium">{o.role}</p>
+              </div>
+              <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-2">
+                <span className="text-2xl font-semibold tabular-nums">{o.match}</span>
+                {i > 0 && onExplore && <button type="button" data-no-export className="btn btn-quiet no-print !px-4 !py-1.5 !text-sm" onClick={() => onExplore(o.key)}>{r.explore}</button>}
+              </div>
             </li>
           ))}
         </ol>
+        <p className="px-6 pb-6 pt-2 text-xs leading-relaxed text-muted">{r.topNote}</p>
       </div>
 
       {onOpenChapter && <button type="button" data-no-export className="btn no-print" onClick={() => onOpenChapter(r.industry)}>{r.openChapter} →</button>}

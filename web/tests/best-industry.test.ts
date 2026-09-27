@@ -11,7 +11,7 @@ import { setDbForTests, type Db } from "@/lib/db";
 import * as B from "@/lib/billing";
 import { bestCredits, saveBestPricing, startBestPurchase } from "@/lib/best-billing";
 import { en } from "@/lib/i18n/en";
-import { INDUSTRIES, INDUSTRY_KEYS, industryDemand, industryFit, industryMatches, LEVELS, SECTOR_KEYS, SECTORS } from "@/lib/industries";
+import { INDUSTRIES, INDUSTRY_KEYS, industryDemand, industryFit, industryMatches, LEVELS, SECTOR_KEYS, SECTORS, sectorOf, topIndustries } from "@/lib/industries";
 import { bestIndustry, industryNames } from "@/lib/industry-chapter";
 
 const TYPES = ["organizer", "driver", "catalyst", "performer", "harmonizer", "analyst", "skeptic", "mediator"] as const;
@@ -69,9 +69,23 @@ describe("the best-industry finder", () => {
     expect(r.why).toContain(r.name);
     expect(r.role.score).toBe(top.peak);
     expect(r.path.map((p) => p.level)).toEqual([...LEVELS]);
-    expect(r.others).toHaveLength(4);
-    expect(r.others.map((o) => o.key)).not.toContain(r.industry);
+    expect(r.top).toHaveLength(5);
+    expect(r.top[0].key).toBe(r.industry);
+    expect(new Set(r.top.map((o) => o.key)).size).toBe(5);
     expect(r.scores.map((s) => s.value)).toEqual([top.peak, top.depth, top.typeFit]);
+  });
+
+  it("picks the top five from different fields: the best match first, never more than two from one sector", () => {
+    for (const leader of TYPES) {
+      const types = profile(leader, 75, leader === "mediator" ? "harmonizer" : "mediator");
+      const five = topIndustries(types)!;
+      expect(five).toHaveLength(5);
+      expect(five[0].industry).toBe(industryMatches(types)![0].industry);
+      const perSector = new Map<string, number>();
+      for (const m of five) perSector.set(sectorOf(m.industry), (perSector.get(sectorOf(m.industry)) ?? 0) + 1);
+      expect(Math.max(...perSector.values())).toBeLessThanOrEqual(2);
+      for (let i = 1; i < five.length; i++) expect(five[i - 1].match).toBeGreaterThanOrEqual(five[i].match);
+    }
   });
 
   it("returns nothing without all eight type scores", () => {
