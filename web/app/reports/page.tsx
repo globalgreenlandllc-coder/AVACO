@@ -112,7 +112,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                 </Link>
                 {(extras.industries.length > 0 || extras.couples.length > 0) && (
                   <div className="-mt-2 flex flex-wrap gap-2 px-6 pb-5">
-                    {extras.industries.map((key) => <Link key={key} href={`/reports/${a.id}?industry=${key}`} className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", industryName.get(key) ?? key)} →</Link>)}
+                    {extras.industries.map((key) => <Link key={key} href={`/reports/${a.id}?industry=${key}#industry`} className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", industryName.get(key) ?? key)} →</Link>)}
                     {extras.couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className={`pill !py-1.5 text-xs ${m.unfinished ? "pill-off" : "pill-on"}`}>♥ {(m.unfinished ? t.reports.extraCoupleWaiting : t.reports.extraCouple).replace("{name}", m.partnerName)} →</Link>)}
                   </div>
                 )}

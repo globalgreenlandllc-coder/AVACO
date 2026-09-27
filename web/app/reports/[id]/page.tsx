@@ -130,7 +130,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const extras = opened.length + couples.length > 0 ? (
     <nav className="no-print flex flex-wrap items-center gap-2" aria-label={t.reports.extrasTitle} data-no-export>
       <span className="eyebrow mr-1">{t.reports.extrasTitle}</span>
-      {opened.map((key) => <Link key={key} href={`/reports/${analysis.id}?industry=${key}`} className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", names.get(key) ?? key)} →</Link>)}
+      {opened.map((key) => <Link key={key} href={`/reports/${analysis.id}?industry=${key}#industry`} scroll className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", names.get(key) ?? key)} →</Link>)}
       {couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className="pill pill-off !py-1.5 text-xs">♥ {t.reports.extraCouple.replace("{name}", m.partnerName)} →</Link>)}
     </nav>
   ) : null;

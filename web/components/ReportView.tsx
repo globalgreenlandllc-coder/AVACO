@@ -199,7 +199,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
       {/* The industry add-on: sold and shown in this one card above the report, never inside it. */}
-      {industry && psy.length === 8 && <Industry {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} />}
+      {industry && psy.length === 8 && <div id="industry"><Industry key={industry.initialIndustry ?? ""} {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} /></div>}
       {match && psy.length === 8 && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
 
       {top && (
