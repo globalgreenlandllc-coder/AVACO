@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { en } from "../lib/i18n/en";
+import { ru } from "../lib/i18n/ru";
 import { industriesEn } from "../lib/i18n/industries-en";
 import { industriesRu } from "../lib/i18n/industries-ru";
 import { INDUSTRIES, INDUSTRY_KEYS, industryFit, industryRanking, isIndustry, LEVELS } from "../lib/industries";
@@ -74,7 +75,7 @@ describe("industryChapter", () => {
     expect(chapter.angle).toContain("Catalyst side (78)");
     expect(chapter.watch.length).toBeGreaterThan(0);
     expect(chapter.roles[0].because).toMatch(/^Because: /);
-    expect(industryNames("ru").find((i) => i.key === "construction")?.name).toBe("Строительство");
+    expect(industryNames(ru).find((i) => i.key === "construction")?.name).toBe("Строительство");
     expect(chapter.rankLine).toMatch(/#\d+ of \d+ industries/);
     expect(chapter.also.length + (chapter.alsoNone ? 1 : 0)).toBeGreaterThan(0);
     expect(chapter.pairText).toContain("Catalyst (78)");

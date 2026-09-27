@@ -1,7 +1,6 @@
 /** The match as it leaves the server: every string already in the visitor's language. Pure. */
 import type { Dict } from "./i18n";
-import { matchEn, type MatchText } from "./i18n/match-en";
-import { matchRu } from "./i18n/match-ru";
+import type { MatchText } from "./i18n/match-en";
 import { pairKey, type MatchFit } from "./match";
 
 export interface MatchReport {
@@ -17,10 +16,10 @@ export interface MatchReport {
   method: string;
 }
 
-const textsFor = (locale: string): MatchText => (locale === "ru" ? matchRu : matchEn);
+const textsFor = (t: Dict): MatchText => t.content.match;
 
 export function matchReport(fit: MatchFit, names: { a: string; b: string }, t: Dict, locale: string): MatchReport {
-  const m = textsFor(locale);
+  const m = textsFor(t);
   const ui = t.match;
   const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
   const [la, lb] = fit.leaders;

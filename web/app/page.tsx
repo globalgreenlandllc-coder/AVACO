@@ -12,8 +12,6 @@ import { giftPrice, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts
 import { isOpenHost } from "@/lib/visitor";
 import { industryTeaser } from "@/lib/industry-chapter";
 import { matchFit } from "@/lib/match";
-import { matchEn } from "@/lib/i18n/match-en";
-import { matchRu } from "@/lib/i18n/match-ru";
 import { organizationJsonLd } from "@/lib/contact";
 import { getDict } from "@/lib/i18n";
 import { LEGAL } from "@/lib/legal";
@@ -41,12 +39,12 @@ export default async function Home() {
   const rows = psytypeRows(SAMPLE_PSY.map(([key, value]) => ({ key, label: key, value, zone: zoneOf(value) })), t);
   // The deeper readings, shown on the sample profile: the roles it would lead in one industry, and how it pairs with a warm partner.
   const sampleTypes = SAMPLE_PSY.map(([key, value]) => ({ key, value }));
-  const teaser = industryTeaser("construction", sampleTypes, locale);
+  const teaser = industryTeaser("construction", sampleTypes, t);
   const exampleIndustry = teaser ? h.deeperExampleIndustry.replace("{industry}", teaser.name).replace("{roles}", teaser.roles.map((r) => `${r.name} ${r.score}`).join(" · ")) : "";
   const partner = sampleTypes.map(({ key }) => ({ key, value: key === "harmonizer" ? 64 : key === "mediator" ? 45 : 11 }));
   const fit = matchFit(sampleTypes, partner);
   const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
-  const exampleMatch = fit ? h.deeperExampleMatch.replace("{a}", typeName(fit.leaders[0])).replace("{b}", typeName(fit.leaders[1])).replace("{score}", String(fit.score)).replace("{verdict}", (locale === "ru" ? matchRu : matchEn).bands[fit.band].title) : "";
+  const exampleMatch = fit ? h.deeperExampleMatch.replace("{a}", typeName(fit.leaders[0])).replace("{b}", typeName(fit.leaders[1])).replace("{score}", String(fit.score)).replace("{verdict}", t.content.match.bands[fit.band].title) : "";
   const leader = rows[0];
   const packs = packViews(billing.packs.filter((p) => p.audience === "user"), billing.currency, locale);
   const single = billing.packs.find((p) => p.audience === "user" && p.credits === 1);

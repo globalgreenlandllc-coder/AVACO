@@ -117,6 +117,8 @@ export async function translateTexts(texts: string[], target: string, cfg: Deepl
 
 const hashOf = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 16);
 const source = (): Array<[string, string]> => Object.entries(flatten(en));
+/** The interface strings alone, without the report content ("content.…"): what decides whether a language is offered. */
+const interfaceSource = () => source().filter(([path]) => !path.startsWith("content."));
 
 export interface LanguageProgress { total: number; done: number }
 
@@ -197,7 +199,9 @@ export const AVAILABLE_SHARE = 0.9;
 
 /** The languages the menu offers: the two written by hand, and every added language that is (nearly) complete. */
 export async function availableLanguages(): Promise<Language[]> {
-  const needed = Math.ceil(source().length * AVAILABLE_SHARE);
+  // Measured on the interface strings, so adding report content never takes a language out of the menu; the content falls
+  // back to English until the language is topped up.
+  const needed = Math.ceil(interfaceSource().length * AVAILABLE_SHARE);
   const built = await languageVersions().catch(() => new Map<string, string>());
   return [...BUILT_IN, ...TRANSLATABLE.filter((l) => Number(built.get(l.code)?.split(":")[0]) >= needed)];
 }

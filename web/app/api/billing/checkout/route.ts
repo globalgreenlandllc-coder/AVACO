@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     const withIndustry = industry ? `&industry=${industry}` : "";
     const session = await createCheckout({
       purchaseId: purchase.id,
-      name: addon ? `AVOCO industry chapter · ${industryNames((await getDict()).locale).find((i) => i.key === industry)?.name ?? industry}` : `AVOCO voice reports × ${purchase.credits}`,
+      name: addon ? `AVOCO industry chapter · ${industryNames((await getDict()).t).find((i) => i.key === industry)?.name ?? industry}` : `AVOCO voice reports × ${purchase.credits}`,
       amountCents: purchase.amountCents,
       currency: (await getSettings()).currency,
       // Stripe fills in {CHECKOUT_SESSION_ID}; the page the buyer lands on confirms the payment itself instead of waiting for the webhook.

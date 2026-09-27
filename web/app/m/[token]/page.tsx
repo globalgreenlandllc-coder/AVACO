@@ -36,17 +36,18 @@ export default async function PartnerLinkPage({ params, searchParams }: { params
     <section>
       <h2 className="font-display text-4xl font-medium">{m.otherReport.replace("{name}", match.ownerName)}</h2>
       <p className="mb-6 mt-2 text-sm text-muted">{m.sharedNote}</p>
-      <ReportView initial={ownerReport} recordedOn={formatDate(ownerReport.created_at, locale)} t={t} pollUrl={`/api/m/${token}/match`} deleteUrl={null} back={null} />
+      <ReportView key={`${locale}-owner`} initial={ownerReport} recordedOn={formatDate(ownerReport.created_at, locale)} t={t} pollUrl={`/api/m/${token}/match`} deleteUrl={null} back={null} />
     </section>
   );
 
   if (partnerReport && !again) {
     return (
       <div className="space-y-12">
-        <MatchView initial={view} pollUrl={`/api/m/${token}/match`} waiting={null} side="partner" t={m} />
+        <MatchView key={locale} initial={view} pollUrl={`/api/m/${token}/match`} waiting={null} side="partner" t={m} />
         <section>
           <h2 className="mb-6 font-display text-4xl font-medium">{m.yourReport}</h2>
           <ReportView
+            key={`${locale}-own`}
             initial={partnerReport}
             recordedOn={formatDate(partnerReport.created_at, locale)}
             t={t}
@@ -78,7 +79,7 @@ export default async function PartnerLinkPage({ params, searchParams }: { params
   );
   return (
     <div className="space-y-10">
-      <MatchView initial={view} pollUrl={`/api/m/${token}/match`} waiting={recorder} side="partner" t={m} />
+      <MatchView key={locale} initial={view} pollUrl={`/api/m/${token}/match`} waiting={recorder} side="partner" t={m} />
     </div>
   );
 }

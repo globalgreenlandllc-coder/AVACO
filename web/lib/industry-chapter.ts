@@ -3,8 +3,7 @@
  * browser only lays it out. The catalogue text itself never reaches a browser that hasn't opened the chapter.
  */
 import type { Dict } from "./i18n";
-import { industriesEn, type IndustryText } from "./i18n/industries-en";
-import { industriesRu } from "./i18n/industries-ru";
+import type { IndustryText } from "./i18n/industries-en";
 import { industryFit, industryRanking, LEVELS, type IndustryKey, type Level, type TypeKey } from "./industries";
 
 export interface ChapterRole { key: string; name: string; text: string; level: Level; levelLabel: string; score: number; because: string; leansOn: string }
@@ -36,19 +35,19 @@ export interface IndustryChapter {
   scoreHelp: string;
 }
 
-/** The industry names for the picker, in the visitor's language (English for added languages, for now). */
-export function industryNames(locale: string): Array<{ key: IndustryKey; name: string }> {
-  const texts = textsFor(locale);
-  return (Object.keys(industriesEn) as IndustryKey[]).map((key) => ({ key, name: texts[key].name })).sort((a, b) => a.name.localeCompare(b.name));
+/** The industry names for the picker, in the dictionary's language (added languages are translated like the rest). */
+export function industryNames(t: Dict): Array<{ key: IndustryKey; name: string }> {
+  const texts = textsFor(t);
+  return (Object.keys(texts) as IndustryKey[]).map((key) => ({ key, name: texts[key].name })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-const textsFor = (locale: string): Record<string, IndustryText> => (locale === "ru" ? industriesRu : industriesEn);
+const textsFor = (t: Dict): Record<string, IndustryText> => t.content.industries;
 
 /** Builds the chapter for one report. Null unless all eight types were scored. */
 export function industryChapter(industry: IndustryKey, types: Array<{ key: string; value: number }>, t: Dict, locale: string, scales: Array<{ key: string; value: number }> | null = null): IndustryChapter | null {
   const fit = industryFit(industry, types, scales);
   if (!fit) return null;
-  const texts = textsFor(locale);
+  const texts = textsFor(t);
   const text = texts[industry];
   const ui = t.industry;
   const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
@@ -118,9 +117,9 @@ export function industryChapter(industry: IndustryKey, types: Array<{ key: strin
 export interface IndustryTeaser { industry: IndustryKey; name: string; overall: number; roles: Array<{ name: string; score: number }>; more: number }
 
 /** A taste of one industry for the pitch at the top of the report: the fit and the three best role names. No texts. */
-export function industryTeaser(industry: IndustryKey, types: Array<{ key: string; value: number }>, locale: string): IndustryTeaser | null {
+export function industryTeaser(industry: IndustryKey, types: Array<{ key: string; value: number }>, t: Dict): IndustryTeaser | null {
   const fit = industryFit(industry, types);
   if (!fit) return null;
-  const text = textsFor(locale)[industry];
+  const text = textsFor(t)[industry];
   return { industry, name: text.name, overall: fit.overall, roles: fit.roles.slice(0, 3).map((r) => ({ name: text.roles[r.key]?.name ?? r.key, score: r.score })), more: Math.max(0, fit.roles.length - 3) };
 }

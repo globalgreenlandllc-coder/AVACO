@@ -27,7 +27,7 @@ export default async function PartnerReportPage({ params }: { params: Promise<{ 
         deleteUrl={`/api/partners/r/${analysis.id}`}
         afterDeleteHref={`/partners?forget=${encodeURIComponent(analysis.id)}`}
         back={{ href: "/partners", label: p.back }}
-        industry={{ industries: industryNames(locale), chapterUrl: `/api/partners/r/${analysis.id}/industry/{key}`, teaser: industryTeaser("it", analysis.psytype ?? [], locale) }}
+        industry={{ industries: industryNames(t), chapterUrl: `/api/partners/r/${analysis.id}/industry/{key}`, teaser: industryTeaser("it", analysis.psytype ?? [], t) }}
         lead={<p className="no-print text-sm leading-relaxed text-ink-2">{p.note} <Link href="/partners" className="font-semibold text-accent-text hover:underline">{p.another}</Link></p>}
       />
     </>

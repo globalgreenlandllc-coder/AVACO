@@ -84,9 +84,9 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     // The add-on has its own price and is paid straight from the card; a report credit can open it too.
     const price = cfg.enabled && !admin && !open ? money(addonCents, cfg.currency, locale) : null;
     industry = {
-      industries: industryNames(locale), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled && !open ? "/api/billing/unlock-industry" : undefined,
+      industries: industryNames(t), chapterUrl: `/api/analyses/${analysis.id}/industry/{key}`, unlockUrl: cfg.enabled && !open ? "/api/billing/unlock-industry" : undefined,
       payUrl: price && canPay ? "/api/billing/checkout" : undefined, payLabel: price ? t.billing.pay.replace("{price}", price) : undefined,
-      unlocked, credits, freeUnlock: admin, price, teaser: industryTeaser("it", analysis.psytype ?? [], locale),
+      unlocked, credits, freeUnlock: admin, price, teaser: industryTeaser("it", analysis.psytype ?? [], t),
       initialIndustry: wantedIndustry, paid,
     };
   }

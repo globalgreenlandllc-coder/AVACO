@@ -63,7 +63,7 @@ async function itemOf(p: Purchase, locale: string, origin: string): Promise<{ it
     return { item: { kind: "match", a: m?.ownerName ?? "", b: m?.partnerName ?? "" }, next: { kind: "match", url: `${origin}/match/${p.matchId}` } };
   }
   if (p.pack === INDUSTRY_PACK && p.unlockIndustry && p.unlockAnalysisId) {
-    const name = industryNames(locale).find((i) => i.key === p.unlockIndustry)?.name ?? p.unlockIndustry;
+    const name = industryNames(await dictFor(locale)).find((i) => i.key === p.unlockIndustry)?.name ?? p.unlockIndustry;
     return { item: { kind: "industry", industry: name }, next: { kind: "industry", url: `${origin}/reports/${p.unlockAnalysisId}?industry=${p.unlockIndustry}` } };
   }
   if (p.ownerKind === "workspace") return { item: { kind: "company", n: p.credits }, next: { kind: "company", url: `${origin}/w/${p.ownerId}` } };

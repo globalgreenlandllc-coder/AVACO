@@ -1,3 +1,5 @@
+import { industriesRu } from "./industries-ru";
+import { matchRu } from "./match-ru";
 import { billingRu } from "./billing-ru";
 import { orgRu } from "./org-ru";
 import { typesRu } from "./types-ru";
@@ -472,6 +474,7 @@ export const ru: Dict = {
     downloading: "Готовим файл…",
     downloadNote: "Один файл только с этой главой. Полная загрузка отчёта внизу включает все открытые вами главы.",
   },
+  content: { industries: industriesRu, match: matchRu },
   contact: {
     eyebrow: "Свяжитесь с нами",
     title: "Отвечает человек, а не бот",

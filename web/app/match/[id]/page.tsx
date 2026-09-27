@@ -107,12 +107,12 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
     <div className="space-y-10">
       <Link href={`/reports/${match.analysisId}`} className="no-print inline-block text-sm font-semibold text-accent-text hover:underline">← {m.backToReport}</Link>
       {justPaid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{t.match.paymentConfirmed}</p>}
-      <MatchView initial={view} pollUrl={`/api/match/${match.id}`} waiting={<div className="space-y-6">{tabs}{uploadFirst ? upload : invite}</div>} side="owner" t={m} />
+      <MatchView key={locale} initial={view} pollUrl={`/api/match/${match.id}`} waiting={<div className="space-y-6">{tabs}{uploadFirst ? upload : invite}</div>} side="owner" t={m} />
       {partnerReport?.status === "completed" && (
         <section>
           <h2 className="font-display text-4xl font-medium">{m.otherReport.replace("{name}", match.partnerName)}</h2>
           <p className="mb-6 mt-2 text-sm text-muted">{m.sharedNote}</p>
-          <ReportView initial={partnerReport} recordedOn={formatDate(partnerReport.created_at, locale)} t={t} pollUrl={`/api/match/${match.id}`} deleteUrl={null} back={null} />
+          <ReportView key={locale} initial={partnerReport} recordedOn={formatDate(partnerReport.created_at, locale)} t={t} pollUrl={`/api/match/${match.id}`} deleteUrl={null} back={null} />
         </section>
       )}
       <DeleteMatch id={match.id} label={fill(m.deleteMatch)} confirm={fill(m.deleteConfirm)} afterHref={`/reports/${match.analysisId}`} />
