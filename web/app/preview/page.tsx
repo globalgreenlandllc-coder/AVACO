@@ -4,6 +4,8 @@ import { ReportView, type Report } from "@/components/ReportView";
 import { teaserOf, zoneOf } from "@/lib/report";
 import { formatDate, getDict } from "@/lib/i18n";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
+import { matchFit } from "@/lib/match";
+import { matchReport } from "@/lib/match-report";
 
 // Sample scores, to look at the report's design without recording. Development only. ?two=1 shows two leading types,
 // ?locked=1 the free preview as a client sees it before paying (?takes=1 adds the recordings behind the profile).
@@ -21,7 +23,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
     emostate: EMO.map(([key, value]) => ({ key, label: key, value })),
   };
   // The industry add-on as a paying client sees it (the chapter itself needs a real report; here only the strip and the picker show).
-  const industry = { industries: industryNames(t), chapterUrl: "/api/preview/industry/{key}", unlockUrl: "/api/preview/unlock", price: "1 credit · $9", teaser: industryTeaser("it", report.psytype ?? [], t) };
+  const industry = { industries: industryNames(t), chapterUrl: "/api/preview/industry/{key}", unlockUrl: "/api/preview/unlock", unlocked: ["it"], price: "1 credit · $9", teaser: industryTeaser("it", report.psytype ?? [], t) };
   if (locked) {
     const preview: Report = { ...report, psytype: null, emostate: null, locked: true, teaser: teaserOf(report.psytype, report.emostate) };
     const dates = ["2026-09-14", "2026-09-18", created].map((d, i) => ({ id: String(i), date: formatDate(d, locale).split(/,| at | в /)[0], current: i === 2 }));
@@ -29,5 +31,9 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
   }
   // The relationship-match add-on, with one couple's report under way and one finished.
   const match = { price: "$14.90 · or 2 credits", freeLabel: t.match.free, credits: 0, needed: 2, canOrder: true, existing: [{ id: "preview-1", partnerName: "Daniel", stage: "invited" as const }, { id: "preview-2", partnerName: "Anna", stage: "ready" as const }] };
-  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} match={match} />;
+  // A finished couple's report with a second sample voice, so the files section and the print carry one.
+  const other = PSY.map(([key, value]): [string, number] => [key, key === "harmonizer" ? 71.2 : key === "catalyst" ? 38.5 : value]);
+  const fit = matchFit(report.psytype ?? [], other.map(([key, value]) => ({ key, value })));
+  const couples = fit ? [{ id: "preview-couple", names: { a: "Dana", b: "Lena" }, report: matchReport(fit, { a: "Dana", b: "Lena" }, t, locale) }] : [];
+  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} match={match} couples={couples} canEmail />;
 }

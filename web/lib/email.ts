@@ -108,7 +108,11 @@ export async function clearEmailSettings(): Promise<void> {
   await db().delete(settings).where(eq(settings.key, "email"));
 }
 
-export interface OutgoingEmail { to: string; subject: string; html: string; text: string; replyTo?: string }
+export interface OutgoingEmail {
+  to: string; subject: string; html: string; text: string; replyTo?: string;
+  /** Files sent along, e.g. the report as one HTML file. */
+  attachments?: Array<{ filename: string; content: Buffer; contentType: string }>;
+}
 
 /** Sends one email from the connected mailbox. Returns false, and sends nothing, when no mailbox is connected. */
 export async function sendEmail(mail: OutgoingEmail): Promise<boolean> {
@@ -121,6 +125,7 @@ export async function sendEmail(mail: OutgoingEmail): Promise<boolean> {
     subject: mail.subject,
     html: mail.html,
     text: mail.text,
+    attachments: mail.attachments,
   });
   return true;
 }

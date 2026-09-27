@@ -22,7 +22,8 @@ import { knownNames } from "@/lib/people";
 import { matchIsFree } from "@/lib/billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { stripeReady } from "@/lib/stripe";
-import { matchesFor, partnerAnalyses } from "@/lib/matches";
+import { buildMatch, matchesFor, partnerAnalyses } from "@/lib/matches";
+import { emailConfig } from "@/lib/email";
 import { stageOf } from "@/lib/match-stage";
 
 /** `paid`, `session`, `industry` and `best` are what Stripe Checkout sends the buyer back with (see api/billing/checkout and api/billing/best). */
@@ -126,6 +127,13 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // A line at the top: the industry chapters and couple's reports this person already has, each one click away.
   const opened = full && analysis.status === "completed" ? await personIndustries().catch(() => [] as string[]) : [];
   const couples = full && analysis.status === "completed" ? await personMatches().catch(() => []) : [];
+  // The finished couple's reports, copied hidden into the page so the file and the print carry them; and whether a
+  // mailbox is connected, so the page can offer to email the file.
+  const readyIds = new Set(match?.existing.filter((e) => e.stage === "ready").map((e) => e.id) ?? []);
+  const [coupleFiles, canEmail] = await Promise.all([
+    Promise.all(couples.filter((m) => readyIds.has(m.id)).map(async (m) => { const report = await buildMatch(m, t, locale).catch(() => null); return report ? { id: m.id, names: report.names, report } : null; })).then((xs) => xs.filter((x) => x !== null)),
+    couples.length > 0 || opened.length > 0 || full ? emailConfig().then((c) => Boolean(c)).catch(() => false) : Promise.resolve(false),
+  ]);
   const names = new Map<string, string>(industryNames(t).map((i) => [i.key, i.name]));
   const extras = opened.length + couples.length > 0 ? (
     <nav className="no-print flex flex-wrap items-center gap-2" aria-label={t.reports.extrasTitle} data-no-export>
@@ -135,5 +143,5 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     </nav>
   ) : null;
 
-  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} lead={extras} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} person={person} />;
+  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} lead={extras} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
 }

@@ -11,6 +11,8 @@ import { Bars } from "./Bars";
 import { Industry, type IndustryProps } from "./Industry";
 import { LockedPreview, type PreviewTakes } from "./LockedPreview";
 import { MatchAddon, type MatchAddonProps } from "./MatchAddon";
+import { CoupleReport } from "./MatchView";
+import type { MatchReport } from "@/lib/match-report";
 import { nameSlug } from "@/lib/person";
 import { PersonName } from "./PersonName";
 import { CountUp, Reveal } from "./Motion";
@@ -57,15 +59,18 @@ export interface ReportViewProps {
   locked?: React.ReactNode;
   /** On a free preview, what may be said about the recordings behind the profile: how many, how settled, when. */
   previewTakes?: PreviewTakes;
+  /** The finished couple's reports ordered from this report: copied hidden into the page, for print and the file. */
+  couples?: Array<{ id: string; names: { a: string; b: string }; report: MatchReport }>;
+  /** A mailbox is connected: the file can be emailed to the person's sign-in address. */
+  canEmail?: boolean;
   /** Whose voice this is (lib/people.ts), with the names already used on the account; passed where the report can be renamed. */
   person?: { name: string | null; known: string[] };
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes, person }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes, person, couples = [], canEmail = false }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const article = useRef<HTMLElement>(null);
   const r = t.report;
@@ -99,39 +104,94 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     }
   }
 
-  /** Saves the report as it looks here: one HTML file, with its design, fonts and working chapters. */
-  /** One file per piece, or everything: the type report alone, the opened industry chapters alone, or the whole page. */
-  async function download(what: "type" | "industry" | "all") {
+  /**
+   * The report as files. Each piece on its own (the type report, one industry chapter, the best industry, one couple's
+   * report) or everything paid for in one file. The add-on pieces sit hidden at the end of the page (data-export-show),
+   * put there for print and for this; the file builder unhides them.
+   */
+  type Piece = { kind: "type" } | { kind: "chapter"; key: string } | { kind: "best" } | { kind: "couple"; id: string } | { kind: "all" };
+  const [saving, setSaving] = useState<string | null>(null);
+  const [mailing, setMailing] = useState<{ state: "idle" } | { state: "sending" } | { state: "sent"; to: string } | { state: "failed"; reason: "no_email" | "other" }>({ state: "idle" });
+  const day = report.created_at.slice(0, 10);
+  // Someone else's report carries their name in the file name and title, so a folder of reports stays readable.
+  const who = person?.name ? `-${nameSlug(person.name)}` : "", whoTitle = person?.name ? ` · ${person.name}` : "";
+  const pieceId = (piece: Piece) => piece.kind === "chapter" ? `chapter:${piece.key}` : piece.kind === "couple" ? `couple:${piece.id}` : piece.kind;
+
+  async function buildFile(piece: Piece): Promise<{ blob: Blob; name: string } | null> {
     const root = article.current;
-    if (!root) return;
-    setSaving(true);
-    const day = report.created_at.slice(0, 10);
-    // Someone else's report carries their name in the file name and title, so a folder of reports stays readable.
-    const who = person?.name ? `-${nameSlug(person.name)}` : "", whoTitle = person?.name ? ` · ${person.name}` : "";
+    if (!root) return null;
+    const stamp = `${whoTitle} · ${recordedOn}`;
+    if (piece.kind === "type") {
+      return { blob: await buildReportFile(root, `${t.brand} · ${t.report.title}${stamp}`, { exclude: ["[data-export-show]", "[data-industry]", "[data-match]"] }), name: `avoco-type-report${who}-${day}.html` };
+    }
+    if (piece.kind === "all") {
+      return { blob: await buildReportFile(root, `${t.brand} · ${t.report.title}${stamp}`), name: `avoco-report-all${who}-${day}.html` };
+    }
+    if (piece.kind === "chapter") {
+      const node = root.querySelector<HTMLElement>(`[data-industry-chapter-print="${piece.key}"]`);
+      const name = industry?.industries.find((i) => i.key === piece.key)?.name ?? piece.key;
+      return node ? { blob: await buildReportFile(node, `${t.brand} · ${name}${stamp}`, { heading: `${t.industry.title} · ${name}` }), name: `avoco-${piece.key}-chapter${who}-${day}.html` } : null;
+    }
+    if (piece.kind === "best") {
+      const node = root.querySelector<HTMLElement>(`[data-industry-chapter-print="best"]`);
+      return node ? { blob: await buildReportFile(node, `${t.brand} · ${r.downloadBest}${stamp}`, { heading: r.downloadBest }), name: `avoco-best-industry${who}-${day}.html` } : null;
+    }
+    const couple = couples.find((c) => c.id === piece.id);
+    const node = root.querySelector<HTMLElement>(`[data-couple-print="${piece.id}"] > section`); // the section, not its hidden wrapper
+    if (!couple || !node) return null;
+    const names = t.match.matchTitle.replace("{a}", couple.names.a).replace("{b}", couple.names.b);
+    return { blob: await buildReportFile(node, `${t.brand} · ${names}`), name: `avoco-match-${nameSlug(couple.names.a)}-${nameSlug(couple.names.b)}.html` };
+  }
+
+  async function download(piece: Piece) {
+    setSaving(pieceId(piece));
     try {
-      if (what === "industry") {
-        const slot = root.querySelector<HTMLElement>("[data-export-show]");
-        if (!slot) return;
-        saveFile(await buildReportFile(slot, `${t.brand} · ${t.industry.title}${whoTitle} · ${recordedOn}`, { heading: t.industry.title }), `avoco-industry${who}-${day}.html`);
-      } else {
-        const title = `${t.brand} · ${t.report.title}${whoTitle} · ${recordedOn}`;
-        const exclude = what === "type" ? ["[data-export-show]", "[data-industry]", "[data-match]"] : [];
-        saveFile(await buildReportFile(root, title, { exclude }), `avoco-${what === "type" ? "type-report" : "report-all"}${who}-${day}.html`);
-      }
+      const file = await buildFile(piece);
+      if (file) saveFile(file.blob, file.name);
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   }
-  // How many industry chapters are open (they are copied into the print slot), so the industry download can say so.
-  const [openChapters, setOpenChapters] = useState(0);
+
+  /** Everything in one file, mailed to the sign-in address by the server (app/api/analyses/[id]/email). */
+  async function emailAll() {
+    setMailing({ state: "sending" });
+    try {
+      const file = await buildFile({ kind: "all" });
+      if (!file) throw new Error("no file");
+      const form = new FormData();
+      form.append("file", new File([file.blob], file.name, { type: "text/html" }));
+      form.append("pieces", JSON.stringify(pieces.filter((p) => p.ready).map((p) => p.label)));
+      const res = await fetch(`/api/analyses/${report.id}/email`, { method: "POST", body: form }).catch(() => null);
+      const body = await res?.json().catch(() => null);
+      if (res?.ok && body?.to) setMailing({ state: "sent", to: body.to });
+      else setMailing({ state: "failed", reason: body?.error === "no_email" ? "no_email" : "other" });
+    } catch {
+      setMailing({ state: "failed", reason: "other" });
+    }
+  }
+
+  // Which add-on pieces are on the page (copied into the print slot by the add-on's card), so each can be a file.
+  const [loaded, setLoaded] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!slot) return;
-    const update = () => setOpenChapters(slot.querySelectorAll("[data-industry-chapter-print]").length);
+    const update = () => setLoaded(new Set(Array.from(slot.querySelectorAll<HTMLElement>("[data-industry-chapter-print]")).map((n) => n.dataset.industryChapterPrint ?? "")));
     update();
     const observer = new MutationObserver(update);
     observer.observe(slot, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [slot]);
+
+  // The list at the foot of the page: every report this person has here, ready to save or still on its way.
+  const pieces: Array<{ piece: Piece; label: string; ready: boolean; waiting?: boolean }> = [
+    { piece: { kind: "type" }, label: r.downloadType, ready: true },
+    ...(industry?.unlocked ?? []).map((key) => ({ piece: { kind: "chapter", key } as Piece, label: r.downloadIndustry.replace("{name}", industry?.industries.find((i) => i.key === key)?.name ?? key), ready: loaded.has(key) })),
+    ...(loaded.has("best") ? [{ piece: { kind: "best" } as Piece, label: r.downloadBest, ready: true }] : []),
+    ...couples.map((c) => ({ piece: { kind: "couple", id: c.id } as Piece, label: r.downloadCouple.replace("{names}", t.match.matchTitle.replace("{a}", c.names.a).replace("{b}", c.names.b)), ready: true })),
+    ...(match?.existing ?? []).filter((m) => m.stage !== "ready").map((m) => ({ piece: { kind: "couple", id: m.id } as Piece, label: r.downloadCoupleWaiting.replace("{name}", m.partnerName), ready: false, waiting: true })),
+  ];
+  const readyPieces = pieces.filter((p) => p.ready);
+  const everythingLabel = readyPieces.length > 1 ? r.downloadEverything.replace("{n}", String(readyPieces.length)) : r.download;
 
   const heading = (
     <div className="flex flex-wrap items-end justify-between gap-4">
@@ -363,30 +423,66 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </div>
       </Reveal>
 
-      {/* Opened industry chapters, for print and the downloaded file only: the add-on's card copies them here. */}
+      {/* The add-ons, for print and the downloaded file only: opened industry chapters (the add-on's card copies them here), then the couple's reports. */}
       {industry && psy.length === 8 && <div ref={setSlot} data-export-show className="hidden print:block" />}
+      {couples.map((c) => (
+        <div key={c.id} data-export-show data-couple-print={c.id} className="hidden print:block">
+          <section className="theme-match space-y-10">
+            <p className="addon-badge">{t.match.eyebrow}</p>
+            <CoupleReport report={c.report} t={t.match} />
+          </section>
+        </div>
+      ))}
 
       <p className="max-w-3xl text-xs leading-relaxed text-muted">{r.disclaimer}</p>
 
       <div data-no-export className="no-print">
         <div className="flex flex-wrap gap-3">
-          <button type="button" className="btn" onClick={() => download("all")} disabled={saving}>{saving ? r.downloading : r.download}</button>
+          <button type="button" className="btn" onClick={() => download({ kind: "all" })} disabled={saving !== null}>{saving === "all" ? r.downloading : everythingLabel}</button>
           <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>
           {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
         </div>
-        <div className="card mt-6 p-6">
-          <p className="eyebrow">{r.downloads}</p>
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">{r.downloadsHelp}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" className="pill pill-off" onClick={() => download("type")} disabled={saving}>↓ {r.downloadType}</button>
-            <button type="button" className="pill pill-off" onClick={() => download("industry")} disabled={saving || openChapters === 0} title={openChapters === 0 ? r.downloadIndustryNone : undefined}>↓ {r.downloadIndustry.replace("{n}", String(openChapters))}</button>
-            {match?.existing.filter((m) => m.stage === "ready").map((m) => (
-              <Link key={m.id} href={`/match/${m.id}?download=1`} className="pill pill-off">↓ {r.downloadCouple.replace("{names}", m.partnerName)}</Link>
-            ))}
-            <button type="button" className="pill pill-on" onClick={() => download("all")} disabled={saving}>↓ {r.downloadAll}</button>
+
+        {/* Every report on this page as a file: one by one, all together, or by email. */}
+        <section className="card mt-6 overflow-hidden" aria-labelledby="downloads-title">
+          <div className="p-6 sm:p-8">
+            <p id="downloads-title" className="eyebrow">{r.downloads}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{r.downloadsHelp}</p>
           </div>
-          {openChapters === 0 && <p className="mt-2 text-xs text-muted">{r.downloadIndustryNone}</p>}
-        </div>
+          <ul className="border-t border-line">
+            {pieces.map((p) => (
+              <li key={pieceId(p.piece)} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
+                <span className="flex items-center gap-3">
+                  <span aria-hidden className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${p.ready ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{p.ready ? "✓" : "…"}</span>
+                  <span className={p.ready ? "font-medium" : "text-ink-2"}>{p.label}</span>
+                </span>
+                {!p.waiting && (
+                  <button type="button" className="pill pill-off" onClick={() => download(p.piece)} disabled={!p.ready || saving !== null}>
+                    ↓ {saving === pieceId(p.piece) ? r.downloading : p.ready ? r.downloadOne : r.preparing}
+                  </button>
+                )}
+              </li>
+            ))}
+            {industry && !industry.unlocked?.length && <li className="border-b border-line px-6 py-3 text-xs text-muted sm:px-8">{r.downloadIndustryNone}</li>}
+          </ul>
+          <div className="grid gap-px bg-line sm:grid-cols-2">
+            <div className="bg-surface p-6 sm:p-8">
+              <p className="font-semibold">{r.downloadAll}</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2">{r.downloadAllHelp.replace("{list}", readyPieces.map((p) => p.label).join(" · "))}</p>
+              <button type="button" className="btn mt-4" onClick={() => download({ kind: "all" })} disabled={saving !== null}>↓ {saving === "all" ? r.downloading : everythingLabel}</button>
+            </div>
+            {canEmail && (
+              <div className="bg-surface p-6 sm:p-8">
+                <p className="font-semibold">{r.emailTitle}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-2">{r.emailText}</p>
+                {mailing.state === "sent"
+                  ? <p role="status" className="mt-4 rounded-xl border border-accent px-4 py-3 text-sm">✓ {r.emailSent.replace("{email}", mailing.to)}</p>
+                  : <button type="button" className="btn btn-quiet mt-4" onClick={emailAll} disabled={mailing.state === "sending" || saving !== null}>✉ {mailing.state === "sending" ? r.emailSending : r.emailSend}</button>}
+                {mailing.state === "failed" && <p role="alert" className="mt-3 text-sm text-danger">{mailing.reason === "no_email" ? r.emailNoAddress : r.emailFailed}</p>}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </article>
   );

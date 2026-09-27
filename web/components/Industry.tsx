@@ -67,19 +67,27 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
   const fc = best && finder ? finder : undefined;
   const two = Boolean(fc);
 
-  async function load(key: string) {
-    if (chapters[key]) { setState({ kind: "chapter", chapter: chapters[key] }); return; }
-    setState({ kind: "loading" });
+  /** Fetches one chapter into the set, without showing it. Null when it is closed (402) or could not be fetched. */
+  async function fetchChapter(key: string): Promise<IndustryChapter | null | "locked"> {
     const res = await fetch(chapterUrl.replace("{key}", key), { cache: "no-store" }).catch(() => null);
-    if (res?.status === 402) { setState({ kind: "locked" }); return; }
-    if (!res?.ok) { setState({ kind: "error" }); return; }
+    if (res?.status === 402) return "locked";
+    if (!res?.ok) return null;
     const chapter = (await res.json()) as IndustryChapter;
     setChapters((c) => ({ ...c, [key]: chapter }));
     setOpen((o) => (o.includes(key) ? o : [...o, key]));
-    setState({ kind: "chapter", chapter });
+    return chapter;
+  }
+
+  async function load(key: string) {
+    if (chapters[key]) { setState({ kind: "chapter", chapter: chapters[key] }); return; }
+    setState({ kind: "loading" });
+    const chapter = await fetchChapter(key);
+    setState(chapter === "locked" ? { kind: "locked" } : chapter ? { kind: "chapter", chapter } : { kind: "error" });
   }
 
   useEffect(() => { if (picked) void load(picked); else setState({ kind: "idle" }); }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Every chapter this person has opened belongs in the print and the downloaded file, whether or not it is on screen.
+  useEffect(() => { for (const key of unlocked) if (!chapters[key] && key !== picked) void fetchChapter(key); }, [unlocked.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
   // A refresh can bring the news that the picked industry was opened meanwhile (the payment landed): fetch it then.
   const unlockedKey = unlocked.join(",");
   useEffect(() => { if (picked && state.kind === "locked" && unlocked.includes(picked)) void load(picked); }, [unlockedKey]); // eslint-disable-line react-hooks/exhaustive-deps
