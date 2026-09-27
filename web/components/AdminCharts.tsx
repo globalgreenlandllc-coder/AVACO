@@ -1,36 +1,74 @@
-/** Charts for the admin portal. One hue, thin marks, a fixed baseline; every mark carries its value as a tooltip and the numbers that matter are written out. */
+/** Charts for the admin portal: real text for every number, one hue, a fixed baseline, and the numbers that matter written out under each chart. */
 
-export function DailyBars({ data, format, label }: { data: Array<{ day: string; value: number }>; format: (v: number) => string; label: string }) {
-  const max = Math.max(1, ...data.map((d) => d.value));
-  const [w, h, gap] = [720, 140, 4];
-  const bw = (w - gap * (data.length - 1)) / data.length;
-  const peak = data.reduce((a, b) => (b.value > a.value ? b : a), data[0]);
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "2026-09-27" → "27 Sep". */
+export const dayLabel = (day: string) => { const [, m, d] = day.split("-"); return `${Number(d)} ${MONTHS[Number(m) - 1] ?? m}`; };
+
+/** The smallest of 1, 2, 5 × 10ⁿ at or above x: the step between gridlines. */
+function niceStep(x: number): number {
+  if (x <= 1) return 1;
+  const pow = 10 ** Math.floor(Math.log10(x));
+  for (const m of [1, 2, 5, 10]) if (m * pow >= x) return m * pow;
+  return 10 * pow;
+}
+
+export interface Bar { key: string; value: number; /** Written under the bar, when this one carries a tick. */ axis?: string; title: string; /** The bar to point out (the peak): full colour and always labelled. */ strong?: boolean; /** Always labelled, even in a crowded chart (the latest day). */ labelled?: boolean }
+
+/** Bars with real text: a scale on the left, the value on every bar while there is room, ticks along the bottom. */
+export function Bars({ items, format, height = 170, ariaLabel }: { items: Bar[]; format: (v: number) => string; height?: number; ariaLabel: string }) {
+  const max = Math.max(0, ...items.map((i) => i.value));
+  const step = niceStep(max / 4);
+  const top = Math.max(step, Math.ceil(max / step) * step);
+  const ticks = Array.from({ length: Math.round(top / step) }, (_, i) => (i + 1) * step);
+  const labelled = items.filter((i) => i.value > 0).length <= 16;
   return (
-    <figure>
-      <svg viewBox={`0 0 ${w} ${h + 18}`} className="w-full" role="img" aria-label={`${label}, last ${data.length} days. Highest: ${format(peak.value)} on ${peak.day}.`}>
-        <line x1="0" x2={w} y1={h} y2={h} stroke="var(--line)" strokeWidth="1" />
-        {data.map((d, i) => {
-          const bh = d.value === 0 ? 0 : Math.max(2, (d.value / max) * (h - 16));
-          return (
-            <g key={d.day}>
-              <rect x={i * (bw + gap)} y={0} width={bw} height={h} fill="transparent"><title>{`${d.day}: ${format(d.value)}`}</title></rect>
-              {bh > 0 && <path d={roundedTop(i * (bw + gap), h - bh, bw, bh, Math.min(4, bw / 2))} fill="var(--bar-leading)"><title>{`${d.day}: ${format(d.value)}`}</title></path>}
-              {d === peak && d.value > 0 && <text x={i * (bw + gap) + bw / 2} y={h - bh - 5} textAnchor="middle" fontSize="11" fill="var(--ink-2)">{format(d.value)}</text>}
-            </g>
-          );
-        })}
-        <text x="0" y={h + 14} fontSize="10" fill="var(--muted)">{data[0]?.day.slice(5)}</text>
-        <text x={w} y={h + 14} fontSize="10" textAnchor="end" fill="var(--muted)">{data.at(-1)?.day.slice(5)}</text>
-      </svg>
-      <figcaption className="sr-only">{data.map((d) => `${d.day}: ${format(d.value)}`).join("; ")}</figcaption>
-    </figure>
+    <div role="img" aria-label={ariaLabel}>
+      <div className="relative" style={{ height: height + 24 }}>
+        <div className="absolute inset-x-0 top-6 bottom-0">
+          {ticks.map((t) => (
+            <div key={t} className="absolute right-0 left-10 border-t border-line" style={{ bottom: `${(t / top) * 100}%` }}>
+              <span className="absolute -top-2 right-full mr-2 text-[11px] tabular-nums text-muted">{format(t)}</span>
+            </div>
+          ))}
+          <div className="absolute inset-y-0 right-0 left-10 flex items-end gap-[3px]">
+            {items.map((i) => (
+              <div key={i.key} className="relative flex h-full flex-1 items-end" title={i.title}>
+                <div
+                  className={`relative w-full rounded-t-[3px] ${i.value > 0 ? "" : "bg-track"}`}
+                  style={{ height: i.value > 0 ? `${Math.max(1.5, (i.value / top) * 100)}%` : 2, background: i.value > 0 ? (i.strong ? "var(--bar-leading)" : "color-mix(in oklab, var(--bar-leading) 72%, var(--surface))") : undefined }}
+                >
+                  {i.value > 0 && (labelled || i.strong || i.labelled) && <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-semibold tabular-nums whitespace-nowrap">{format(i.value)}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-1.5 flex gap-[3px] pl-10">
+        {items.map((i) => <div key={i.key} className="relative h-4 flex-1">{i.axis && <span className="absolute left-1/2 -translate-x-1/2 text-[11px] whitespace-nowrap text-muted">{i.axis}</span>}</div>)}
+      </div>
+    </div>
   );
 }
 
-/** A rectangle square at the baseline and rounded at the data end. */
-function roundedTop(x: number, y: number, w: number, h: number, r: number): string {
-  const rr = Math.min(r, h);
-  return `M${x},${y + h} V${y + rr} Q${x},${y} ${x + rr},${y} H${x + w - rr} Q${x + w},${y} ${x + w},${y + rr} V${y + h} Z`;
+/** One bar per day, the peak pointed out, and under it the total, the best day and the daily average (`decimals` of them). */
+export function DailyBars({ data, format, label, decimals = 1 }: { data: Array<{ day: string; value: number }>; format: (v: number) => string; label: string; decimals?: number }) {
+  if (data.length === 0) return null;
+  const n = data.length;
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const peak = data.reduce((a, b) => (b.value > a.value ? b : a), data[0]);
+  const avg = Math.round((total / n) * 10 ** decimals) / 10 ** decimals;
+  const items: Bar[] = data.map((d, i) => ({ key: d.day, value: d.value, axis: (n - 1 - i) % 7 === 0 ? dayLabel(d.day) : "", title: `${dayLabel(d.day)}: ${format(d.value)}`, strong: d === peak && d.value > 0, labelled: i === n - 1 }));
+  return (
+    <figure>
+      <Bars items={items} format={format} ariaLabel={`${label}, last ${n} days. Highest: ${format(peak.value)} on ${dayLabel(peak.day)}.`} />
+      <figcaption className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-2">
+        <span>{n} days: <b className="text-ink">{format(total)}</b></span>
+        {peak.value > 0 && <span>Best day: <b className="text-ink">{dayLabel(peak.day)}, {format(peak.value)}</b></span>}
+        <span>Average: <b className="text-ink">{format(avg)}</b> a day</span>
+      </figcaption>
+    </figure>
+  );
 }
 
 export function RankBars({ rows, empty }: { rows: Array<{ label: string; value: number; note?: string }>; empty: string }) {

@@ -33,7 +33,7 @@ export default async function AdminOverview() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Reports per day</h2><DailyBars data={o.series.map((d) => ({ day: d.day, value: d.reports }))} format={String} label="Reports per day" /></div>
-        <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Revenue per day</h2><DailyBars data={o.series.map((d) => ({ day: d.day, value: d.revenue }))} format={$} label="Revenue per day" /></div>
+        <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Revenue per day</h2><DailyBars data={o.series.map((d) => ({ day: d.day, value: d.revenue }))} format={$} label="Revenue per day" decimals={0} /></div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">

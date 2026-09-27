@@ -1,4 +1,5 @@
 /** Admin → Statistics: a number with its change against the previous period, and the funnel from visitor to paying customer. */
+import { Bars, type Bar } from "./AdminCharts";
 
 export function KpiDelta({ label, value, previous, sub, format = String }: { label: string; value: number; previous?: number | null; sub?: string; format?: (v: number) => string }) {
   const pct = previous != null && previous > 0 ? Math.round(((value - previous) / previous) * 100) : null;
@@ -37,22 +38,10 @@ export function Funnel({ steps }: { steps: Array<{ label: string; value: number;
   );
 }
 
-/** Views by hour of the day: a small profile, the busiest hour written out. */
+/** Views by hour of the day, the busiest hour pointed out. */
 export function HourBars({ hours }: { hours: Array<{ hour: number; views: number }> }) {
-  const max = Math.max(1, ...hours.map((h) => h.views));
-  const peak = hours.reduce((a, b) => (b.views > a.views ? b : a), hours[0]);
   const label = (h: number) => (h === 0 ? "12am" : h === 12 ? "12pm" : h < 12 ? `${h}am` : `${h - 12}pm`);
-  return (
-    <figure>
-      <svg viewBox="0 0 720 118" className="w-full" role="img" aria-label={`Views by hour, New York time. Busiest: ${label(peak.hour)} with ${peak.views} views.`}>
-        <line x1="0" x2="720" y1="100" y2="100" stroke="var(--line)" strokeWidth="1" />
-        {hours.map((h) => {
-          const bh = h.views === 0 ? 0 : Math.max(2, (h.views / max) * 84);
-          return <rect key={h.hour} x={h.hour * 30 + 2} y={100 - bh} width="26" height={bh} rx="3" fill={h === peak && h.views > 0 ? "var(--bar-leading)" : "var(--track)"}><title>{`${label(h.hour)}: ${h.views}`}</title></rect>;
-        })}
-        {[0, 6, 12, 18, 23].map((h) => <text key={h} x={h * 30 + 15} y="114" fontSize="10" textAnchor="middle" fill="var(--muted)">{label(h)}</text>)}
-      </svg>
-      <figcaption className="sr-only">{hours.map((h) => `${label(h.hour)}: ${h.views}`).join("; ")}</figcaption>
-    </figure>
-  );
+  const peak = hours.reduce((a, b) => (b.views > a.views ? b : a), hours[0]);
+  const items: Bar[] = hours.map((h) => ({ key: String(h.hour), value: h.views, axis: h.hour % 3 === 0 ? label(h.hour) : "", title: `${label(h.hour)}: ${h.views} views`, strong: h === peak && h.views > 0 }));
+  return <Bars items={items} format={String} height={130} ariaLabel={`Views by hour, New York time. Busiest: ${label(peak.hour)} with ${peak.views} views.`} />;
 }
