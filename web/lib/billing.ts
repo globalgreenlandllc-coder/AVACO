@@ -297,7 +297,11 @@ export async function unlockIndustry(userId: string, analysisId: string, industr
   await db().insert(industryAccess).values({ analysisId, industry, ownerKind: "user", ownerId: userId, source: admin ? "admin" : "credit" }).onConflictDoNothing();
 }
 
-/** Industries already open on a report. */
+/** Remembers a chapter that opened without a purchase (a free host, billing off, the finder's winner, another recording of the same person), so it is listed with the report like a bought one. */
+export async function noteIndustryOpened(userId: string, analysisId: string, industry: string): Promise<void> {
+  await db().insert(industryAccess).values({ analysisId, industry, ownerKind: "user", ownerId: userId, source: "free" }).onConflictDoNothing().catch(() => undefined);
+}
+
 /** Every industry chapter an account opened, report by report (for My reports and for a person's other reports). */
 export async function industriesByReport(userId: string): Promise<Map<string, string[]>> {
   const rows = await db().select({ analysisId: industryAccess.analysisId, industry: industryAccess.industry }).from(industryAccess).where(eq(industryAccess.ownerId, userId));
