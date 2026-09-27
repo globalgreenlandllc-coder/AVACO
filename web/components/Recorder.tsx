@@ -219,6 +219,19 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   return (
     <div className="card p-7 sm:p-10">
       <div className="flex flex-col items-center text-center">
+        {/* The type is read from the natural voice (pitch and timbre): a put-on voice is the one thing a person can do
+            that changes it, so this sits right above the button, and stays up while they record. */}
+        {phase !== "sending" && (
+          <div className="mb-8 flex w-full max-w-md items-start gap-3 rounded-2xl border border-accent bg-accent-soft px-5 py-4 text-left">
+            <svg className="mt-0.5 shrink-0 text-accent-text" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" />
+            </svg>
+            <div>
+              <p className="font-semibold">{t.voiceTitle}</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.voiceText}</p>
+            </div>
+          </div>
+        )}
         <div className="relative grid h-44 w-44 place-items-center">
           {recording && <span className="breathe absolute inset-3 rounded-full bg-accent" style={{ scale: String(1 + level * 0.25) }} aria-hidden />}
           <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90" aria-hidden>

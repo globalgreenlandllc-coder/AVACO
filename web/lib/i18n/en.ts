@@ -93,7 +93,9 @@ export const en = {
   },
   record: {
     title: "New recording",
-    lead: "Find a quiet place and speak in your normal voice, in any language. What you say doesn't matter, only how you sound.",
+    lead: "Find a quiet place and talk in your everyday voice, the way you speak with a friend, in any language. What you say doesn't matter, only how you sound.",
+    voiceTitle: "Speak in your everyday voice",
+    voiceText: "Talk the way you do with a friend. Not louder, higher, deeper or more formal than usual, and not like reading aloud. Your type is read from your natural voice, so a put-on voice can give a different type.",
     promptsTitle: "Not sure what to say?",
     prompts: [
       "Describe how your day has gone so far.",
@@ -108,7 +110,7 @@ export const en = {
     checking: "Listening to the room… stay quiet for a moment",
     noisy: "Background noise is high here. The reading will partly be about the room. For a truer result, find a quieter spot and record again.",
     quietTitle: "For the truest reading",
-    quietTips: ["A quiet room with soft surroundings: curtains, a sofa, a carpet. Not a bathroom or an empty kitchen.", "Phone or microphone 10 to 20 cm from your mouth; wired is better than Bluetooth earbuds.", "Your normal speaking voice, about something ordinary. Don't read from a page.", "Longer is steadier: aim for about a minute, and record more than once over time."],
+    quietTips: ["A quiet room with soft surroundings: curtains, a sofa, a carpet. Not a bathroom or an empty kitchen.", "Phone or microphone 10 to 20 cm from your mouth; wired is better than Bluetooth earbuds.", "Only you speaking: no one else in the recording, and no TV or music in the background.", "Longer is steadier: aim for about a minute, and record more than once over time."],
     uploadHint: "Already have one? Audio (wav, mp3, m4a, ogg, opus) or video (mp4, mov, webm), 30 seconds to 5 minutes, in any language.",
     minimum: "Keep going: at least 30 seconds",
     ready: "Long enough. Stop whenever you like",
