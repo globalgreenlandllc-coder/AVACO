@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { buildReportFile, saveFile } from "@/lib/export";
 import type { Dict } from "@/lib/i18n";
 import type { IndustryChapter, IndustryTeaser } from "@/lib/industry-chapter";
+import { CoverCapsules } from "./CoverCapsules";
 import { RefreshWhile } from "./RefreshWhile";
 
 export interface IndustryProps {
@@ -42,7 +43,7 @@ export interface IndustryProps {
 type State = { kind: "idle" } | { kind: "loading" } | { kind: "locked" } | { kind: "error" } | { kind: "chapter"; chapter: IndustryChapter };
 
 /**
- * The industry add-on, sold and shown in one apricot panel above the report: a selection bar with the industries, the
+ * The industry add-on, sold above the report in a cover of its own (amber): a selection bar with the industries, the
  * price and the button that opens or buys, and the chapter itself once it is open. Nothing of it sits inside the
  * report. For print and the downloaded file, every opened chapter is copied to `printSlot`, at the very end.
  */
@@ -116,62 +117,69 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
 
   return (
     <>
-      <aside data-no-export className="no-print offer offer-industry" aria-label={a.badge} data-industry>
-        <p className="eyebrow !text-accent-text">{a.badge}</p>
-        <h2 className="mt-3 font-display text-3xl font-medium leading-tight sm:text-4xl">{a.title}</h2>
-        <p className="mt-3 max-w-3xl leading-relaxed text-ink-2">{a.text}</p>
-        <p className="mt-5"><span className="inline-block rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">{priceLabel}</span></p>
+      <aside data-no-export className="no-print" aria-label={a.badge} data-industry>
+        {/* The offer, dressed as the report's own cover in a shade of amber; the picker sits where the report has its radar. */}
+        <section className="cover offer-cover offer-industry px-7 py-10 sm:px-12 sm:py-14">
+          <CoverCapsules />
+          <p className="cover-eyebrow relative"><span className="font-display text-xl font-semibold tracking-[0.2em]">AVOCO</span><span className="mx-3 opacity-50">·</span>{a.badge}</p>
 
-        {paidState && (
-          <p role="status" className="mt-6 rounded-2xl bg-surface px-5 py-4 text-sm font-medium">
-            {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
-          </p>
-        )}
-        {paidState === "pending" && <RefreshWhile />}
-
-        {/* The selection bar in a white card with a tab, as on the landing page; next to it whatever the chosen industry needs. */}
-        <div className="card mt-7 overflow-hidden">
-          <p className="tab-title">{a.cta}</p>
-          <div className="px-5 pb-6 pt-5 sm:px-7 sm:pb-7">
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="sr-only" htmlFor="industry-select">{t.pick}</label>
-              <select id="industry-select" value={picked ?? ""} onChange={(e) => { setPicked(e.target.value || null); setShown(true); }} className="offer-field w-full px-4 py-3 text-sm font-semibold sm:w-80">
-                <option value="">{a.select}</option>
-                {industries.map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
-              </select>
-              {state.kind === "locked" && picked && (
-                freeUnlock || credits > 0
-                  ? <button type="button" className="btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
-                  : payUrl && payLabel
-                    ? <button type="button" className="btn" onClick={pay} disabled={busy}>{busy ? t.lock.unlocking : payLabel}</button>
-                    : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn">{t.lock.getCredits}</Link>
+          <div className="relative mt-10 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+            <div>
+              <h2 className="gold-text pb-2 font-display text-4xl font-semibold leading-[1.02] sm:text-6xl">{a.title}</h2>
+              <p className="mt-5 max-w-md leading-relaxed text-ink-2 sm:text-lg">{a.text}</p>
+              <p className="mt-6"><span className="offer-badge">{priceLabel}</span></p>
+              {paidState && (
+                <p role="status" className="mt-6 max-w-md rounded-2xl border border-line px-5 py-4 text-sm">
+                  {paidState === "confirmed" ? t.lock.paid.replace("{industry}", paidName) : t.lock.paidPending}
+                </p>
               )}
-              {state.kind === "locked" && picked && !freeUnlock && credits > 0 && payUrl && payLabel && (
-                <button type="button" className="btn btn-quiet" onClick={pay} disabled={busy}>{payLabel}</button>
-              )}
-              {state.kind === "chapter" && (
-                <>
-                  <button type="button" className="btn btn-quiet" onClick={() => setShown((v) => !v)}>{shown ? a.hide : a.show}</button>
-                  <button type="button" className="btn btn-quiet" onClick={() => downloadChapter(state.chapter)} disabled={saving}>{saving ? t.downloading : t.download}</button>
-                </>
-              )}
+              {paidState === "pending" && <RefreshWhile />}
             </div>
 
-            {example && (
-              <div className="mt-5 rounded-2xl bg-accent-soft p-4 sm:px-5">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{a.exampleTag}</p>
-                <p className="mt-2 text-sm leading-relaxed">{example}</p>
+            <div>
+              <p className="cover-eyebrow">{a.cta}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <label className="sr-only" htmlFor="industry-select">{t.pick}</label>
+                <select id="industry-select" value={picked ?? ""} onChange={(e) => { setPicked(e.target.value || null); setShown(true); }} className="offer-field w-full px-4 py-3 text-sm font-semibold">
+                  <option value="">{a.select}</option>
+                  {industries.map((i) => <option key={i.key} value={i.key}>{i.name}{open.includes(i.key) ? ` · ${a.openedTag}` : ""}</option>)}
+                </select>
+                {state.kind === "locked" && picked && (
+                  freeUnlock || credits > 0
+                    ? <button type="button" className="btn" onClick={unlock} disabled={busy}>{busy ? t.lock.unlocking : freeUnlock ? t.lock.unlockAdmin : t.lock.unlock}</button>
+                    : payUrl && payLabel
+                      ? <button type="button" className="btn" onClick={pay} disabled={busy}>{busy ? t.lock.unlocking : payLabel}</button>
+                      : <Link href={`${creditsHref}?unlock=${analysisId}&industry=${picked}`} className="btn">{t.lock.getCredits}</Link>
+                )}
+                {state.kind === "locked" && picked && !freeUnlock && credits > 0 && payUrl && payLabel && (
+                  <button type="button" className="btn btn-quiet" onClick={pay} disabled={busy}>{payLabel}</button>
+                )}
+                {state.kind === "chapter" && (
+                  <>
+                    <button type="button" className="btn btn-quiet" onClick={() => setShown((v) => !v)}>{shown ? a.hide : a.show}</button>
+                    <button type="button" className="btn btn-quiet" onClick={() => downloadChapter(state.chapter)} disabled={saving}>{saving ? t.downloading : t.download}</button>
+                  </>
+                )}
               </div>
-            )}
-            {state.kind === "loading" && <p className="mt-4 text-sm text-ink-2" aria-live="polite">{t.loading}</p>}
-            {state.kind === "error" && <p className="mt-4 text-sm text-danger" aria-live="polite">{t.error}</p>}
-            {state.kind === "locked" && picked && (
-              <p className="mt-4 max-w-3xl text-sm leading-relaxed text-ink-2">{t.lock.text} {freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
-            )}
-          </div>
-        </div>
 
-        {/* The opened chapter lives inside the card; only the chosen one is on screen. */}
+              {/* Until an industry is chosen: a live example from this person's own scores, shown the way the cover shows a score. */}
+              {example && teaser?.roles[0] && (
+                <div className="mt-8 border-t border-line pt-6">
+                  <p className="text-sm font-semibold text-ink-2">{a.exampleTag} · {teaser.name}</p>
+                  <p className="mt-2 flex items-baseline gap-3"><span className="text-4xl font-semibold tabular-nums">{teaser.roles[0].score}</span><span className="text-sm text-ink-2">/ 100</span></p>
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-2">{example}</p>
+                </div>
+              )}
+              {state.kind === "loading" && <p className="mt-5 text-sm text-ink-2" aria-live="polite">{t.loading}</p>}
+              {state.kind === "error" && <p className="mt-5 text-sm text-danger" aria-live="polite">{t.error}</p>}
+              {state.kind === "locked" && picked && (
+                <p className="mt-5 max-w-md text-sm leading-relaxed text-ink-2">{t.lock.text} {freeUnlock ? t.lock.adminNote : credits > 0 ? t.lock.youHave.replace("{n}", String(credits)) : t.lock.need}</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* The opened chapter follows its cover, as the report follows its own; only the chosen one is on screen. */}
         {state.kind === "chapter" && shown && (
           <div data-industry-chapter={state.chapter.industry} className="rise">
             <Chapter chapter={state.chapter} onPick={(key) => { setPicked(key); setShown(true); }} />

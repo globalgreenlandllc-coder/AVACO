@@ -230,18 +230,23 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .addon-select { border-color: var(--addon); background: var(--surface); color: var(--ink); }
 .addon-select:focus-visible { outline-color: var(--addon); }
 
-/* The two add-ons offered at the top of a report (components/Industry.tsx, MatchAddon.tsx), in the landing page's own
-   shapes: a solid panel holding white cards with a tab, pills and the example box. Each panel re-defines the accent
-   tokens, so everything inside takes its colour: apricot for the industry chapter, dusty rose for the relationship
-   match, each a step away from the report's gold. Solid fills with dark ink, like the gold tabs; checked for 4.5:1.
-   The chapter opened inside the industry panel keeps its own .theme-industry colours. */
-.offer { border-radius: 28px; padding: 1.75rem 1.25rem; background: var(--accent-soft); }
-@media (min-width: 640px) { .offer { padding: 2.75rem 3rem; } }
-.offer-industry { --accent: #e39a62; --accent-ink: #2b1405; --accent-text: #93441a; --accent-soft: #f6e4d4; }
-.offer-match { --accent: #de8f8d; --accent-ink: #2b0f13; --accent-text: #963a4c; --accent-soft: #f6e0de; }
-@media (prefers-color-scheme: dark) {
-  .offer-industry { --accent-ink: #231003; --accent-text: #f0ae82; --accent-soft: #2b1d13; }
-  .offer-match { --accent: #e0908e; --accent-ink: #25090e; --accent-text: #f2a8aa; --accent-soft: #2c1a1b; }
+/* The two add-ons offered at the top of a report (components/Industry.tsx, MatchAddon.tsx), dressed as the report's own
+   cover: the dark panel, the drifting capsules, the gold-text title and the pill. Each is only a shade off the report's
+   gold: amber for the industry chapter, rose gold for the relationship match. .offer-cover points the page tokens at the
+   dark panel, so the site's own buttons, lines and texts inside read on it (4.5:1 checked on both panel colours). The
+   opened industry chapter sits below its cover, on the page, in its own .theme-industry colours. */
+.offer-industry { --cover-bg: #1f1509; --cover-bg-2: #3d260e; --cover-gold: #eca45a; --cover-muted: #d4bc9d; }
+.offer-match { --cover-bg: #1f130d; --cover-bg-2: #3d2317; --cover-gold: #eaa68f; --cover-muted: #d6bda9; }
+.offer-cover {
+  color-scheme: dark;
+  --ink: var(--cover-ink); --ink-2: var(--cover-muted); --muted: color-mix(in oklab, var(--cover-muted) 82%, var(--cover-bg));
+  --line: color-mix(in oklab, var(--cover-gold) 26%, transparent); --surface: color-mix(in oklab, var(--cover-ink) 5%, transparent);
+  --accent: var(--cover-gold); --accent-ink: var(--cover-bg); --accent-text: var(--cover-gold); --accent-soft: color-mix(in oklab, var(--cover-gold) 9%, transparent);
+  --danger: #f3a397;
 }
+.offer-cover .btn-quiet { color: var(--cover-gold); border-color: color-mix(in oklab, var(--cover-gold) 60%, transparent); }
+.offer-industry .gold-text { background-image: linear-gradient(100deg, #f8d4a6, var(--cover-gold) 45%, #c47a2a); }
+.offer-match .gold-text { background-image: linear-gradient(100deg, #f7d3c3, var(--cover-gold) 45%, #c07560); }
+.offer-badge { display: inline-block; border-radius: 999px; padding: 0.35rem 0.9rem; background: var(--cover-gold); color: var(--cover-bg); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .offer-field { border-radius: 0.75rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
-.offer-field:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
+.offer-tile { border-radius: 1.25rem; border: 1px solid var(--line); background: var(--surface); }

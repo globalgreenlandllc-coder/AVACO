@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { CoverCapsules } from "./CoverCapsules";
 
 export interface MatchAddonProps {
   analysisId: string;
@@ -19,7 +20,7 @@ export interface MatchAddonProps {
   t: Dict["match"];
 }
 
-/** The relationship add-on at the top of a report, in a dusty-rose panel: order a couple's report, and the matches already ordered. */
+/** The relationship add-on at the top of a report, in a cover of its own (rose gold): order a couple's report, and the matches already ordered. */
 export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, t }: MatchAddonProps) {
   const router = useRouter();
   const [ownerName, setOwnerName] = useState("");
@@ -51,81 +52,80 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
   const ready = existing.filter((m) => m.stage === "ready");
   const stageText = (stage: MatchAddonProps["existing"][number]["stage"]) => t.stages[stage].replace(" {when}", "").replace("{when}", "").replace(" · {type} {value}", "");
 
-  // The order, in two white cards with a tab, as on the landing page: who the two are, then how the partner's voice arrives.
+  // The order, on the cover's right where the report has its radar: who the two are, then how the partner's voice arrives.
   const form = (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-      <div className="card overflow-hidden">
-        <p className="tab-title">1 · {t.stepWho}</p>
-        <div className="grid gap-4 px-5 pb-6 pt-5 sm:grid-cols-2 sm:px-7 sm:pb-7">
-          <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input ref={ownerRef} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
-          <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input ref={partnerRef} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
-          <label className="flex items-center gap-2 text-sm text-ink-2 sm:col-span-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />{t.withFamily}</label>
-        </div>
+    <form onSubmit={(e) => e.preventDefault()}>
+      <p className="cover-eyebrow">1 · {t.stepWho}</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input ref={ownerRef} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
+        <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input ref={partnerRef} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
+        <label className="flex items-center gap-2 text-sm text-ink-2 sm:col-span-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--cover-gold)]" />{t.withFamily}</label>
       </div>
-      <div className="card overflow-hidden">
-        <p className="tab-title">2 · {t.stepHow.replace("{name}", who)}</p>
-        <div className="px-5 pb-6 pt-5 sm:px-7 sm:pb-7">
-          {canOrder ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex flex-col rounded-2xl bg-accent-soft p-5">
-                <p className="font-semibold">{t.haveRecording}</p>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-2">{withName(t.haveRecordingText)}</p>
-                <button type="button" className="btn mt-5 w-full max-sm:!px-4 max-sm:!text-sm sm:w-auto sm:self-start" disabled={Boolean(busy)} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
-              </div>
-              <div className="flex flex-col rounded-2xl border border-line p-5">
-                <p className="font-semibold">{t.noRecording}</p>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-2">{withName(t.noRecordingText)}</p>
-                <button type="button" className="btn btn-quiet mt-5 w-full max-sm:!px-4 max-sm:!text-sm sm:w-auto sm:self-start" disabled={Boolean(busy)} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta.replace("{name}", who)}</button>
-              </div>
-            </div>
-          ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn">{t.getCredits} · {t.needCredits.replace("{n}", String(needed))}</Link>}
-          {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
-          {canOrder && price && <p className="mt-4 text-xs text-muted">{credits >= needed ? t.payWithCredits.replace("{n}", String(needed)).replace("{have}", String(credits)) : t.payByCard.replace("{price}", price.split(" ·")[0])}</p>}
+      <p className="cover-eyebrow mt-8">2 · {t.stepHow.replace("{name}", who)}</p>
+      {canOrder ? (
+        <div className="mt-4 space-y-3">
+          <div className="offer-tile p-5">
+            <p className="font-semibold">{t.haveRecording}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-2">{withName(t.haveRecordingText)}</p>
+            <button type="button" className="btn mt-4 w-full max-sm:!px-4 max-sm:!text-sm sm:w-auto" disabled={Boolean(busy)} onClick={() => order("upload")}>{busy === "upload" ? t.ordering : t.uploadCta}</button>
+          </div>
+          <div className="offer-tile p-5">
+            <p className="font-semibold">{t.noRecording}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-2">{withName(t.noRecordingText)}</p>
+            <button type="button" className="btn btn-quiet mt-4 w-full max-sm:!px-4 max-sm:!text-sm sm:w-auto" disabled={Boolean(busy)} onClick={() => order("invite")}>{busy === "invite" ? t.ordering : t.inviteCta.replace("{name}", who)}</button>
+          </div>
         </div>
-      </div>
+      ) : <Link href={`${creditsHref}?unlock=${analysisId}`} className="btn mt-4">{t.getCredits} · {t.needCredits.replace("{n}", String(needed))}</Link>}
+      {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
+      {canOrder && price && <p className="mt-4 text-xs text-muted">{credits >= needed ? t.payWithCredits.replace("{n}", String(needed)).replace("{have}", String(credits)) : t.payByCard.replace("{price}", price.split(" ·")[0])}</p>}
     </form>
   );
 
   return (
-    <section className="offer offer-match" data-no-export aria-label={t.eyebrow}>
-      <p className="eyebrow !text-accent-text">{t.eyebrow}</p>
-      <h2 className="mt-3 font-display text-3xl font-medium leading-tight sm:text-4xl">{t.title}</h2>
-      <p className="mt-3 max-w-3xl leading-relaxed text-ink-2">{t.lead}</p>
-      <p className="mt-5"><span className="inline-block rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">{price ?? freeLabel}</span></p>
+    <section className="cover offer-cover offer-match no-print px-7 py-10 sm:px-12 sm:py-14" data-no-export aria-label={t.eyebrow}>
+      <CoverCapsules />
+      <p className="cover-eyebrow relative"><span className="font-display text-xl font-semibold tracking-[0.2em]">AVOCO</span><span className="mx-3 opacity-50">·</span>{t.eyebrow}</p>
 
-      {inProgress.length > 0 && (
-        <div className="card mt-7 overflow-hidden">
-          <p className="tab-title">{t.inProgressTitle}</p>
-          <ul className="divide-y divide-line px-5 pb-2 pt-2 sm:px-7">
-            {inProgress.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <span className="text-sm"><span className="font-semibold">{t.inProgressFor.replace("{name}", m.partnerName)}</span> <span className="text-ink-2">· {stageText(m.stage)}</span></span>
-                <Link href={`/match/${m.id}`} className="btn !px-5 !py-2">{t.continue} →</Link>
-              </li>
-            ))}
-          </ul>
+      <div className="relative mt-10 grid gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-start">
+        <div>
+          <h2 className="gold-text pb-2 font-display text-4xl font-semibold leading-[1.02] sm:text-6xl">{t.title}</h2>
+          <p className="mt-5 max-w-md leading-relaxed text-ink-2 sm:text-lg">{t.lead}</p>
+          <p className="mt-6"><span className="offer-badge">{price ?? freeLabel}</span></p>
         </div>
-      )}
 
-      {ready.length > 0 && (
-        <div className="card mt-7 overflow-hidden">
-          <p className="tab-title">{t.existing}</p>
-          <ul className="divide-y divide-line px-5 pb-2 pt-2 sm:px-7">
-            {ready.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                <span><span className="font-semibold">{m.partnerName}</span> <span className="text-ink-2">· {t.ready}</span></span>
-                <Link href={`/match/${m.id}`} className="font-semibold text-accent-text hover:underline">{t.open} →</Link>
-              </li>
-            ))}
-          </ul>
+        {/* The right side, where the report has its radar: the couples already ordered, then a new order. */}
+        <div className="space-y-9">
+          {inProgress.length > 0 && (
+            <div>
+              <p className="cover-eyebrow">{t.inProgressTitle}</p>
+              <ul className="mt-2 divide-y divide-line">
+                {inProgress.map((m) => (
+                  <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <span className="text-sm"><span className="font-semibold">{t.inProgressFor.replace("{name}", m.partnerName)}</span> <span className="text-ink-2">· {stageText(m.stage)}</span></span>
+                    <Link href={`/match/${m.id}`} className="btn !px-5 !py-2">{t.continue} →</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {ready.length > 0 && (
+            <div>
+              <p className="cover-eyebrow">{t.existing}</p>
+              <ul className="mt-2 divide-y divide-line">
+                {ready.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                    <span><span className="font-semibold">{m.partnerName}</span> <span className="text-ink-2">· {t.ready}</span></span>
+                    <Link href={`/match/${m.id}`} className="font-semibold text-accent-text hover:underline">{t.open} →</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* With a couple's report already under way, a new one is one click away instead of a whole form. */}
+          {inProgress.length > 0
+            ? <details><summary className="btn btn-quiet cursor-pointer">{t.startAnother}</summary><div className="mt-6">{form}</div></details>
+            : form}
         </div>
-      )}
-
-      {/* With a couple's report already under way, a new one is one click away instead of a whole form. */}
-      <div className="mt-7">
-        {inProgress.length > 0
-          ? <details><summary className="btn btn-quiet cursor-pointer">{t.startAnother}</summary><div className="mt-5">{form}</div></details>
-          : form}
       </div>
     </section>
   );
