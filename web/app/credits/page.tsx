@@ -1,5 +1,10 @@
 import { desc, eq, and } from "drizzle-orm";
 import { BuyCredits } from "@/components/BuyCredits";
+import { CreditsExplainer } from "@/components/CreditsExplainer";
+import { bestCredits, bestPriceCents } from "@/lib/best-billing";
+import { INDUSTRY_KEYS } from "@/lib/industries";
+import { industryPriceCents } from "@/lib/industry-billing";
+import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { asUser, balance, confirmCheckout, getSettings } from "@/lib/billing";
 import { creditLedger, db } from "@/lib/db";
 import { formatDate, getDict } from "@/lib/i18n";
@@ -12,10 +17,14 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const b = t.billing;
   // Back from Stripe: confirm the payment now, so the balance below is already right even if the webhook is late.
   if (typeof session === "string") await confirmCheckout(asUser(userId), session).catch(() => null);
-  const [credits, history] = await Promise.all([
+  const [credits, history, industryCents, bestCents, bestN, matchCents, matchN] = await Promise.all([
     balance(asUser(userId)),
     db().select().from(creditLedger).where(and(eq(creditLedger.ownerKind, "user"), eq(creditLedger.ownerId, userId))).orderBy(desc(creditLedger.createdAt)).limit(50),
+    industryPriceCents(), bestPriceCents(), bestCredits(), matchPriceCents(), matchCredits(),
   ]);
+  // What a credit buys, with the add-ons' own prices: by card only while charging is on.
+  const card = (cents: number) => (cfg.enabled ? money(cents, cfg.currency, locale) : null);
+  const prices = { industry: { credits: 1, card: card(industryCents) }, best: { credits: bestN, card: card(bestCents) }, match: { credits: matchN, card: card(matchCents) } };
 
   return (
     <div className="space-y-12">
@@ -26,6 +35,8 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
         <p className="mt-8 text-sm text-ink-2">{b.balance}</p>
         <p className="font-display text-6xl font-medium tabular-nums">{credits}</p>
       </div>
+
+      <CreditsExplainer t={t} industries={INDUSTRY_KEYS.length} prices={prices} />
 
       <section>
         <h2 className="mb-6 font-display text-3xl font-medium">{b.buy}</h2>
