@@ -155,14 +155,12 @@ export async function buildLanguage(lang: string, by: string, maxStrings = 120):
 
 /** Progress of every added language at once, for the admin page. */
 export async function allProgress(): Promise<Map<string, LanguageProgress>> {
-  const entries = source();
-  const current = new Map(entries.map(([path, text]) => [path, hashOf(text)]));
-  const rows = await db().select({ lang: translations.lang, path: translations.path, sourceHash: translations.sourceHash }).from(translations);
+  // One language at a time, a few in parallel: the whole table in one answer (31 languages, 100k+ rows, over 6 MB)
+  // is more than the HTTP driver gets back in one piece, and the admin page and the build both ask for this.
+  const langs = (await db().select({ lang: translations.lang }).from(translations).groupBy(translations.lang)).map((r) => r.lang);
   const out = new Map<string, LanguageProgress>();
-  for (const r of rows) {
-    const p = out.get(r.lang) ?? { total: entries.length, done: 0 };
-    if (current.get(r.path) === r.sourceHash) p.done += 1;
-    out.set(r.lang, p);
+  for (let i = 0; i < langs.length; i += 8) {
+    await Promise.all(langs.slice(i, i + 8).map(async (lang) => { out.set(lang, await languageProgress(lang)); }));
   }
   return out;
 }
