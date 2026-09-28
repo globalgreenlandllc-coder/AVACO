@@ -86,6 +86,8 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
   }
 
   useEffect(() => { if (picked) void load(picked); else setState({ kind: "idle" }); }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The add-on sits below the report; someone back from paying, or sent to a chapter by a link, is brought straight to it.
+  useEffect(() => { if (initialIndustry || paid || best?.paid) document.getElementById("industry")?.scrollIntoView({ block: "start" }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Every chapter this person has opened belongs in the print and the downloaded file, whether or not it is on screen.
   useEffect(() => { for (const key of unlocked) if (!chapters[key] && key !== picked) void fetchChapter(key); }, [unlocked.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
   // A refresh can bring the news that the picked industry was opened meanwhile (the payment landed): fetch it then.

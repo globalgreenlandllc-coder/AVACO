@@ -258,10 +258,6 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     <article ref={article} className="space-y-10">
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
 
-      {/* The industry add-on: sold and shown in this one card above the report, never inside it. */}
-      {industry && psy.length === 8 && <div id="industry"><Industry key={industry.initialIndustry ?? ""} {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} /></div>}
-      {match && psy.length === 8 && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
-
       {top && (
         <section className="cover break-inside-avoid px-7 py-10 sm:px-12 sm:py-14 print:px-8 print:py-8">
           {/* The capsules of AVOCO's printed cover. */}
@@ -300,6 +296,12 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
               <Radar rows={psy} help={r.signatureHelp} />
             </div>
           </div>
+          {/* The add-ons wait below the report; from the cover, one link takes the reader there. */}
+          {(industry || match) && psy.length === 8 && (
+            <p className="no-print relative mt-8" data-no-export>
+              <a href="#addons" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors hover:bg-[color-mix(in_oklab,var(--cover-gold)_12%,transparent)]" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 50%, transparent)", color: "var(--cover-gold)" }}>{r.addonsJump} ↓</a>
+            </p>
+          )}
         </section>
       )}
 
@@ -423,7 +425,20 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </div>
       </Reveal>
 
-      {/* The add-ons, for print and the downloaded file only: opened industry chapters (the add-on's card copies them here), then the couple's reports. */}
+      {/* The add-ons come after the report, never above it: the report is what was paid for. Sold in their own covers. */}
+      {(industry || match) && psy.length === 8 && (
+        <section id="addons" data-no-export className="no-print scroll-mt-24 space-y-8">
+          <div>
+            <p className="eyebrow">{r.addonsEyebrow}</p>
+            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{r.addonsTitle}</h2>
+            <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{r.addonsLead}</p>
+          </div>
+          {industry && <div id="industry" className="scroll-mt-24"><Industry key={industry.initialIndustry ?? ""} {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} /></div>}
+          {match && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
+        </section>
+      )}
+
+      {/* The add-ons' content, for print and the downloaded file only: opened industry chapters (the add-on's card copies them here), then the couple's reports. */}
       {industry && psy.length === 8 && <div ref={setSlot} data-export-show className="hidden print:block" />}
       {couples.map((c) => (
         <div key={c.id} data-export-show data-couple-print={c.id} className="hidden print:block">

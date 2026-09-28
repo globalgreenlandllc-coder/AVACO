@@ -10,8 +10,11 @@ import { isAdminUser } from "@/lib/admin";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
 import { giftPrice, MAX_BEST, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
 import { isOpenHost } from "@/lib/visitor";
-import { industryTeaser } from "@/lib/industry-chapter";
-import { INDUSTRY_KEYS } from "@/lib/industries";
+import { bestPriceCents } from "@/lib/best-billing";
+import { industryPriceCents } from "@/lib/industry-billing";
+import { industryNames, industryTeaser } from "@/lib/industry-chapter";
+import { INDUSTRY_KEYS, topIndustries } from "@/lib/industries";
+import { matchPriceCents } from "@/lib/match-billing";
 import { matchFit } from "@/lib/match";
 import { organizationJsonLd } from "@/lib/contact";
 import { getDict } from "@/lib/i18n";
@@ -42,6 +45,12 @@ export default async function Home() {
   const sampleTypes = SAMPLE_PSY.map(([key, value]) => ({ key, value }));
   const teaser = industryTeaser("construction", sampleTypes, t);
   const exampleIndustry = teaser ? h.deeperExampleIndustry.replace("{industry}", teaser.name).replace("{roles}", teaser.roles.map((r) => `${r.name} ${r.score}`).join(" · ")) : "";
+  // The best industry for the sample profile, and what each add-on costs (named on the page, so nobody is surprised inside a report).
+  const industryName = new Map(industryNames(t).map((i) => [i.key, i.name]));
+  const best = topIndustries(sampleTypes, 3, 2) ?? [];
+  const exampleBest = best.length >= 3 ? h.deeperExampleBest.replace("{industry}", industryName.get(best[0].industry) ?? best[0].industry).replace("{score}", String(best[0].match)).replace("{second}", industryName.get(best[1].industry) ?? "").replace("{third}", industryName.get(best[2].industry) ?? "") : "";
+  const [industryCents, bestCents, matchCents] = billing.enabled && !open ? await Promise.all([industryPriceCents(), bestPriceCents(), matchPriceCents()]) : [0, 0, 0];
+  const addonPrices = billing.enabled && !open ? [industryCents, bestCents, matchCents].map((c) => money(c, billing.currency, locale)) : [];
   const partner = sampleTypes.map(({ key }) => ({ key, value: key === "harmonizer" ? 64 : key === "mediator" ? 45 : 11 }));
   const fit = matchFit(sampleTypes, partner);
   const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
@@ -177,14 +186,19 @@ export default async function Home() {
             </li>
           ))}
         </ol>
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
           {h.deeper.map((d, i) => (
-            <div key={d.title} className="card overflow-hidden">
-              <p className="tab-title">{d.title}</p>
-              <p className="px-6 pt-4 leading-relaxed text-ink-2">{d.text.replace("{n}", String(INDUSTRY_KEYS.length))}</p>
-              <div className="mx-6 mb-6 mt-5 rounded-2xl bg-accent-soft p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{h.deeperExample}</p>
-                <p className="mt-2 text-sm leading-relaxed">{i === 0 ? exampleIndustry : exampleMatch}</p>
+            <div key={d.title} className="card flex flex-col overflow-hidden">
+              <div className="flex items-start justify-between gap-3">
+                <p className="tab-title">{d.title}</p>
+                {addonPrices[i] && <span className="mr-5 mt-4 rounded-full border border-accent px-3 py-1 text-xs font-bold text-accent-text">{addonPrices[i]}</span>}
+              </div>
+              <p className="px-6 pt-4 text-sm leading-relaxed text-ink-2">{d.text.replace("{n}", String(INDUSTRY_KEYS.length))}</p>
+              <div className="mx-6 mb-6 mt-auto pt-5">
+                <div className="rounded-2xl bg-accent-soft p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{h.deeperExample}</p>
+                  <p className="mt-2 text-sm leading-relaxed">{[exampleIndustry, exampleBest, exampleMatch][i]}</p>
+                </div>
               </div>
             </div>
           ))}
