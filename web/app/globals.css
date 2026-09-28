@@ -75,22 +75,38 @@
 }
 
 html { background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
-body { min-height: 100dvh; font-family: var(--font-sans); }
+/* A faint gold light at the top of every page, so the cream never reads as flat. */
+body { min-height: 100dvh; font-family: var(--font-sans); background: radial-gradient(70% 38rem at 50% -6rem, color-mix(in oklab, var(--accent) 13%, var(--bg)), var(--bg) 70%) no-repeat; }
+h1, h2, h3 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+/* Fields: the site's own inputs get a gold focus ring; Clerk's keep their own. */
+main :is(input, textarea, select):not([class*="cl-"]):focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 28%, transparent); }
+main :is(input, textarea, select):not([class*="cl-"]) { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 ::selection { background: color-mix(in oklab, var(--accent) 25%, transparent); }
 :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; border-radius: 6px; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   border-radius: 999px; padding: 0.8rem 1.6rem; font-weight: 600; font-size: 0.95rem;
-  background: var(--accent); color: var(--accent-ink); transition: transform 0.15s ease, opacity 0.15s ease;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 88%, white), var(--accent)); color: var(--accent-ink);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, white 35%, transparent), 0 10px 24px -14px color-mix(in oklab, var(--accent-text) 70%, transparent);
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.2s ease, filter 0.15s ease;
 }
-.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: inset 0 1px 0 color-mix(in oklab, white 35%, transparent), 0 14px 28px -14px color-mix(in oklab, var(--accent-text) 80%, transparent); filter: saturate(1.05) brightness(1.03); }
+.btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.97); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-quiet { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-.btn-quiet:hover:not(:disabled) { border-color: var(--ink-2); }
+.btn-quiet { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+.btn-quiet:hover:not(:disabled) { border-color: var(--ink-2); background: color-mix(in oklab, var(--accent) 8%, transparent); box-shadow: none; filter: none; }
 .btn-danger { color: var(--danger); }
-.btn-danger:hover:not(:disabled) { border-color: var(--danger); }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
+.btn-danger:hover:not(:disabled) { border-color: var(--danger); background: color-mix(in oklab, var(--danger) 8%, transparent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 1px 2px color-mix(in oklab, var(--ink) 4%, transparent), 0 14px 36px -30px color-mix(in oklab, var(--ink) 30%, transparent); }
+/* A card that is a link or a button: it lifts under the pointer. */
+.card-link { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.card-link:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--accent) 55%, var(--line)); box-shadow: 0 1px 2px color-mix(in oklab, var(--ink) 5%, transparent), 0 22px 44px -28px color-mix(in oklab, var(--ink) 40%, transparent); }
+/* The header: fixed to the top, the page showing through it. */
+.site-header { position: sticky; top: 0; z-index: 30; background: color-mix(in oklab, var(--bg) 78%, transparent); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); border-bottom: 1px solid transparent; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.site-header[data-scrolled="true"] { border-bottom-color: var(--line); box-shadow: 0 8px 24px -20px color-mix(in oklab, var(--ink) 35%, transparent); }
+@media (prefers-color-scheme: dark) { .card { box-shadow: none; } .card-link:hover { box-shadow: 0 22px 44px -28px rgba(0, 0, 0, 0.7); } }
 .eyebrow { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 
 @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.18); opacity: 0.15; } }
@@ -118,7 +134,11 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
 .cover {
   position: relative; overflow: hidden; border-radius: 32px; color: var(--cover-ink);
   background: radial-gradient(120% 90% at 85% 10%, var(--cover-bg-2), var(--cover-bg) 60%);
+  box-shadow: 0 30px 60px -40px rgba(20, 12, 3, 0.55);
 }
+/* A film of grain over the dark covers, so the gradient has the depth of paper rather than a flat screen. */
+.cover::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: soft-light; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.cover > * { position: relative; }
 .cover-capsule { position: absolute; border-radius: 999px; pointer-events: none; }
 .cover-eyebrow { font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; color: var(--cover-gold); }
 .gold-text { background: linear-gradient(100deg, #f7d88f, var(--cover-gold) 45%, #c98a22); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -169,7 +189,10 @@ body { min-height: 100dvh; font-family: var(--font-sans); }
           --bar-leading: #8a5306; --bar-active: #c07e1a; --bar-background: #dfa64f;
           --cover-bg: #f8ecd7; --cover-bg-2: #fdf6e6; --cover-ink: #2a1c05; --cover-muted: #5a4f40; --cover-gold: #8a5306; }
   .no-print { display: none !important; }
-  .card { border-color: var(--line); break-inside: avoid; }
+  .card { border-color: var(--line); break-inside: avoid; box-shadow: none; }
+  .cover { box-shadow: none; }
+  .cover::before { display: none; }
+  body { background: #fff; }
   .card-flow { break-inside: auto; }
   .reveal { opacity: 1 !important; }
   .bar-fill, .reveal.in, .rise, .radar-shape, .radar-dot, .heart, .score-ring, .sheen, .drift { animation: none !important; }

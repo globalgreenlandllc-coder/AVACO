@@ -165,7 +165,7 @@ export function LockedPreview({ t, recordedOn, teaser, takes, hideEmotions = fal
  */
 function LockedCard({ title, note, locked, opens, wide = false, clear = false, children }: { title: string; note: string; locked: string; opens: string; wide?: boolean; clear?: boolean; children: React.ReactNode }) {
   return (
-    <a href="#unlock" className={`card group relative block overflow-hidden p-6 transition-colors hover:border-ink-2 sm:p-8 ${wide ? "md:col-span-2" : ""}`}>
+    <a href="#unlock" className={`card card-link group relative block overflow-hidden p-6  sm:p-8 ${wide ? "md:col-span-2" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-2xl font-medium sm:text-3xl">{title}</h3>
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-widest text-accent-text"><Lock /> {locked}</span>

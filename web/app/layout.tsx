@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Link from "next/link";
@@ -26,6 +26,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { metadataBase: new URL(origin), title: `${t.brand} · ${t.home.eyebrow}`, description: t.home.lead };
 }
 
+/** The browser's own chrome takes the page's colour: cream by day, the dark cream at night. */
+export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#faf5ea" }, { media: "(prefers-color-scheme: dark)", color: "#14100a" }] };
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [{ locale, t }, languages, open, visitor] = await Promise.all([getDict(), availableLanguages(), isOpenHost(), visitorId()]);
   // Finished couple's reports the person hasn't opened yet: a notice on every page, and a count on "My reports".
@@ -37,16 +40,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Header locale={locale} t={t} alerts={ready.length} />
           <MatchReadyNotice matches={ready} t={t.match} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>
-          <footer className="no-print border-t border-line px-5 py-8 text-xs text-muted">
-            <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
-              <p>© {new Date().getFullYear()} {LEGAL.operator}. {t.footer}</p>
-              <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1">
-                <Link href="/privacy" className="hover:text-ink">{t.legal.nav.privacy}</Link>
-                <Link href="/terms" className="hover:text-ink">{t.legal.nav.terms}</Link>
-                <Link href="/docs/api" className="hover:text-ink">{t.legal.nav.api}</Link>
-                <a href={`mailto:${LEGAL.support}`} className="hover:text-ink">{LEGAL.support}</a>
+          <footer className="no-print border-t border-line px-5 py-10 text-xs text-muted sm:px-8">
+            <div className="mx-auto grid w-full max-w-5xl gap-8 sm:grid-cols-[1fr_auto_auto] sm:items-start">
+              <div className="max-w-sm">
+                <p className="font-display text-xl font-semibold tracking-[0.14em] text-ink">{t.brand}</p>
+                <p className="mt-2 leading-relaxed">{t.home.lead}</p>
+                <p className="mt-4">© {new Date().getFullYear()} {LEGAL.operator}. {t.footer}</p>
+              </div>
+              <nav className="flex flex-col gap-2" aria-label={t.legal.nav.privacy}>
+                <Link href="/privacy" className="transition-colors hover:text-ink">{t.legal.nav.privacy}</Link>
+                <Link href="/terms" className="transition-colors hover:text-ink">{t.legal.nav.terms}</Link>
+                <Link href="/docs/api" className="transition-colors hover:text-ink">{t.legal.nav.api}</Link>
+                <a href={`mailto:${LEGAL.support}`} className="transition-colors hover:text-ink">{LEGAL.support}</a>
               </nav>
-              <LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} openUp />
+              <div className="sm:justify-self-end"><LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} openUp /></div>
             </div>
           </footer>
         </body>

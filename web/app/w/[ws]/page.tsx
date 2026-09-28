@@ -45,7 +45,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ ws: 
           <ul className="mt-6 space-y-3">
             {groupList.map((g) => (
               <li key={g.id}>
-                <Link href={`/w/${ws.id}/g/${g.id}`} className="card flex items-center justify-between gap-4 p-5 transition-colors hover:border-ink-2">
+                <Link href={`/w/${ws.id}/g/${g.id}`} className="card card-link flex items-center justify-between gap-4 p-5 ">
                   <span className="font-medium">{g.name}</span>
                   <span className="text-sm text-muted">{o.ws.peopleCount.replace("{n}", String(g.people))} →</span>
                 </Link>

@@ -21,7 +21,7 @@ export default async function WorkspacesPage() {
           <ul className="mt-10 space-y-3">
             {list.map((ws) => (
               <li key={ws.id}>
-                <Link href={`/w/${ws.id}`} className="card flex flex-wrap items-center justify-between gap-4 p-6 transition-colors hover:border-ink-2">
+                <Link href={`/w/${ws.id}`} className="card card-link flex flex-wrap items-center justify-between gap-4 p-6 ">
                   <div>
                     <p className="text-lg font-medium">{ws.name}</p>
                     <p className="mt-1 text-sm text-ink-2">{o.presets[presetOf(ws.industry)].name} · {o.list.role[ws.role]}</p>

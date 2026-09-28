@@ -102,7 +102,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               : t.reports.balanced;
             const extras = { industries: byReport.get(a.id) ?? [], couples: matchRows.filter((m) => m.analysisId === a.id) };
             return (
-              <li key={a.id} className="card transition-colors hover:border-ink-2">
+              <li key={a.id} className="card card-link ">
                 <Link href={`/reports/${a.id}`} className="flex flex-wrap items-center justify-between gap-4 p-6">
                   <div>
                     <p className="font-medium">{many && !chosen && <span className="font-semibold">{label({ key: personKey(names.get(a.id)), name: names.get(a.id) ?? null })} · </span>}{formatDate(a.created_at, locale)}</p>
@@ -128,7 +128,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <ul className="mt-5 space-y-3">
             {matchRows.map((r) => (
               <li key={r.id}>
-                <Link href={`/match/${r.id}`} className={`card flex flex-wrap items-center justify-between gap-4 p-6 transition-colors hover:border-ink-2 ${r.unseen ? "border-accent" : ""}`}>
+                <Link href={`/match/${r.id}`} className={`card card-link flex flex-wrap items-center justify-between gap-4 p-6  ${r.unseen ? "border-accent" : ""}`}>
                   <div>
                     <p className="font-medium">{r.title}</p>
                     <p className="mt-1 text-sm text-ink-2">{r.text}</p>

@@ -57,6 +57,17 @@ function GiftGlyph() {
   );
 }
 
+function MarkGlyph() {
+  return (
+    <svg width="104" height="104" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="16" fill="#120d05" />
+      <path d="M32 13 L47.5 50 L40.5 50 L32 28.5 L23.5 50 L16.5 50 Z" fill={GOLD} />
+      <rect x="26" y="41" width="12" height="4.2" rx="2.1" fill="#120d05" />
+      <rect x="26" y="41" width="12" height="4.2" rx="2.1" fill={GOLD} opacity="0.9" />
+    </svg>
+  );
+}
+
 function HeartsGlyph() {
   return (
     <svg width="104" height="104" viewBox="0 0 96 96">
@@ -67,7 +78,7 @@ function HeartsGlyph() {
 }
 
 /** One preview card: an eyebrow, a big title in the display face, a line under it, the brand at the foot. */
-export function OgCard({ eyebrow, title, sub, glyph }: { eyebrow: string; title: string; sub: string; glyph: "gift" | "hearts" }): ReactElement {
+export function OgCard({ eyebrow, title, sub, glyph }: { eyebrow: string; title: string; sub: string; glyph: "gift" | "hearts" | "mark" }): ReactElement {
   const big = title.length <= 44;
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", padding: 64, background: "linear-gradient(135deg, #1e1609 0%, #3a290d 100%)", color: INK, fontFamily: "Manrope, sans-serif" }}>
@@ -75,7 +86,7 @@ export function OgCard({ eyebrow, title, sub, glyph }: { eyebrow: string; title:
       <div style={{ position: "absolute", top: -140, right: 110, width: 64, height: 280, borderRadius: 999, background: "rgba(236,182,87,0.55)" }} />
       <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          {glyph === "gift" ? <GiftGlyph /> : <HeartsGlyph />}
+          {glyph === "gift" ? <GiftGlyph /> : glyph === "hearts" ? <HeartsGlyph /> : <MarkGlyph />}
           <div style={{ fontSize: 26, letterSpacing: 6, textTransform: "uppercase", color: GOLD }}>{eyebrow}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 1020 }}>

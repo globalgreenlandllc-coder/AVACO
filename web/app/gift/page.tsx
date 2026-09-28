@@ -40,7 +40,7 @@ export default async function GiftPage() {
           <ul className="mt-5 space-y-3">
             {given.map((x) => (
               <li key={x.id}>
-                <Link href={`/gift/${x.id}`} className="card flex flex-wrap items-center justify-between gap-4 p-6 transition-colors hover:border-ink-2">
+                <Link href={`/gift/${x.id}`} className="card card-link flex flex-wrap items-center justify-between gap-4 p-6 ">
                   <div>
                     <p className="font-medium">{x.recipientName ?? g.giver.someone} · {formatDate(x.createdAt.toISOString(), locale)}</p>
                     <p className="mt-1 text-sm text-ink-2">{g.giver.contents.replace("{reports}", String(x.reports)).replace("{industries}", x.industries ? ` + ${x.industries} × ${g.form.industries}` : "").replace("{matches}", `${x.best ? ` + ${x.best} × ${g.form.best}` : ""}${x.matches ? ` + ${x.matches} × ${g.form.matches}` : ""}`)}</p>
