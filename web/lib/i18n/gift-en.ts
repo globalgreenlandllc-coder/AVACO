@@ -3,7 +3,7 @@ export interface GiftText {
   nav: string;
   landing: { eyebrow: string; title: string; text: string; points: string[]; cta: string; from: string };
   form: {
-    title: string; lead: string; yourName: string; recipientName: string; recipientHelp: string; message: string; messagePlaceholder: string;
+    title: string; lead: string; yourName: string; yourNamePlaceholder: string; recipientName: string; recipientNamePlaceholder: string; recipientHelp: string; message: string; messagePlaceholder: string;
     reports: string; reportsHelp: string; industries: string; industriesHelp: string; matches: string; matchesHelp: string; best: string; bestHelp: string; total: string; pay: string; create: string; creating: string;
     signIn: string; signInFree: string; freeNote: string; secure: string; given: string; none: string;
   };
@@ -35,10 +35,12 @@ export const giftEn: GiftText = {
     title: "Gift a voice report",
     lead: "Choose what the gift holds, pay once, and you get a private link to send. Whoever opens it records their voice and gets everything below, free for them, with your name on it.",
     yourName: "Your first name",
+    yourNamePlaceholder: "Robert",
     recipientName: "Their first name",
+    recipientNamePlaceholder: "Laura",
     recipientHelp: "Optional: it appears on the gift page. Leave it empty if you want to decide later who gets it.",
     message: "A message from you",
-    messagePlaceholder: "Happy birthday, Lena. I've always wanted to know what your voice says about you…",
+    messagePlaceholder: "Happy birthday, Laura. I've always wanted to know what your voice says about you…",
     reports: "Voice reports",
     reportsHelp: "One is usually enough; more lets them record again on another day and compare.",
     industries: "Industry chapters",

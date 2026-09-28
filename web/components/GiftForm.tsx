@@ -84,8 +84,8 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
   return (
     <form onSubmit={submit} className="space-y-6">
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="text-sm"><span className="text-ink-2">{t.yourName}</span><input value={draft.giverName} onChange={(e) => update({ giverName: e.target.value })} required maxLength={60} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /></label>
-        <label className="text-sm"><span className="text-ink-2">{t.recipientName}</span><input value={draft.recipientName} onChange={(e) => update({ recipientName: e.target.value })} maxLength={60} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /><span className="mt-1 block text-xs text-muted">{t.recipientHelp}</span></label>
+        <label className="text-sm"><span className="text-ink-2">{t.yourName}</span><input value={draft.giverName} onChange={(e) => update({ giverName: e.target.value })} required maxLength={60} placeholder={t.yourNamePlaceholder} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /></label>
+        <label className="text-sm"><span className="text-ink-2">{t.recipientName}</span><input value={draft.recipientName} onChange={(e) => update({ recipientName: e.target.value })} maxLength={60} placeholder={t.recipientNamePlaceholder} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /><span className="mt-1 block text-xs text-muted">{t.recipientHelp}</span></label>
       </div>
       <label className="block text-sm"><span className="text-ink-2">{t.message}</span><textarea value={draft.message} onChange={(e) => update({ message: e.target.value })} maxLength={300} rows={3} placeholder={t.messagePlaceholder} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /></label>
 
