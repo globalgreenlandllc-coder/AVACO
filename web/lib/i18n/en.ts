@@ -237,6 +237,8 @@ export const en = {
     downloadAllHelp: "{list}. One file, one after another.",
     downloadEverything: "Download everything · {n} reports",
     downloadOne: "Download",
+    downloadThis: "Download this report",
+    thisReport: "the report on this page",
     filesChapters: "Industry chapters · {n}",
     filesCouples: "Reports for two · {n}",
     downloadChapters: "All {n} in one file",

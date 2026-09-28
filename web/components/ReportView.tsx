@@ -488,7 +488,8 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
 
       <div data-no-export className="no-print">
         <div className="flex flex-wrap gap-3">
-          <button type="button" className="btn" onClick={() => download({ kind: "all" })} disabled={saving !== null}>{saving === "all" ? r.downloading : everythingLabel}</button>
+          <button type="button" className="btn btn-go" onClick={() => download({ kind: "type" })} disabled={saving !== null}>↓ {saving === "type" ? r.downloading : r.downloadThis}</button>
+          {readyPieces.length > 1 && <button type="button" className="btn btn-quiet" onClick={() => download({ kind: "all" })} disabled={saving !== null}>{saving === "all" ? r.downloading : everythingLabel}</button>}
           <button type="button" className="btn btn-quiet" onClick={() => window.print()}>{r.print}</button>
           {del && <button type="button" className="btn btn-quiet btn-danger" onClick={remove} disabled={deleting}>{deleting ? r.deleting : deleteLabel ?? r.delete}</button>}
         </div>
@@ -501,7 +502,10 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
           </div>
           {/* One row per kind of report; the chapters and the pair reports fold away, each group with its count. */}
           <ul className="border-t border-line">
-            {fileRow(typeRow)}
+            <li className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
+              <span className="flex items-center gap-3">{tick(true)}<span><span className="font-medium">{typeRow.label}</span><span className="ml-2 text-xs text-muted">{r.thisReport}</span></span></span>
+              <button type="button" className="btn btn-go !px-4 !py-2 !text-sm" onClick={() => download({ kind: "type" })} disabled={saving !== null}>↓ {saving === "type" ? r.downloading : r.downloadThis}</button>
+            </li>
             {bestRow && fileRow(bestRow)}
             {industry && (chapterRows.length > 0 ? (
               <li className="border-b border-line px-6 py-4 sm:px-8">

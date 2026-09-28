@@ -97,6 +97,10 @@ main :is(input, textarea, select):not([class*="cl-"]) { transition: border-color
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-quiet { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
 .btn-quiet:hover:not(:disabled) { border-color: var(--ink-2); background: color-mix(in oklab, var(--accent) 8%, transparent); box-shadow: none; filter: none; }
+/* The one green button: the report on this page, as a file. Green so it can't be confused with the gold "everything". */
+.btn-go { background: linear-gradient(180deg, #3f9a63, #2e7f4e); color: #f3fff7; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 24px -14px rgba(31, 94, 57, 0.8); }
+.btn-go:hover:not(:disabled) { filter: saturate(1.05) brightness(1.04); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 14px 28px -14px rgba(31, 94, 57, 0.9); }
+@media (prefers-color-scheme: dark) { .btn-go { background: linear-gradient(180deg, #4fb377, #3a9660); color: #06210f; } }
 .btn-danger { color: var(--danger); }
 .btn-danger:hover:not(:disabled) { border-color: var(--danger); background: color-mix(in oklab, var(--danger) 8%, transparent); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 1px 2px color-mix(in oklab, var(--ink) 4%, transparent), 0 14px 36px -30px color-mix(in oklab, var(--ink) 30%, transparent); }

@@ -238,6 +238,8 @@ export const ru: Dict = {
     downloadAllHelp: "{list}. Один файл, друг за другом.",
     downloadEverything: "Скачать всё · отчётов: {n}",
     downloadOne: "Скачать",
+    downloadThis: "Скачать этот отчёт",
+    thisReport: "отчёт на этой странице",
     filesChapters: "Отраслевые главы · {n}",
     filesCouples: "Отчёты на двоих · {n}",
     downloadChapters: "Все {n} одним файлом",
