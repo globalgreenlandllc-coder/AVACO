@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Trends } from "@/components/Trends";
 import { fullAccessIds, industriesByReport } from "@/lib/billing";
-import { industryNames } from "@/lib/industry-chapter";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { stageOf } from "@/lib/match-stage";
@@ -44,9 +43,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     };
   }));
 
-  // What was opened or ordered on each report: its industry chapters and its couple's reports, shown on the row.
+  // How much each report has grown: a count of its chapters and pair reports on the row, the list itself on the report.
   const byReport = userId ? await industriesByReport(userId).catch(() => new Map<string, string[]>()) : new Map<string, string[]>();
-  const industryName = new Map<string, string>(industryNames(t).map((i) => [i.key, i.name]));
   // Everything not finished, in one place at the top: recordings still being analysed, reports ready to open, and couple's reports waiting.
   const analysing = shown.filter((a) => a.status === "processing" || a.status === "queued");
   const toOpen = shown.filter((a) => a.status === "completed" && !open.has(a.id));
@@ -102,22 +100,18 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               : !open.has(a.id) ? t.reports.locked
               : leaders.length > 0 ? `${t.reports.leading}: ${leaders.slice(0, 2).map((l) => l.name).join(", ")}`
               : t.reports.balanced;
-            const extras = { industries: byReport.get(a.id) ?? [], couples: matchRows.filter((m) => m.analysisId === a.id) };
+            const chapters = byReport.get(a.id)?.length ?? 0, pairs = matchRows.filter((m) => m.analysisId === a.id).length;
+            const grown = [chapters > 0 && t.reports.rowChapters.replace("{n}", String(chapters)), pairs > 0 && t.reports.rowCouples.replace("{n}", String(pairs))].filter(Boolean).join(" · ");
             return (
-              <li key={a.id} className="card card-link ">
+              <li key={a.id} className="card card-link">
                 <Link href={`/reports/${a.id}`} className="flex flex-wrap items-center justify-between gap-4 p-6">
                   <div>
                     <p className="font-medium">{many && !chosen && <span className="font-semibold">{label({ key: personKey(names.get(a.id)), name: names.get(a.id) ?? null })} · </span>}{formatDate(a.created_at, locale)}</p>
                     {summary && <p className="mt-1 text-sm text-ink-2">{summary}</p>}
+                    {grown && <p className="mt-1 text-xs text-muted">{grown}</p>}
                   </div>
                   <span className="text-sm text-muted">{t.status[a.status]} →</span>
                 </Link>
-                {(extras.industries.length > 0 || extras.couples.length > 0) && (
-                  <div className="-mt-2 flex flex-wrap gap-2 px-6 pb-5">
-                    {extras.industries.map((key) => <Link key={key} href={`/reports/${a.id}?industry=${key}#industry`} className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", industryName.get(key) ?? key)} →</Link>)}
-                    {extras.couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className={`pill !py-1.5 text-xs ${m.unfinished ? "pill-off" : "pill-on"}`}>♥ {(m.unfinished ? t.reports.extraCoupleWaiting : t.reports.extraCouple).replace("{name}", m.partnerName)} →</Link>)}
-                  </div>
-                )}
               </li>
             );
           })}

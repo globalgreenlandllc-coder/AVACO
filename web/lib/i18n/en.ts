@@ -152,6 +152,8 @@ export const en = {
     extraCouple: "Couple's report with {name}",
     extraCoupleWaiting: "Couple's report with {name} · waiting",
     attentionTitle: "Waiting to finish",
+    rowChapters: "Industry chapters: {n}",
+    rowCouples: "Reports for two: {n}",
     analysing: "Being analysed · {when}",
     readyToOpen: "Ready · {when} · open it to see your type",
   },

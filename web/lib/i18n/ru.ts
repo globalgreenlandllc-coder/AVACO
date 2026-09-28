@@ -153,6 +153,8 @@ export const ru: Dict = {
     extraCouple: "Отчёт пары с {name}",
     extraCoupleWaiting: "Отчёт пары с {name} · ждём",
     attentionTitle: "Ждёт завершения",
+    rowChapters: "Отраслевых глав: {n}",
+    rowCouples: "Отчётов на двоих: {n}",
     analysing: "Анализируется · {when}",
     readyToOpen: "Готов · {when} · откройте, чтобы увидеть свой тип",
     locked: "Готов · предпросмотр, откройте, чтобы увидеть свой тип",
