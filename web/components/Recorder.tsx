@@ -7,6 +7,9 @@ import type { Dict } from "@/lib/i18n";
 import { cleanName, MAX_NAME, personKey } from "@/lib/person";
 import { AudioError, MAX_SECONDS, MIN_SECONDS, toAnalysisWav } from "@/lib/wav";
 import { Thinking } from "./Thinking";
+import { VoiceScope } from "./VoiceScope";
+import { Waveform } from "./Waveform";
+import { peaksFromBlob } from "@/lib/waveform";
 
 type Phase = "idle" | "recording" | "recorded" | "sending";
 /**
@@ -58,6 +61,9 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const [level, setLevel] = useState(0);
   const [noisy, setNoisy] = useState(false);
   const [clip, setClip] = useState<{ blob: Blob; url: string } | null>(null);
+  /** The live analyser while recording (components/VoiceScope.tsx), and the shape of the clip once there is one. */
+  const [scope, setScope] = useState<{ analyser: AnalyserNode; sampleRate: number } | null>(null);
+  const [peaks, setPeaks] = useState<number[] | null>(null);
   const [consent, setConsent] = useState(false);
   const [extra, setExtra] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -104,8 +110,10 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     // Level meter: the loudest sample of each frame, smoothed a little.
     const ctx = new AudioContext();
     const analyser = ctx.createAnalyser();
-    analyser.fftSize = 1024;
+    analyser.fftSize = 2048;
     ctx.createMediaStreamSource(stream).connect(analyser);
+    setScope({ analyser, sampleRate: ctx.sampleRate });
+    setPeaks(null);
     const samples = new Float32Array(analyser.fftSize);
     let frame = 0;
     const frameDb: number[] = []; // one level per animation frame, for the room check at the end
@@ -130,7 +138,9 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         setPhase("idle");
         return;
       }
-      setRecording(new Blob(chunks, { type: rec.mimeType }));
+      const blob = new Blob(chunks, { type: rec.mimeType });
+      setRecording(blob);
+      void peaksFromBlob(blob).then(setPeaks);
       setNoisy(isNoisy(frameDb)); // we warn, we don't refuse
       setPhase("recorded");
     };
@@ -147,6 +157,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       stream.getTracks().forEach((track) => track.stop());
       void ctx.close();
       setLevel(0);
+      setScope(null);
       cleanup.current = null;
     };
 
@@ -163,6 +174,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
 
   function reset() {
     setRecording(null);
+    setPeaks(null);
     setConsent(false);
     setExtra(false);
     setSeconds(0);
@@ -176,6 +188,8 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     onStart?.();
     setError(null);
     setRecording(file);
+    setPeaks(null);
+    void peaksFromBlob(file).then(setPeaks);
     setSeconds(0);
     setPhase("recorded");
   }
@@ -202,6 +216,8 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       if (res.status === 502 || res.status === 503) { setError("unavailable"); setProgress(null); setPhase("recorded"); return; }
       if (!res.ok) throw new Error(`analyses ${res.status}`);
       const { id } = await res.json();
+      // The report page shows this very recording being analysed (components/Analysing.tsx).
+      try { if (peaks) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(peaks)); } catch { /* it then draws a stand-in */ }
       router.push(doneUrl.replace("{id}", id));
       router.refresh();
     } catch (err) {
@@ -215,6 +231,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const recording = phase === "recording";
   const enough = seconds >= MIN_SECONDS;
   const ring = recording ? Math.min(1, seconds / MIN_SECONDS) : 0;
+  const sendProgress = Math.min(1, (step + (step === 1 ? uploaded / 100 : 0.5)) / 3);
 
   // Whose voice: asked before recording (and still changeable before sending), with the account holder's own name on "me".
   const whoseBlock = whose ? (
@@ -278,6 +295,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
             : phase === "sending" ? progress
             : t.start}
         </p>
+        {recording && <div className="mt-6 w-full max-w-md"><VoiceScope analyser={scope?.analyser ?? null} sampleRate={scope?.sampleRate ?? 48000} t={t.scope} /></div>}
 
         {phase === "idle" && (
           <div className="mt-6 flex flex-col items-center gap-2">
@@ -303,6 +321,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
 
       {(phase === "recorded" || phase === "sending") && clip && (
         <div className="mt-8 space-y-6 border-t border-line pt-8">
+          {peaks && phase === "recorded" && <Waveform peaks={peaks} height={64} label={t.scope.waveform} />}
           <audio controls src={clip.url} className="w-full" />
           {whoseBlock}
           <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-ink-2">
@@ -318,7 +337,9 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
           )}
           {phase === "sending" && (
             <div className="grid items-center gap-6 rounded-2xl border border-line p-6 sm:grid-cols-[auto_1fr]" aria-live="polite" aria-busy="true">
-              <Thinking size={150} thoughts={[t.busy.steps[step]]} label={t.busy.thinking} />
+              {peaks
+                ? <div className="w-full sm:w-64"><Waveform peaks={peaks} progress={sendProgress} scan height={96} label={t.scope.waveform} /><p className="mt-2 text-center text-xs text-muted">{t.busy.steps[step]}</p></div>
+                : <Thinking size={150} thoughts={[t.busy.steps[step]]} label={t.busy.thinking} />}
               <div>
                 <p className="font-semibold">{t.busy.thinking}</p>
                 <ol className="mt-3 space-y-2 text-sm">
