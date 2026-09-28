@@ -5,6 +5,7 @@ import { Contact } from "@/components/Contact";
 import { GiftForm } from "@/components/GiftForm";
 import { GiftRibbon } from "@/components/GiftRibbon";
 import { Reveal } from "@/components/Motion";
+import { ScrollToHash } from "@/components/ScrollToHash";
 import { Radar } from "@/components/Radar";
 import { isAdminUser } from "@/lib/admin";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
@@ -62,6 +63,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-24 pt-2 sm:pt-6">
+      <ScrollToHash />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJsonLd(origin, LEGAL.operator, LEGAL.support) }} />
       {/* Hero: the report's own cover, with the sample profile's voice signature. */}
       <section className="cover px-7 py-12 sm:px-12 sm:py-16">
