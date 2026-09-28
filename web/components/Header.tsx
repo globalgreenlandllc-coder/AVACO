@@ -8,6 +8,7 @@ import { isOpenHost } from "@/lib/visitor";
 import { HeaderShell } from "./HeaderShell";
 import { LanguageSwitch } from "./LanguageSwitch";
 
+// Links into a section of the landing page are plain anchors: the client-side link changes the address but does not scroll to the section.
 const link = "whitespace-nowrap rounded-full px-3 py-1.5 text-ink-2 transition-colors hover:bg-track/70 hover:text-ink";
 
 /**
@@ -36,11 +37,11 @@ export async function Header({ locale, t, alerts = 0 }: { locale: Locale; t: Dic
             <Link href="/reports" className={link}>{t.nav.reports}{badge}</Link>
             <Link href="/w" className={`hidden md:inline ${link}`}>{t.org.nav}</Link>
             <Link href="/credits" className={`hidden md:inline ${link}`}>{t.billing.nav}</Link>
-            <Link href="/#gift" className={`hidden sm:inline ${link}`}>{t.gift.nav}</Link>
+            <a href="/#gift" className={`hidden sm:inline ${link}`}>{t.gift.nav}</a>
             {admin && <Link href="/admin" className="ml-1 rounded-full bg-accent px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-ink transition-opacity hover:opacity-90">Admin</Link>}
           </Show>
           <Show when="signed-out">
-            <Link href="/#gift" className={`hidden sm:inline ${link}`}>{t.gift.nav}</Link>
+            <a href="/#gift" className={`hidden sm:inline ${link}`}>{t.gift.nav}</a>
             <Link href="/sample" className={`hidden md:inline ${link}`}>{t.nav.sample}</Link>
           </Show>
           <span className="ml-1">{lang}</span>
