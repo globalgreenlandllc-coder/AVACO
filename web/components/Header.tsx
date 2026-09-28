@@ -8,7 +8,7 @@ import { isOpenHost } from "@/lib/visitor";
 import { HeaderShell } from "./HeaderShell";
 import { LanguageSwitch } from "./LanguageSwitch";
 
-const link = "rounded-full px-3 py-1.5 text-ink-2 transition-colors hover:bg-track/70 hover:text-ink";
+const link = "whitespace-nowrap rounded-full px-3 py-1.5 text-ink-2 transition-colors hover:bg-track/70 hover:text-ink";
 
 /**
  * The header, fixed to the top of every page. On a phone only what matters fits beside the brand: reports (with the

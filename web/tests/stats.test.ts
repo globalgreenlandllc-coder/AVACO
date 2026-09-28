@@ -33,7 +33,7 @@ afterAll(async () => { setDbForTests(null); await client.close(); });
 
 describe("statistics", () => {
   it("joins the visits with sign-ups, recordings and purchases", async () => {
-    const now = Date.now();
+    const now = new Date().setUTCHours(12, 0, 0, 0); // noon, so Anna's two visits an hour apart never straddle midnight UTC
     const v = (at: number, o: Partial<typeof schema.visits.$inferInsert>) => ({ id: crypto.randomUUID(), at: new Date(at), site: "main" as const, path: "/", visitor: "anna", session: "a1", userId: null, landing: false, source: "instagram", campaign: null, country: "US", device: "phone" as const, locale: "en", ...o });
     await db.insert(schema.visits).values([
       v(now - 2 * DAY, { landing: true }),

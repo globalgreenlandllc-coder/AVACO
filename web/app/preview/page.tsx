@@ -35,5 +35,8 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
   const other = PSY.map(([key, value]): [string, number] => [key, key === "harmonizer" ? 71.2 : key === "catalyst" ? 38.5 : value]);
   const fit = matchFit(report.psytype ?? [], other.map(([key, value]) => ({ key, value })));
   const couples = fit ? [{ id: "preview-couple", names: { a: "Dana", b: "Lena" }, report: matchReport(fit, { a: "Dana", b: "Lena" }, t, locale) }] : [];
-  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} match={match} couples={couples} canEmail />;
+  // What a well-used report holds: many chapters and pair reports opened, sixteen recordings behind the profile.
+  const opened = { industries: industryNames(t).slice(0, 22).map((i) => ({ key: i.key, name: i.name, href: `/preview?industry=${i.key}#industry` })), couples: ["Olga", "Serge", "Dmitriy", "Anna", "Lena", "Max"].map((n, i) => ({ id: `c${i}`, href: "/preview/match", glyph: i % 2 ? "🤝" : "♥", label: `${i % 2 ? "Partnership" : "Couple's"} report with ${n}` })) };
+  const sampleTakes = { n: 16, band: "low" as const, pct: 44, leader: "Analyst", thisRecording: null, recordings: Array.from({ length: 16 }, (_, i) => ({ id: `r${i}`, date: `${28 - Math.floor(i / 3)} Sep`, name: ["Analyst", "Organizer", "Driver"][i % 3], value: [60.7, 88.6, 52.7][i % 3], current: i === 0 })) };
+  return <ReportView key={locale} initial={report} recordedOn={formatDate(created, locale)} t={t} deleteUrl={null} back={null} industry={industry} match={match} couples={couples} canEmail opened={opened} takes={sampleTakes} />;
 }

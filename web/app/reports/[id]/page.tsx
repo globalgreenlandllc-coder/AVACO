@@ -8,7 +8,6 @@ import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess,
 import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { isAdminUser } from "@/lib/admin";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
-import Link from "next/link";
 import { INDUSTRY_KEYS, industryMatches, isIndustry } from "@/lib/industries";
 import { industryPriceCents } from "@/lib/industry-billing";
 import { fieldFits } from "@/lib/fit";
@@ -40,6 +39,8 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const profile = await profileFor(userId, single);
   const analysis = { ...single, psytype: profile.psytype };
   const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
+  // "28 Sep" rather than "28 September 2026": sixteen of them have to fit a phone.
+  const shortDate = (iso: string, loc: string) => { try { return new Intl.DateTimeFormat(loc, { day: "numeric", month: "short" }).format(new Date(iso)); } catch { return iso.slice(5, 10); } };
   const own = single.psytype?.length ? [...single.psytype].sort((a, b) => b.value - a.value)[0] : null;
   const takes = profile.consensus ? {
     n: profile.consensus.n,
@@ -47,7 +48,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     pct: Math.round(profile.consensus.agreement * 100),
     leader: typeName(profile.consensus.leader),
     thisRecording: own ? { name: typeName(own.key), value: own.value } : null,
-    recordings: profile.consensus.recordings.map((x) => ({ id: x.id, date: formatDate(x.created_at, locale).split(/,| at | в /)[0], name: typeName(x.key), value: x.value, current: x.id === single.id })),
+    recordings: profile.consensus.recordings.map((x) => ({ id: x.id, date: shortDate(x.created_at, locale), name: typeName(x.key), value: x.value, current: x.id === single.id })),
   } : undefined;
 
   // Back from Stripe: confirm the payment on this very load, so the report and the chapter the buyer came for open
@@ -136,13 +137,11 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     couples.length > 0 || opened.length > 0 || full ? emailConfig().then((c) => Boolean(c)).catch(() => false) : Promise.resolve(false),
   ]);
   const names = new Map<string, string>(industryNames(t).map((i) => [i.key, i.name]));
-  const extras = opened.length + couples.length > 0 ? (
-    <nav className="no-print flex flex-wrap items-center gap-2" aria-label={t.reports.extrasTitle} data-no-export>
-      <span className="eyebrow mr-1">{t.reports.extrasTitle}</span>
-      {opened.map((key) => <Link key={key} href={`/reports/${analysis.id}?industry=${key}#industry`} scroll className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", names.get(key) ?? key)} →</Link>)}
-      {couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className="pill pill-off !py-1.5 text-xs">{m.kind === "couple" ? "♥" : "🤝"} {swapWords(t.reports.extraCouple, t.content.match.kinds[m.kind]).replace("{name}", m.partnerName)} →</Link>)}
-    </nav>
-  ) : null;
+  // What is already in this report, listed with the add-ons at its foot: each chapter and each pair report one tap away.
+  const alreadyOpened = {
+    industries: opened.map((key) => ({ key, name: names.get(key) ?? key, href: `/reports/${analysis.id}?industry=${key}#industry` })),
+    couples: couples.map((m) => ({ id: m.id, href: `/match/${m.id}`, glyph: m.kind === "couple" ? "♥" : "🤝", label: swapWords(readyIds.has(m.id) ? t.reports.extraCouple : t.reports.extraCoupleWaiting, t.content.match.kinds[m.kind]).replace("{name}", m.partnerName) })),
+  };
 
-  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} lead={extras} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
+  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} opened={alreadyOpened} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
 }
