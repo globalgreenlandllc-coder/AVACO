@@ -160,6 +160,46 @@ export function CoupleReport({ report: r, t }: { report: MatchReport; t: Dict["m
       </ol>
     </section>
 
+    {/* Closer up: the two leading types in eight areas of a shared life, AVOCO's texts side by side and the pair read on each. */}
+    <section data-deep>
+      <h2 className="font-display text-4xl font-medium">{r.deep.title}</h2>
+      <p className="mt-3 max-w-3xl leading-relaxed text-ink-2">{r.deep.lead}</p>
+      {r.deep.avoco.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-line bg-surface p-5">
+          <p className="eyebrow">{r.deep.avocoTitle}</p>
+          <ul className="mt-2 space-y-1 text-sm leading-relaxed text-ink-2">{r.deep.avoco.map((x) => <li key={x}>{x}</li>)}</ul>
+        </div>
+      )}
+      <ol className="mt-8 space-y-6">
+        {r.deep.themes.map((d, i) => (
+          <li key={d.key} className="card break-inside-avoid overflow-hidden">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="tab-title">{String(i + 1).padStart(2, "0")} · {d.name}</p>
+              <span className={`mr-6 mt-4 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${d.kind === "contrast" ? "bg-accent text-accent-ink" : d.kind === "aligned" ? "border border-line text-ink-2" : "bg-accent-soft text-accent-text"}`}>{r.deep.kinds[d.kind]}</span>
+            </div>
+            <div className="px-6 pb-6 pt-3 sm:px-7">
+              <p className="text-xs text-muted">{d.blurb}</p>
+              <div className="mt-5 grid gap-6 md:grid-cols-2">
+                {[d.a, d.b].map((side) => (
+                  <div key={side.name}>
+                    <p className="font-semibold">{side.name} <span className="ml-1 text-xs font-bold uppercase tracking-widest text-accent-text">{side.type}</span></p>
+                    <div className="mt-2 space-y-2 text-sm leading-relaxed text-ink-2">{side.points.map((p) => <p key={p}>{p}</p>)}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 rounded-2xl bg-accent-soft p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{r.deep.rubTitle}</p>
+                <p className="mt-2 text-sm leading-relaxed">{d.rub}</p>
+                <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{r.deep.helpTitle}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-2">{d.help}</p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 max-w-3xl text-xs leading-relaxed text-muted">{r.deep.note}</p>
+    </section>
+
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="card p-7">
         <p className="eyebrow">{t.rolesTitle}</p>

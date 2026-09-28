@@ -23,6 +23,7 @@ import { matchIsFree } from "@/lib/billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { stripeReady } from "@/lib/stripe";
 import { buildMatch, matchesFor, partnerAnalyses } from "@/lib/matches";
+import { swapWords } from "@/lib/match-kind";
 import { emailConfig } from "@/lib/email";
 import { stageOf } from "@/lib/match-stage";
 
@@ -117,7 +118,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
     // "Your first name" in the order form starts as whoever this report is about: the named person, or the account holder.
     const ownerName = profile.person ?? (isOpenVisitor(userId) ? null : (await currentUser().catch(() => null))?.firstName) ?? undefined;
-    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses, defaultOwnerName: ownerName };
+    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses, defaultOwnerName: ownerName, kinds: t.content.match.kinds };
   }
 
   // A preview gets no result: not the type, not the per-recording types, only how many recordings and when.
@@ -139,7 +140,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     <nav className="no-print flex flex-wrap items-center gap-2" aria-label={t.reports.extrasTitle} data-no-export>
       <span className="eyebrow mr-1">{t.reports.extrasTitle}</span>
       {opened.map((key) => <Link key={key} href={`/reports/${analysis.id}?industry=${key}#industry`} scroll className="pill pill-off !py-1.5 text-xs">{t.reports.extraIndustry.replace("{name}", names.get(key) ?? key)} →</Link>)}
-      {couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className="pill pill-off !py-1.5 text-xs">♥ {t.reports.extraCouple.replace("{name}", m.partnerName)} →</Link>)}
+      {couples.map((m) => <Link key={m.id} href={`/match/${m.id}`} className="pill pill-off !py-1.5 text-xs">{m.kind === "couple" ? "♥" : "🤝"} {swapWords(t.reports.extraCouple, t.content.match.kinds[m.kind]).replace("{name}", m.partnerName)} →</Link>)}
     </nav>
   ) : null;
 

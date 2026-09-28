@@ -1,5 +1,6 @@
 /** Words for the relationship match (lib/match.ts). Keys must match the rules there; a test checks that. */
 import type { Category, Role, TypeKey } from "../match";
+import type { KindWords, MatchKind } from "../match-kind";
 
 export interface MatchText {
   categories: Record<Category, { name: string; blurb: string; brings: Record<TypeKey, string>; tip: string }>;
@@ -10,6 +11,8 @@ export interface MatchText {
   roles: Record<Role, { name: string; text: string; none: string }>;
   bands: Record<"natural" | "strong" | "complementary" | "challenging", { title: string; text: string }>;
   today: { tense: string; reserved: string; steady: string };
+  /** Who the two are to each other: the words of the pages and the areas read, per kind (lib/match-kind.ts). */
+  kinds: Record<MatchKind, KindWords>;
 }
 
 export const matchEn: MatchText = {
@@ -26,7 +29,7 @@ export const matchEn: MatchText = {
       brings: { organizer: "planning and control of the budget", driver: "earning power and appetite for more", catalyst: "opportunities, and spending on them", performer: "generosity and a taste for the good life", harmonizer: "modest needs and care for the family's comfort", analyst: "frugality by indifference", skeptic: "caution, savings and no surprises", mediator: "little interest in money as a goal" } },
     ambition: { name: "Ambition and shared goals", blurb: "Where the two of you are going, and whether you pull the same way.", tip: "Write one shared five-year picture together, in ten sentences, and revisit it each birthday.",
       brings: { organizer: "a plan and the discipline to follow it", driver: "a big goal and the drive to reach it", catalyst: "new ventures, one after another", performer: "visibility, recognition and a name", harmonizer: "support for the other's goals", analyst: "mastery of something difficult", skeptic: "quality and steady improvement", mediator: "meaning over achievement" } },
-    fun: { name: "Fun, freedom and adventure", blurb: "Laughter, travel, spontaneity, and how much room each needs.", tip: "Protect each partner's own time and own friends; the couple gets stronger when both come back with stories.",
+    fun: { name: "Fun, freedom and adventure", blurb: "Laughter, travel, spontaneity, and how much room each needs.", tip: "Protect each partner's own time and own friends; the two of you get stronger when both come back with stories.",
       brings: { organizer: "well-organised trips and traditions", driver: "bold plans and pace", catalyst: "spontaneity, parties and new people", performer: "shows, scenes and a talent for enjoying life", harmonizer: "warm evenings with close friends", analyst: "curiosity and unusual interests", skeptic: "quiet pleasures, carefully chosen", mediator: "nature, art and slow time" } },
     loyalty: { name: "Loyalty and trust", blurb: "Constancy, jealousy, promises kept.", tip: "Say out loud what counts as a betrayal for each of you; it is rarely the same list.",
       brings: { organizer: "principles and a code", driver: "possessiveness and protection", catalyst: "sincerity in the moment, and a wide social life", performer: "devotion with an audience, and a need to be admired", harmonizer: "faithfulness and moral scruple", analyst: "steadiness, once committed", skeptic: "reliability and a word that is kept", mediator: "loyalty to the person and to the ideal" } },
@@ -55,17 +58,72 @@ export const matchEn: MatchText = {
     "family:catalyst|performer": "Wonderful, exciting parents who will need a routine imposed from somewhere.", "family:harmonizer|organizer": "Warmth inside a structure: what children need most.", "family:driver|harmonizer": "Standards and protection with tenderness.",
   },
   roles: {
-    engine: { name: "The engine", text: "{name} sets the pace, starts things and pushes when the couple stalls.", none: "Neither of you naturally pushes; decide who starts things, or they wait." },
-    anchor: { name: "The anchor", text: "{name} keeps the couple steady: order, routine, the ground under the plans.", none: "Nobody here is the anchor; routines and order will need an outside structure." },
+    engine: { name: "The engine", text: "{name} sets the pace, starts things and pushes when the two of you stall.", none: "Neither of you naturally pushes; decide who starts things, or they wait." },
+    anchor: { name: "The anchor", text: "{name} keeps the pair steady: order, routine, the ground under the plans.", none: "Nobody here is the anchor; routines and order will need an outside structure." },
     peacemaker: { name: "The peacemaker", text: "{name} feels the room, softens edges and ends the fights.", none: "Neither of you smooths things over naturally, so fights last longer than they need to." },
     planner: { name: "The planner", text: "{name} thinks ahead, arranges and remembers what is due.", none: "Planning is nobody's instinct here; a shared calendar is not optional." },
     treasurer: { name: "The treasurer", text: "{name} minds the money and asks the uncomfortable question.", none: "Neither of you watches the money by nature; automate savings before you need them." },
   },
   bands: {
     natural: { title: "A natural match", text: "{a} and {b} pull the same way and give each other what each needs most. The frictions are few and named below; they are habits, not walls." },
-    strong: { title: "A strong match, with work in a few areas", text: "{a} and {b} fit well where it matters most. Two or three areas below will ask for effort; couples like this do best when they name those areas early instead of discovering them." },
+    strong: { title: "A strong match, with work in a few areas", text: "{a} and {b} fit well where it matters most. Two or three areas below will ask for effort; pairs like this do best when they name those areas early instead of discovering them." },
     complementary: { title: "Complementary, and demanding", text: "{a} and {b} are each other's missing half, which is exactly where the arguments live. This can be one of the strongest pairings there is, if both accept that the other is not going to become like them." },
-    challenging: { title: "A challenging pairing", text: "{a} and {b} want different things from life and from each other, and say them in different languages. It can work, and some such couples are the most interesting ones, but it needs deliberate rules: how you argue, who decides what, and what each of you gives up." },
+    challenging: { title: "A challenging pairing", text: "{a} and {b} want different things from life and from each other, and say them in different languages. It can work, and some such pairs are the most interesting ones, but it needs deliberate rules: how you argue, who decides what, and what each of you gives up." },
   },
   today: { tense: "{name} sounds tense in this recording (composure {calm}): not the week for big decisions about each other.", reserved: "{name} sounds reserved in this recording (warmth {warmth}); read the softer categories above with that in mind.", steady: "{name} sounds steady and warm in this recording." },
+  kinds: {
+    couple: {
+      label: "A couple", hint: "Partners, spouses, dating: any two people in love.", who: "your partner",
+      title: "How do the two of you fit?", lead: "Invite your partner to record a minute of their voice on a private link. You both get their report, and a couple's report on top: how your two types fit in nine areas, who holds which role, and where the work is.",
+      eyebrow: "Add-on · Relationship match", areasTitle: "Nine areas of a relationship", partnerName: "Your partner's first name", swap: [], categories: {},
+    },
+    business: {
+      label: "Business partners", hint: "Co-founders, co-owners, two people building something together.", who: "your business partner",
+      title: "How do you work together?", lead: "Invite your business partner to record a minute of their voice on a private link. You both get their report, and a partnership report on top: how your two types work together in six areas, who holds which role, and where the friction is.",
+      eyebrow: "Add-on · Partnership match", areasTitle: "Six areas of a partnership", partnerName: "Your business partner's first name",
+      swap: [["Invite my partner", "Invite my business partner"], ["Your matches", "Your pair reports"], ["The couple's report", "The partnership report"], ["Couple's report", "Partnership report"], ["couple's report", "partnership report"], ["Your partner's", "Your business partner's"], ["your partner's", "your business partner's"], ["your partner", "your business partner"], ["my partner", "my business partner"], ["Relationship matches", "Pair reports"], ["Relationship match", "Partnership match"], ["Nine areas of a relationship", "Six areas of a partnership"]],
+      categories: {
+        warmth: { name: "Support under pressure", blurb: "Who notices when the other is overloaded, and what happens next.", tip: "Agree a signal for \"I'm at the limit\", and treat it as a fact, not a complaint." },
+        providing: { name: "Money and resources", blurb: "Earning, spending, investing, and who worries about the numbers.", tip: "Ownership shares written down, one account for the business, and a monthly numbers meeting nobody skips." },
+        ambition: { name: "Goals and growth", blurb: "Where the two of you are taking this, and whether you pull the same way.", tip: "Write one shared three-year picture, then name which goals are the company's and which are each of yours." },
+        fun: { name: "Energy and time off", blurb: "Pace, breaks, and how much room each of you needs.", tip: "Protect each partner's time off; the business gets stronger when both come back with ideas." },
+        loyalty: { name: "Trust and reliability", blurb: "Promises kept, credit shared, and what counts as a betrayal.", tip: "Say out loud what counts as a betrayal in this partnership; it is rarely the same list." },
+        communication: { name: "Communication and conflict", blurb: "How disagreements start, how they end, and who gives way.", tip: "Take disagreements out of the moment: a fixed half hour later, one topic, and the decision written down." },
+      },
+    },
+    colleagues: {
+      label: "Colleagues", hint: "Two people who work side by side: a manager and a report, teammates, a duo.", who: "your colleague",
+      title: "How do the two of you work together?", lead: "Invite your colleague to record a minute of their voice on a private link. You both get their report, and a team report on top: how your two types work together in five areas, who holds which role, and where the friction is.",
+      eyebrow: "Add-on · Team match", areasTitle: "Five areas of working together", partnerName: "Your colleague's first name",
+      swap: [["Invite my partner", "Invite my colleague"], ["Your matches", "Your pair reports"], ["The couple's report", "The team report"], ["Couple's report", "Team report"], ["couple's report", "team report"], ["Your partner's", "Your colleague's"], ["your partner's", "your colleague's"], ["your partner", "your colleague"], ["my partner", "my colleague"], ["Relationship matches", "Pair reports"], ["Relationship match", "Team match"], ["Nine areas of a relationship", "Five areas of working together"]],
+      categories: {
+        warmth: { name: "Support at work", blurb: "Who notices when the other is overloaded, and what happens next.", tip: "Agree a signal for \"I'm at the limit\", and treat it as a fact, not a complaint." },
+        ambition: { name: "Goals and growth", blurb: "What each of you wants from the work, and whether you pull the same way.", tip: "Say what each of you wants to be doing in three years; it explains most of the small frictions." },
+        fun: { name: "Energy and pace", blurb: "Tempo, breaks, and how much room each of you needs.", tip: "Match the pace on shared work, and leave each other's own work alone." },
+        loyalty: { name: "Trust and reliability", blurb: "Promises kept, credit shared, and what counts as a betrayal.", tip: "Say out loud what counts as a betrayal at work; it is rarely the same list." },
+        communication: { name: "Communication and conflict", blurb: "How disagreements start, how they end, and who gives way.", tip: "Take disagreements out of the moment: a fixed half hour later, one topic, and the decision written down." },
+      },
+    },
+    family: {
+      label: "Family", hint: "A parent and a child, siblings, relatives: two people who share a family.", who: "your family member",
+      title: "How do the two of you get along?", lead: "Invite your family member to record a minute of their voice on a private link. You both get their report, and a family report on top: how your two types get along in six areas of family life, who holds which role, and where the friction is.",
+      eyebrow: "Add-on · Family match", areasTitle: "Six areas of family life", partnerName: "Their first name",
+      swap: [["Invite my partner", "Invite my family member"], ["Your matches", "Your pair reports"], ["The couple's report", "The family report"], ["Couple's report", "Family report"], ["couple's report", "family report"], ["Your partner's", "Their"], ["your partner's", "their"], ["your partner", "your family member"], ["my partner", "my family member"], ["Relationship matches", "Pair reports"], ["Relationship match", "Family match"], ["Nine areas of a relationship", "Six areas of family life"]],
+      categories: {
+        providing: { name: "Money and support", blurb: "Who provides, who worries, and how money is talked about.", tip: "Keep money talk out of arguments about everything else; give it its own time." },
+        loyalty: { name: "Loyalty and trust", blurb: "Constancy, promises kept, and taking each other's side.", tip: "Say out loud what counts as a betrayal for each of you; it is rarely the same list." },
+        fun: { name: "Fun and time together", blurb: "Laughter, traditions, and how much room each of you needs.", tip: "Protect one tradition that is only the two of yours, and each other's own time." },
+      },
+    },
+    friends: {
+      label: "Friends", hint: "Close friends, flatmates, travel companions.", who: "your friend",
+      title: "How do the two of you get along?", lead: "Invite your friend to record a minute of their voice on a private link. You both get their report, and a friendship report on top: how your two types get along in five areas, who holds which role, and where the friction is.",
+      eyebrow: "Add-on · Friendship match", areasTitle: "Five areas of a friendship", partnerName: "Your friend's first name",
+      swap: [["Invite my partner", "Invite my friend"], ["Your matches", "Your pair reports"], ["The couple's report", "The friendship report"], ["Couple's report", "Friendship report"], ["couple's report", "friendship report"], ["Your partner's", "Your friend's"], ["your partner's", "your friend's"], ["your partner", "your friend"], ["my partner", "my friend"], ["Relationship matches", "Pair reports"], ["Relationship match", "Friendship match"], ["Nine areas of a relationship", "Five areas of a friendship"]],
+      categories: {
+        ambition: { name: "Goals and support", blurb: "What each of you is after, and how you back each other.", tip: "Ask about the other's next goal once a season, and remember the answer." },
+        loyalty: { name: "Loyalty and trust", blurb: "Constancy, keeping confidences, and showing up.", tip: "Say out loud what counts as a betrayal for each of you; it is rarely the same list." },
+      },
+    },
+  },
 };

@@ -6,6 +6,8 @@
  * Profiles are AVOCO's eight scores (in practice a leader, a runner-up at 45 and six low ones), so a partner's
  * "presence" in a category is a soft OR over their types: any strong type covers it, two cover it more.
  */
+import { CATEGORY_SETS, type MatchKind } from "./match-kind";
+
 export type TypeKey = "organizer" | "driver" | "catalyst" | "performer" | "harmonizer" | "analyst" | "skeptic" | "mediator";
 export const TYPE_KEYS: TypeKey[] = ["organizer", "driver", "catalyst", "performer", "harmonizer", "analyst", "skeptic", "mediator"];
 type Scores = Array<{ key: string; value: number }>;
@@ -107,14 +109,19 @@ function today(scales: Scores | null | undefined): Today | null {
 
 export const bandOf = (score: number): MatchFit["band"] => (score >= 78 ? "natural" : score >= 63 ? "strong" : score >= 48 ? "complementary" : "challenging");
 
-/** Reads two profiles against each other. Null unless both have all eight types. `withFamily` includes the parenting category. */
-export function matchFit(a: Scores, b: Scores, opts: { scalesA?: Scores | null; scalesB?: Scores | null; withFamily?: boolean } = {}): MatchFit | null {
+/**
+ * Reads two profiles against each other. Null unless both have all eight types. `kind` picks the areas read (a couple's
+ * romance and home, a partnership's money and goals, …); `withFamily` adds the parenting area to a couple's.
+ */
+export function matchFit(a: Scores, b: Scores, opts: { scalesA?: Scores | null; scalesB?: Scores | null; withFamily?: boolean; kind?: MatchKind } = {}): MatchFit | null {
   const sa = new Map(a.map((s) => [s.key, s.value])), sb = new Map(b.map((s) => [s.key, s.value]));
   if (TYPE_KEYS.some((t) => !sa.has(t) || !sb.has(t))) return null;
   const leaders: [TypeKey, TypeKey] = [topTwo(sa)[0][0], topTwo(sb)[0][0]];
   const heartsBlend = topTwo(sa).reduce((s, [ta, wa]) => s + topTwo(sb).reduce((s2, [tb, wb]) => s2 + wa * wb * hearts(ta, tb), 0), 0);
 
-  const categories: CategoryFit[] = CATEGORIES.filter((c) => c !== "family" || opts.withFamily).map((key) => {
+  const kind = opts.kind ?? "couple";
+  const wanted: Category[] = [...CATEGORY_SETS[kind], ...(kind === "couple" && opts.withFamily ? ["family" as const] : [])];
+  const categories: CategoryFit[] = CATEGORIES.filter((c) => wanted.includes(c)).map((key) => {
     const rule = RULES[key];
     const pa = presence(rule.types, sa), pb = presence(rule.types, sb);
     const either = 100 * (1 - (1 - pa / 100) * (1 - pb / 100));

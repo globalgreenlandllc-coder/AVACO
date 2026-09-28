@@ -13,6 +13,7 @@ import { db, matches, type OwnerKind } from "./db";
 import { gateway, type Analysis } from "./gateway";
 import type { Dict } from "./i18n";
 import { matchFit } from "./match";
+import { isMatchKind } from "./match-kind";
 import { matchReport, type MatchReport } from "./match-report";
 import { profileFor } from "./profile";
 import { Invalid, NotFound } from "./workspaces";
@@ -27,11 +28,12 @@ const clean = (v: unknown, max: number, what: string) => { const s = typeof v ==
  * unpaid and a purchase is returned for the Stripe Checkout (lib/match-billing.ts), and the partner's link stays
  * closed until the payment lands.
  */
-export async function createMatch(userId: string, input: { analysisId: unknown; ownerName: unknown; partnerName: unknown; withFamily?: unknown }): Promise<{ match: Match; purchase: Awaited<ReturnType<typeof startMatchPurchase>> | null; reused?: boolean }> {
+export async function createMatch(userId: string, input: { analysisId: unknown; ownerName: unknown; partnerName: unknown; withFamily?: unknown; kind?: unknown }): Promise<{ match: Match; purchase: Awaited<ReturnType<typeof startMatchPurchase>> | null; reused?: boolean }> {
   const analysisId = typeof input.analysisId === "string" ? input.analysisId : "";
   const analysis = analysisId ? await gateway.getAnalysisFor(userId, analysisId) : null;
   if (!analysis || analysis.status !== "completed" || !analysis.psytype?.length) throw new NotFound("Report not found");
   const ownerName = clean(input.ownerName, 60, "Your name"), partnerName = clean(input.partnerName, 60, "Partner's name");
+  const kind = isMatchKind(input.kind) ? input.kind : "couple";
 
   // The same couple ordered again from the same report, while the first one isn't finished: reopen it, never charge twice.
   // (Unpaid: a fresh checkout for that same match. Finished ones may be ordered again: a new recording, a new reading.)
@@ -48,7 +50,7 @@ export async function createMatch(userId: string, input: { analysisId: unknown; 
   const paid = Boolean(free) || byCredits;
   const [match] = await db().insert(matches).values({
     id, ownerKind: "user" as OwnerKind, ownerId: userId, analysisId, ownerName, partnerName,
-    partnerToken: randomBytes(24).toString("base64url"), withFamily: input.withFamily === true, source: free ?? "credit", paidAt: paid ? new Date() : null,
+    partnerToken: randomBytes(24).toString("base64url"), withFamily: input.withFamily === true, kind, source: free ?? "credit", paidAt: paid ? new Date() : null,
   }).returning();
   return { match, purchase: paid ? null : await startMatchPurchase(asUser(userId), analysisId, id) };
 }
@@ -128,7 +130,7 @@ export async function buildMatch(match: Match, t: Dict, locale: string): Promise
   if (!own?.psytype?.length || done.length === 0) return null;
   const a = (await profileFor(match.ownerId, own)).psytype ?? own.psytype;
   const b = consensus(done.map((x) => ({ id: x.id, created_at: x.created_at, psytype: x.psytype! })))?.scores ?? done[0].psytype!;
-  const fit = matchFit(a, b, { scalesA: own.emostate, scalesB: done[0].emostate, withFamily: match.withFamily });
+  const fit = matchFit(a, b, { scalesA: own.emostate, scalesB: done[0].emostate, withFamily: match.withFamily, kind: match.kind });
   if (fit) await markReady(match);
-  return fit ? matchReport(fit, { a: match.ownerName, b: match.partnerName }, t, locale) : null;
+  return fit ? matchReport(fit, { a: match.ownerName, b: match.partnerName }, t, locale, match.kind) : null;
 }

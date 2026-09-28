@@ -205,6 +205,8 @@ export const matches = pgTable(
     partnerName: text("partner_name").notNull(),
     partnerToken: text("partner_token").notNull().unique(),
     withFamily: boolean("with_family").notNull().default(false),
+    /** Who the two are to each other (lib/match-kind.ts): a couple, business partners, colleagues, family, friends. */
+    kind: text("kind").$type<"couple" | "business" | "colleagues" | "family" | "friends">().notNull().default("couple"),
     source: text("source").$type<"credit" | "free" | "admin">().notNull(),
     partnerConsentAt: ts("partner_consent_at"),
     /** Null while a card payment is still pending; the partner's link stays closed until then. */

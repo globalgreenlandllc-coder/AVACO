@@ -9,6 +9,7 @@ import { Recorder } from "@/components/Recorder";
 import { ReportView } from "@/components/ReportView";
 import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
+import { matchWords } from "@/lib/match-kind";
 import { isPaid, markSeen, matchFor } from "@/lib/matches";
 import { matchPriceCents } from "@/lib/match-billing";
 import { money } from "@/lib/money";
@@ -26,6 +27,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   if (!userId) notFound();
   let match = await matchFor(userId, id);
   if (!match) notFound();
+  const words = matchWords(t.match, match.kind, t.content.match.kinds); // the page's every word, said for who the two are
   // Back from Stripe: confirm the payment on this very load, so the link opens now, not whenever the webhook gets round to it.
   let justPaid = false;
   if (!isPaid(match) && typeof session === "string") {
@@ -41,7 +43,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
       <div className="theme-match mx-auto max-w-lg space-y-6 pt-10 text-center">
         {confirming && <RefreshWhile />}
         <div className="relative mx-auto grid h-20 w-20 place-items-center"><span className={`${confirming ? "breathe " : ""}absolute inset-0 rounded-full bg-accent`} aria-hidden /><span className="relative h-8 w-8 rounded-full bg-accent" aria-hidden /></div>
-        <p className="leading-relaxed text-ink-2">{confirming ? t.match.awaitingPayment : t.match.notPaid.replace("{name}", match.partnerName)}</p>
+        <p className="leading-relaxed text-ink-2">{confirming ? words.awaitingPayment : words.notPaid.replace("{name}", match.partnerName)}</p>
         {!confirming && cfg && (
           <PayMatch analysisId={match.analysisId} ownerName={match.ownerName} partnerName={match.partnerName} withFamily={match.withFamily} label={t.match.payNow.replace("{price}", money(cents, cfg.currency, locale))} />
         )}
@@ -51,7 +53,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   }
   const state = await matchStatus(match, t, locale);
   if (state.status === "ready" && !match.ownerSeenAt) await markSeen(match); // the notice on every page has done its job
-  const m = t.match;
+  const m = words;
   const link = `${origin}/m/${match.partnerToken}`;
   const fill = (s: string) => s.replace("{name}", match.partnerName);
 
@@ -106,7 +108,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   return (
     <div className="space-y-10">
       <Link href={`/reports/${match.analysisId}`} className="no-print inline-block text-sm font-semibold text-accent-text hover:underline">← {m.backToReport}</Link>
-      {justPaid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{t.match.paymentConfirmed}</p>}
+      {justPaid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{m.paymentConfirmed}</p>}
       <MatchView key={locale} initial={view} pollUrl={`/api/match/${match.id}`} waiting={<div className="space-y-6">{tabs}{uploadFirst ? upload : invite}</div>} side="owner" t={m} />
       {partnerReport?.status === "completed" && (
         <section>

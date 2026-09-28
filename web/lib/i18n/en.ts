@@ -1,5 +1,6 @@
 import { industriesEn } from "./industries-en";
 import { matchEn } from "./match-en";
+import { matchDeepEn } from "./match-deep-en";
 import { billingEn } from "./billing-en";
 import { orgEn } from "./org-en";
 import { typesEn } from "./types-en";
@@ -505,7 +506,7 @@ export const en = {
     downloadNote: "One file with just this chapter. The full report download at the bottom includes every chapter you have opened.",
   },
   /** The industry chapter's and the couple's report's texts (lib/industries.ts, lib/match.ts): translated with the rest. */
-  content: { industries: industriesEn, match: matchEn },
+  content: { industries: industriesEn, match: matchEn, matchDeep: matchDeepEn },
   contact: {
     eyebrow: "Contact us",
     title: "A person answers, not a bot",

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { MATCH_KINDS, matchWords, type KindWords, type MatchKind } from "@/lib/match-kind";
 import { CoverCapsules } from "./CoverCapsules";
 
 export interface MatchAddonProps {
@@ -19,12 +20,16 @@ export interface MatchAddonProps {
   existing: Array<{ id: string; partnerName: string; stage: "invited" | "opened" | "recording" | "analysing" | "ready" }>;
   /** "Your first name" to start with: whoever the report is about. */
   defaultOwnerName?: string;
+  /** The words per kind of pair (lib/match-kind.ts): the form re-says itself for the kind chosen. */
+  kinds: Record<MatchKind, KindWords>;
   t: Dict["match"];
 }
 
 /** The relationship add-on at the top of a report, in a cover of its own (rose gold): order a couple's report, and the matches already ordered. */
-export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, defaultOwnerName, t }: MatchAddonProps) {
+export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, defaultOwnerName, kinds, t: base }: MatchAddonProps) {
   const router = useRouter();
+  const [kind, setKind] = useState<MatchKind>("couple");
+  const t = matchWords(base, kind, kinds);
   const [ownerName, setOwnerName] = useState(defaultOwnerName ?? "");
   const [partnerName, setPartnerName] = useState("");
   const [withFamily, setWithFamily] = useState(false);
@@ -39,7 +44,7 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
   async function order(mode: "upload" | "invite") {
     if (!ownerName.trim() || !partnerName.trim()) { setError(t.namesFirst); (ownerName.trim() ? partnerRef : ownerRef).current?.focus(); return; }
     setBusy(mode); setError(null);
-    const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily, mode }) }).catch(() => null);
+    const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily: kind === "couple" && withFamily, kind, mode }) }).catch(() => null);
     if (res?.status === 201) {
       const { id, url } = await res.json();
       if (url) { window.location.href = url; return; } // paying by card: Stripe, then back to the match page
@@ -58,10 +63,18 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
   const form = (
     <form onSubmit={(e) => e.preventDefault()}>
       <p className="cover-eyebrow">1 · {t.stepWho}</p>
+      {/* Who the two are to each other: the areas read and every word below follow this. */}
+      <div className="mt-4 flex flex-wrap gap-2" role="radiogroup" aria-label={t.stepWho}>
+        {MATCH_KINDS.map((k) => (
+          <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} title={kinds[k].hint}
+            className={`pill !py-2 text-xs ${kind === k ? "pill-on" : "pill-off"}`}>{kinds[k].label}</button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-ink-2">{kinds[kind].hint}</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm"><span className="text-ink-2">{t.yourName}</span><input ref={ownerRef} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
         <label className="block text-sm"><span className="text-ink-2">{t.partnerName}</span><input ref={partnerRef} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} required maxLength={60} className="offer-field mt-1.5 w-full px-3 py-2.5" /></label>
-        <label className="flex items-center gap-2 text-sm text-ink-2 sm:col-span-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--cover-gold)]" />{t.withFamily}</label>
+        {kind === "couple" && <label className="flex items-center gap-2 text-sm text-ink-2 sm:col-span-2"><input type="checkbox" checked={withFamily} onChange={(e) => setWithFamily(e.target.checked)} className="h-4 w-4 accent-[var(--cover-gold)]" />{t.withFamily}</label>}
       </div>
       <p className="cover-eyebrow mt-8">2 · {t.stepHow.replace("{name}", who)}</p>
       {canOrder ? (

@@ -2,6 +2,8 @@
 import type { Dict } from "./i18n";
 import type { MatchText } from "./i18n/match-en";
 import { pairKey, type MatchFit } from "./match";
+import { deepReading, type Deep } from "./match-deep";
+import { matchWords, type MatchKind } from "./match-kind";
 
 export interface MatchReport {
   names: { a: string; b: string };
@@ -13,19 +15,22 @@ export interface MatchReport {
   roles: Array<{ key: string; name: string; text: string; held: boolean }>;
   today: string[];
   strengthsTitle: string; watchTitle: string; strengths: string[]; watch: string[];
+  /** The two leading types closer up: eight areas of a shared life (lib/match-deep.ts). */
+  deep: Deep;
   method: string;
 }
 
 const textsFor = (t: Dict): MatchText => t.content.match;
 
-export function matchReport(fit: MatchFit, names: { a: string; b: string }, t: Dict, locale: string): MatchReport {
+export function matchReport(fit: MatchFit, names: { a: string; b: string }, t: Dict, locale: string, kind: MatchKind = "couple"): MatchReport {
   const m = textsFor(t);
-  const ui = t.match;
+  const ui = matchWords(t.match, kind, m.kinds);
+  const words = m.kinds[kind];
   const typeName = (key: string) => (Object.hasOwn(t.psytypes, key) ? t.psytypes[key as keyof typeof t.psytypes].name : key);
   const [la, lb] = fit.leaders;
 
   const categories = fit.categories.map((c) => {
-    const text = m.categories[c.key];
+    const text = { ...m.categories[c.key], ...(kind === "couple" ? {} : words.categories[c.key]) };
     return {
       key: c.key, name: text.name, blurb: text.blurb, score: c.score,
       a: ui.brings.replace("{name}", names.a).replace("{what}", text.brings[c.a.type]),
@@ -55,6 +60,7 @@ export function matchReport(fit: MatchFit, names: { a: string; b: string }, t: D
     hearts: { count: fit.hearts, note: m.pairNotes[pairKey(la, lb)] ?? "", a: { name: typeName(la), value: fit.leaderScores[0] }, b: { name: typeName(lb), value: fit.leaderScores[1] } },
     reasons, categories, roles, today,
     strengthsTitle: ui.strengths, watchTitle: ui.watch, strengths: strengths.map((c) => c.name), watch: watch.map((c) => c.name),
+    deep: deepReading(la, lb, names, t, kind),
     method: ui.method,
   };
 }

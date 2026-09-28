@@ -10,21 +10,23 @@ import { ReportView } from "@/components/ReportView";
 import { formatDate, getDict } from "@/lib/i18n";
 import { matchStatus } from "@/lib/match-status";
 import { matchByToken, notePartnerOpened } from "@/lib/matches";
+import { matchWords } from "@/lib/match-kind";
 import { ogLine } from "@/lib/og";
 
 /** What the link shows before it is opened: who is inviting, and to what, with the picture from opengraph-image.tsx. */
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const [{ token }, { t }] = await Promise.all([params, getDict()]);
   const match = await matchByToken(token).catch(() => null);
-  const title = match ? `♥ ${t.match.partnerTitle.replace("{a}", match.ownerName)}` : `${t.brand} · ${t.match.title}`;
-  const description = ogLine(match ? t.match.partnerIntro.replace("{a}", match.ownerName) : t.match.lead, 160);
+  const m = match ? matchWords(t.match, match.kind, t.content.match.kinds) : t.match;
+  const title = match ? `${match.kind === "couple" ? "♥" : "🤝"} ${m.partnerTitle.replace("{a}", match.ownerName)}` : `${t.brand} · ${t.match.title}`;
+  const description = ogLine(match ? m.partnerIntro.replace("{a}", match.ownerName) : t.match.lead, 160);
   return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: t.brand, type: "website" }, twitter: { card: "summary_large_image", title, description } };
 }
 
 export default async function PartnerLinkPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ again?: string; deleted?: string }> }) {
   const [{ token }, { again, deleted }, { t, locale }] = await Promise.all([params, searchParams, getDict()]);
   const match = await matchByToken(token);
-  const m = t.match;
+  const m = match ? matchWords(t.match, match.kind, t.content.match.kinds) : t.match;
   if (!match) return <p className="card mx-auto mt-10 max-w-lg p-10 text-center text-ink-2">{deleted ? m.partnerDeleted : t.org.record.invalid}</p>;
   await notePartnerOpened(match).catch(() => {}); // the orderer's tracker: "opened the link"
   match.partnerOpenedAt ??= new Date(); // this very render must not still say "not opened"

@@ -38,7 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <body className="flex flex-col">
           <VisitBeacon />
           <Header locale={locale} t={t} alerts={ready.length} />
-          <MatchReadyNotice matches={ready} t={t.match} />
+          <MatchReadyNotice matches={ready} t={t.match} kinds={t.content.match.kinds} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>
           <footer className="no-print border-t border-line px-5 py-10 text-xs text-muted sm:px-8">
             <div className="mx-auto grid w-full max-w-5xl gap-8 sm:grid-cols-[1fr_auto_auto] sm:items-start">

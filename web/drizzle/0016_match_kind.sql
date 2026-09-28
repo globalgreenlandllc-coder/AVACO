@@ -1,0 +1,1 @@
+ALTER TABLE "matches" ADD COLUMN "kind" text DEFAULT 'couple' NOT NULL;

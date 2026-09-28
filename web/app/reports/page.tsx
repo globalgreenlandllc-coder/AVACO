@@ -6,6 +6,7 @@ import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { stageOf } from "@/lib/match-stage";
 import { matchesFor, partnerAnalyses } from "@/lib/matches";
+import { matchWords } from "@/lib/match-kind";
 import { namesFor, peopleIn, personKey, reportsOf, type Person } from "@/lib/people";
 import { leadingTypes, psytypeRows } from "@/lib/report";
 import { visitorId } from "@/lib/visitor";
@@ -34,11 +35,12 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     const partner = await partnerAnalyses(m).catch(() => []);
     const stage = stageOf({ openedAt: m.partnerOpenedAt, startedAt: m.partnerStartedAt, analyses: partner });
     const ready = stage === "ready";
+    const w = matchWords(t.match, m.kind, t.content.match.kinds); // said for who the two are to each other
     return {
-      id: m.id, analysisId: m.analysisId, partnerName: m.partnerName, unseen: ready && !m.ownerSeenAt, unfinished: !ready,
-      title: t.match.list.pair.replace("{a}", m.ownerName).replace("{b}", m.partnerName),
-      text: ready ? t.match.list.ready : t.match.stages[stage].replace("{when}", when(partner[0]?.created_at ?? m.partnerOpenedAt)).replace(" · {type} {value}", ""),
-      status: ready ? t.match.ready : t.match.waiting.replace("{name}", m.partnerName),
+      id: m.id, analysisId: m.analysisId, partnerName: m.partnerName, unseen: ready && !m.ownerSeenAt, unfinished: !ready, glyph: m.kind === "couple" ? "♥" : "🤝",
+      title: w.list.pair.replace("{a}", m.ownerName).replace("{b}", m.partnerName),
+      text: ready ? w.list.ready : w.stages[stage].replace("{when}", when(partner[0]?.created_at ?? m.partnerOpenedAt)).replace(" · {type} {value}", ""),
+      status: ready ? w.ready : w.waiting.replace("{name}", m.partnerName),
     };
   }));
 
@@ -59,7 +61,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <ul className="mt-3 divide-y divide-line">
             {waitingCouples.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <span className="text-sm"><span className="font-semibold">♥ {r.title}</span> <span className="text-ink-2">· {t.match.unfinishedText.replace("{stage}", r.text)}</span></span>
+                <span className="text-sm"><span className="font-semibold">{r.glyph} {r.title}</span> <span className="text-ink-2">· {t.match.unfinishedText.replace("{stage}", r.text)}</span></span>
                 <Link href={`/match/${r.id}`} className="btn !px-5 !py-2">{t.match.continue} →</Link>
               </li>
             ))}
