@@ -1,6 +1,7 @@
 /** Words for the relationship match (lib/match.ts). Keys must match the rules there; a test checks that. */
 import type { Category, Role, TypeKey } from "../match";
 import type { KindWords, MatchKind } from "../match-kind";
+import { matchKindWordsEn } from "./match-kind-words";
 
 export interface MatchText {
   categories: Record<Category, { name: string; blurb: string; brings: Record<TypeKey, string>; tip: string }>;
@@ -75,14 +76,14 @@ export const matchEn: MatchText = {
     couple: {
       label: "A couple", hint: "Partners, spouses, dating: any two people in love.", who: "your partner",
       title: "How do the two of you fit?", lead: "Invite your partner to record a minute of their voice on a private link. You both get their report, and a couple's report on top: how your two types fit in nine areas, who holds which role, and where the work is.",
-      eyebrow: "Add-on · Relationship match", areasTitle: "Nine areas of a relationship", partnerName: "Your partner's first name", swap: [], categories: {},
+      eyebrow: "Add-on · Relationship match", areasTitle: "Nine areas of a relationship", partnerName: "Your partner's first name", swap: [], words: matchKindWordsEn.couple, categories: {},
     },
     business: {
       label: "Business partners", hint: "Co-founders, co-owners, two people building something together.", who: "your business partner",
       title: "How do you work together?", lead: "Invite your business partner to record a minute of their voice on a private link. You both get their report, and a partnership report on top: how your two types work together in six areas, who holds which role, and where the friction is.",
       eyebrow: "Add-on · Partnership match", areasTitle: "Six areas of a partnership", partnerName: "Your business partner's first name",
       swap: [["Invite my partner", "Invite my business partner"], ["Your matches", "Your pair reports"], ["The couple's report", "The partnership report"], ["Couple's report", "Partnership report"], ["couple's report", "partnership report"], ["Your partner's", "Your business partner's"], ["your partner's", "your business partner's"], ["your partner", "your business partner"], ["my partner", "my business partner"], ["Relationship matches", "Pair reports"], ["Relationship match", "Partnership match"], ["Nine areas of a relationship", "Six areas of a partnership"]],
-      categories: {
+      words: matchKindWordsEn.business, categories: {
         warmth: { name: "Support under pressure", blurb: "Who notices when the other is overloaded, and what happens next.", tip: "Agree a signal for \"I'm at the limit\", and treat it as a fact, not a complaint." },
         providing: { name: "Money and resources", blurb: "Earning, spending, investing, and who worries about the numbers.", tip: "Ownership shares written down, one account for the business, and a monthly numbers meeting nobody skips." },
         ambition: { name: "Goals and growth", blurb: "Where the two of you are taking this, and whether you pull the same way.", tip: "Write one shared three-year picture, then name which goals are the company's and which are each of yours." },
@@ -96,7 +97,7 @@ export const matchEn: MatchText = {
       title: "How do the two of you work together?", lead: "Invite your colleague to record a minute of their voice on a private link. You both get their report, and a team report on top: how your two types work together in five areas, who holds which role, and where the friction is.",
       eyebrow: "Add-on · Team match", areasTitle: "Five areas of working together", partnerName: "Your colleague's first name",
       swap: [["Invite my partner", "Invite my colleague"], ["Your matches", "Your pair reports"], ["The couple's report", "The team report"], ["Couple's report", "Team report"], ["couple's report", "team report"], ["Your partner's", "Your colleague's"], ["your partner's", "your colleague's"], ["your partner", "your colleague"], ["my partner", "my colleague"], ["Relationship matches", "Pair reports"], ["Relationship match", "Team match"], ["Nine areas of a relationship", "Five areas of working together"]],
-      categories: {
+      words: matchKindWordsEn.colleagues, categories: {
         warmth: { name: "Support at work", blurb: "Who notices when the other is overloaded, and what happens next.", tip: "Agree a signal for \"I'm at the limit\", and treat it as a fact, not a complaint." },
         ambition: { name: "Goals and growth", blurb: "What each of you wants from the work, and whether you pull the same way.", tip: "Say what each of you wants to be doing in three years; it explains most of the small frictions." },
         fun: { name: "Energy and pace", blurb: "Tempo, breaks, and how much room each of you needs.", tip: "Match the pace on shared work, and leave each other's own work alone." },
@@ -109,7 +110,7 @@ export const matchEn: MatchText = {
       title: "How do the two of you get along?", lead: "Invite your family member to record a minute of their voice on a private link. You both get their report, and a family report on top: how your two types get along in six areas of family life, who holds which role, and where the friction is.",
       eyebrow: "Add-on · Family match", areasTitle: "Six areas of family life", partnerName: "Their first name",
       swap: [["Invite my partner", "Invite my family member"], ["Your matches", "Your pair reports"], ["The couple's report", "The family report"], ["Couple's report", "Family report"], ["couple's report", "family report"], ["Your partner's", "Their"], ["your partner's", "their"], ["your partner", "your family member"], ["my partner", "my family member"], ["Relationship matches", "Pair reports"], ["Relationship match", "Family match"], ["Nine areas of a relationship", "Six areas of family life"]],
-      categories: {
+      words: matchKindWordsEn.family, categories: {
         providing: { name: "Money and support", blurb: "Who provides, who worries, and how money is talked about.", tip: "Keep money talk out of arguments about everything else; give it its own time." },
         loyalty: { name: "Loyalty and trust", blurb: "Constancy, promises kept, and taking each other's side.", tip: "Say out loud what counts as a betrayal for each of you; it is rarely the same list." },
         fun: { name: "Fun and time together", blurb: "Laughter, traditions, and how much room each of you needs.", tip: "Protect one tradition that is only the two of yours, and each other's own time." },
@@ -120,7 +121,7 @@ export const matchEn: MatchText = {
       title: "How do the two of you get along?", lead: "Invite your friend to record a minute of their voice on a private link. You both get their report, and a friendship report on top: how your two types get along in five areas, who holds which role, and where the friction is.",
       eyebrow: "Add-on · Friendship match", areasTitle: "Five areas of a friendship", partnerName: "Your friend's first name",
       swap: [["Invite my partner", "Invite my friend"], ["Your matches", "Your pair reports"], ["The couple's report", "The friendship report"], ["Couple's report", "Friendship report"], ["couple's report", "friendship report"], ["Your partner's", "Your friend's"], ["your partner's", "your friend's"], ["your partner", "your friend"], ["my partner", "my friend"], ["Relationship matches", "Pair reports"], ["Relationship match", "Friendship match"], ["Nine areas of a relationship", "Five areas of a friendship"]],
-      categories: {
+      words: matchKindWordsEn.friends, categories: {
         ambition: { name: "Goals and support", blurb: "What each of you is after, and how you back each other.", tip: "Ask about the other's next goal once a season, and remember the answer." },
         loyalty: { name: "Loyalty and trust", blurb: "Constancy, keeping confidences, and showing up.", tip: "Say out loud what counts as a betrayal for each of you; it is rarely the same list." },
       },

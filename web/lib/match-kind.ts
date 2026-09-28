@@ -29,23 +29,46 @@ export interface KindWords {
   title: string; lead: string; eyebrow: string; areasTitle: string; partnerName: string;
   /** Phrases of the couple's wording, and what they become for this kind: [from, to], longest first, applied in order. */
   swap: string[][];
+  /**
+   * Every sentence of the couple's wording that reads differently for this kind, whole, by its path in t.match
+   * ("notPaid", "whatNow.steps[2]"). Generated from the swaps for English and Russian (scripts/match-kind-words.mts)
+   * and translated whole into every other language, so the kind's wording holds in all of them.
+   */
+  words: Record<string, string>;
   /** Areas that read differently for this kind. */
   categories: Partial<Record<Category, { name: string; blurb: string; tip: string }>>;
 }
 
-/** One string of the couple's wording, said for this kind. */
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** One string of the couple's wording, said for this kind. A phrase only matches whole words: "your partner" leaves "your partnership" alone. */
 export function swapWords(text: string, words: KindWords): string {
   let out = text;
-  for (const [from, to] of words.swap) out = out.split(from).join(to);
+  for (const [from, to] of words.swap) out = out.replace(new RegExp(`(?<!\\p{L})${escape(from)}(?!\\p{L})`, "gu"), to);
   return out;
 }
 
-/** The whole set of match words (t.match), said for this kind: every string swapped, then the explicit ones set. */
+/** Sets a value at a flat path ("whatNow.steps[2]") inside a nested object of strings, arrays and objects. */
+function setPath(root: Record<string, unknown>, path: string, value: string): void {
+  const keys = path.split(/\.|\[|\]/).filter(Boolean);
+  let node: unknown = root;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (!node || typeof node !== "object") return;
+    node = (node as Record<string, unknown>)[keys[i]];
+  }
+  if (node && typeof node === "object") (node as Record<string, unknown>)[keys[keys.length - 1]] = value;
+}
+
+/**
+ * The whole set of match words (t.match), said for this kind: every string swapped (English and Russian), then every
+ * whole sentence of the kind set in (every language), then the explicit ones.
+ */
 export function matchWords<T extends Record<string, unknown>>(ui: T, kind: MatchKind, kinds: Record<MatchKind, KindWords>): T {
   if (kind === "couple") return ui;
   const words = kinds[kind];
   const walk = (v: unknown): unknown => (typeof v === "string" ? swapWords(v, words) : Array.isArray(v) ? v.map(walk) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)])) : v);
   const out = walk(ui) as Record<string, unknown>;
+  for (const [path, text] of Object.entries(words.words ?? {})) setPath(out, path, text);
   Object.assign(out, { title: words.title, lead: words.lead, eyebrow: words.eyebrow, categoriesTitle: words.areasTitle, partnerFallback: words.who, partnerName: words.partnerName });
   return out as T;
 }
