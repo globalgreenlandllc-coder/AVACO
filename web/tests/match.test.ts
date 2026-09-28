@@ -106,7 +106,7 @@ describe("any kind of pair", () => {
     expect(r.deep.themes.find((x) => x.key === "love")?.name).toBe("Working together");
     expect(r.deep.themes.find((x) => x.key === "love")?.a.points.join(" ")).toMatch(/partner|business/i);
     const words = matchWords(en.match, "business", matchEn.kinds);
-    expect(words.title).toBe("How do you work together?");
+    expect(words.title).toBe("How well do you work together?");
     expect(JSON.stringify(words)).not.toContain("couple's report");
     expect(words.partnerTitle).toBe("{a} invited you to a partnership report");
     const friends = matchReport(matchFit(profile("catalyst", "driver"), profile("harmonizer", "mediator"), { kind: "friends" })!, { a: "Dima", b: "Anna" }, en, "en", "friends");

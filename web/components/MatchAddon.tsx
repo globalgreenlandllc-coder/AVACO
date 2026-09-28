@@ -22,11 +22,13 @@ export interface MatchAddonProps {
   defaultOwnerName?: string;
   /** The words per kind of pair (lib/match-kind.ts): the form re-says itself for the kind chosen. */
   kinds: Record<MatchKind, KindWords>;
+  /** "Works for", before the kinds on the cover. */
+  worksFor: string;
   t: Dict["match"];
 }
 
 /** The relationship add-on at the top of a report, in a cover of its own (rose gold): order a couple's report, and the matches already ordered. */
-export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, defaultOwnerName, kinds, t: base }: MatchAddonProps) {
+export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, canOrder, creditsHref = "/credits", existing, defaultOwnerName, kinds, worksFor, t: base }: MatchAddonProps) {
   const router = useRouter();
   const [kind, setKind] = useState<MatchKind>("couple");
   const t = matchWords(base, kind, kinds);
@@ -106,6 +108,10 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
           <h2 className="gold-text pb-2 font-display text-4xl font-semibold leading-[1.02] sm:text-6xl">{t.title}</h2>
           <p className="mt-5 max-w-md leading-relaxed text-ink-2 sm:text-lg">{t.lead}</p>
           <p className="mt-6"><span className="offer-badge">{price ?? freeLabel}</span></p>
+          <p className="mt-6 flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="mr-1 font-bold uppercase tracking-[0.14em]" style={{ color: "var(--cover-gold)" }}>{worksFor}</span>
+            {MATCH_KINDS.map((k) => <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full border px-2.5 py-1 font-semibold transition-colors ${kind === k ? "border-transparent" : ""}`} style={kind === k ? { background: "var(--cover-gold)", color: "var(--cover-bg)" } : { borderColor: "color-mix(in oklab, var(--cover-gold) 45%, transparent)", color: "var(--cover-ink)" }}>{kinds[k].label}</button>)}
+          </p>
         </div>
 
         {/* The right side, where the report has its radar: the couples already ordered, then a new order. */}

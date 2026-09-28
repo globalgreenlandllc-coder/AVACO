@@ -196,6 +196,12 @@ export default async function Home() {
                 {addonPrices[i] && <span className="mr-5 mt-4 rounded-full border border-accent px-3 py-1 text-xs font-bold text-accent-text">{addonPrices[i]}</span>}
               </div>
               <p className="px-6 pt-4 text-sm leading-relaxed text-ink-2">{d.text.replace("{n}", String(INDUSTRY_KEYS.length))}</p>
+              {i === 2 && (
+                <div className="mx-6 mt-4 flex flex-wrap items-center gap-1.5">
+                  <span className="mr-1 text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{h.deeperWorksFor}</span>
+                  {h.deeperKinds.map((k) => <span key={k} className="rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-ink-2">{k}</span>)}
+                </div>
+              )}
               <div className="mx-6 mb-6 mt-auto pt-5">
                 <div className="rounded-2xl bg-accent-soft p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-text">{h.deeperExample}</p>

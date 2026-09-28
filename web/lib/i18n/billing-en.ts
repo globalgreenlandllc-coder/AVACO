@@ -30,8 +30,8 @@ export const billingEn = {
     industryText: "Every role in one industry ranked for your voice, with your path from the first step to the top.",
     best: "Your best industry",
     bestText: "All {n} industries compared, the winner and its best role explained, and a top five to explore.",
-    match: "Couple's report",
-    matchText: "Your partner records too. How the two of you fit in nine areas, who holds which role, and where the work is.",
+    match: "Do you two match?",
+    matchText: "Your voice and theirs read together, for a couple, business partners, colleagues, family or friends: a match score, where you click, where it rubs, and what helps.",
     or: "or {price} by card",
   },
   lock: {

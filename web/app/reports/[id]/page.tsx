@@ -119,7 +119,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
     // "Your first name" in the order form starts as whoever this report is about: the named person, or the account holder.
     const ownerName = profile.person ?? (isOpenVisitor(userId) ? null : (await currentUser().catch(() => null))?.firstName) ?? undefined;
-    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses, defaultOwnerName: ownerName, kinds: t.content.match.kinds };
+    match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses, defaultOwnerName: ownerName, kinds: t.content.match.kinds, worksFor: t.content.match.worksFor };
   }
 
   // A preview gets no result: not the type, not the per-recording types, only how many recordings and when.
