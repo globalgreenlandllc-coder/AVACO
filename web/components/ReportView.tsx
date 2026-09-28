@@ -112,7 +112,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
    * report) or everything paid for in one file. The add-on pieces sit hidden at the end of the page (data-export-show),
    * put there for print and for this; the file builder unhides them.
    */
-  type Piece = { kind: "type" } | { kind: "chapter"; key: string } | { kind: "best" } | { kind: "couple"; id: string } | { kind: "all" };
+  type Piece = { kind: "type" } | { kind: "chapter"; key: string } | { kind: "chapters" } | { kind: "best" } | { kind: "couple"; id: string } | { kind: "all" };
   const [saving, setSaving] = useState<string | null>(null);
   const [mailing, setMailing] = useState<{ state: "idle" } | { state: "sending" } | { state: "sent"; to: string } | { state: "failed"; reason: "no_email" | "other" }>({ state: "idle" });
   const day = report.created_at.slice(0, 10);
@@ -134,6 +134,10 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       const node = root.querySelector<HTMLElement>(`[data-industry-chapter-print="${piece.key}"]`);
       const name = industry?.industries.find((i) => i.key === piece.key)?.name ?? piece.key;
       return node ? { blob: await buildReportFile(node, `${t.brand} · ${name}${stamp}`, { heading: `${t.industry.title} · ${name}` }), name: `avoco-${piece.key}-chapter${who}-${day}.html` } : null;
+    }
+    if (piece.kind === "chapters") {
+      const node = root.querySelector<HTMLElement>("[data-export-show]:not([data-couple-print])"); // every opened chapter, as copied for print
+      return node ? { blob: await buildReportFile(node, `${t.brand} · ${t.industry.title}${stamp}`, { heading: t.industry.title }), name: `avoco-industry-chapters${who}-${day}.html` } : null;
     }
     if (piece.kind === "best") {
       const node = root.querySelector<HTMLElement>(`[data-industry-chapter-print="best"]`);
@@ -194,6 +198,20 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
     ...(match?.existing ?? []).filter((m) => m.stage !== "ready").map((m) => ({ piece: { kind: "couple", id: m.id } as Piece, label: r.downloadCoupleWaiting.replace("{name}", m.partnerName), ready: false, waiting: true })),
   ];
   const readyPieces = pieces.filter((p) => p.ready);
+  // The files list, grouped: the type report, the best industry, the chapters (folded), the pair reports (folded).
+  const typeRow = pieces[0], bestRow = pieces.find((p) => p.piece.kind === "best");
+  const chapterRows = pieces.filter((p) => p.piece.kind === "chapter"), coupleRows = pieces.filter((p) => p.piece.kind === "couple");
+  const tick = (ready: boolean) => <span aria-hidden className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${ready ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{ready ? "✓" : "…"}</span>;
+  const fileRow = (p: (typeof pieces)[number], inner = false) => (
+    <li key={pieceId(p.piece)} className={`flex flex-wrap items-center justify-between gap-3 ${inner ? "px-4 py-3" : "border-b border-line px-6 py-4 sm:px-8"}`}>
+      <span className="flex items-center gap-3">{tick(p.ready)}<span className={p.ready ? (inner ? "text-sm" : "font-medium") : "text-sm text-ink-2"}>{p.label}</span></span>
+      {!p.waiting && (
+        <button type="button" className={`pill pill-off ${inner ? "!px-3 !py-1.5 !text-xs" : ""}`} onClick={() => download(p.piece)} disabled={!p.ready || saving !== null}>
+          ↓ {saving === pieceId(p.piece) ? r.downloading : p.ready ? r.downloadOne : r.preparing}
+        </button>
+      )}
+    </li>
+  );
   const openedCount = (opened?.industries.length ?? 0) + (opened?.couples.length ?? 0);
   const everythingLabel = readyPieces.length > 1 ? r.downloadEverything.replace("{n}", String(readyPieces.length)) : r.download;
 
@@ -481,26 +499,35 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
             <p id="downloads-title" className="eyebrow">{r.downloads}</p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2">{r.downloadsHelp}</p>
           </div>
+          {/* One row per kind of report; the chapters and the pair reports fold away, each group with its count. */}
           <ul className="border-t border-line">
-            {pieces.map((p) => (
-              <li key={pieceId(p.piece)} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
-                <span className="flex items-center gap-3">
-                  <span aria-hidden className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${p.ready ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{p.ready ? "✓" : "…"}</span>
-                  <span className={p.ready ? "font-medium" : "text-ink-2"}>{p.label}</span>
-                </span>
-                {!p.waiting && (
-                  <button type="button" className="pill pill-off" onClick={() => download(p.piece)} disabled={!p.ready || saving !== null}>
-                    ↓ {saving === pieceId(p.piece) ? r.downloading : p.ready ? r.downloadOne : r.preparing}
-                  </button>
-                )}
+            {fileRow(typeRow)}
+            {bestRow && fileRow(bestRow)}
+            {industry && (chapterRows.length > 0 ? (
+              <li className="border-b border-line px-6 py-4 sm:px-8">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="flex items-center gap-3">{tick(chapterRows.some((x) => x.ready))}<span className="font-medium">{r.filesChapters.replace("{n}", String(chapterRows.length))}</span></span>
+                  <button type="button" className="pill pill-off" onClick={() => download({ kind: "chapters" })} disabled={!chapterRows.some((x) => x.ready) || saving !== null}>↓ {saving === "chapters" ? r.downloading : r.downloadChapters.replace("{n}", String(chapterRows.length))}</button>
+                </div>
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs font-semibold text-accent-text">{r.eachChapter}</summary>
+                  <ul className="mt-3 divide-y divide-line rounded-2xl border border-line">{chapterRows.map((p) => fileRow(p, true))}</ul>
+                </details>
               </li>
-            ))}
-            {industry && !industry.unlocked?.length && <li className="border-b border-line px-6 py-3 text-xs text-muted sm:px-8">{r.downloadIndustryNone}</li>}
+            ) : <li className="border-b border-line px-6 py-3 text-xs text-muted sm:px-8">{r.downloadIndustryNone}</li>)}
+            {coupleRows.length > 0 && (
+              <li className="border-b border-line px-6 py-4 sm:px-8">
+                <div className="flex items-center gap-3">{tick(coupleRows.some((x) => x.ready))}<span className="font-medium">{r.filesCouples.replace("{n}", String(coupleRows.length))}</span></div>
+                {coupleRows.length <= 2
+                  ? <ul className="mt-3 divide-y divide-line rounded-2xl border border-line">{coupleRows.map((p) => fileRow(p, true))}</ul>
+                  : <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-accent-text">{r.eachCouple}</summary><ul className="mt-3 divide-y divide-line rounded-2xl border border-line">{coupleRows.map((p) => fileRow(p, true))}</ul></details>}
+              </li>
+            )}
           </ul>
           <div className="grid gap-px bg-line sm:grid-cols-2">
             <div className="bg-surface p-6 sm:p-8">
               <p className="font-semibold">{r.downloadAll}</p>
-              <p className="mt-1 text-sm leading-relaxed text-ink-2">{r.downloadAllHelp.replace("{list}", readyPieces.map((p) => p.label).join(" · "))}</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2">{r.downloadAllHelp.replace("{list}", [typeRow.label, chapterRows.some((x) => x.ready) && r.filesChapters.replace("{n}", String(chapterRows.filter((x) => x.ready).length)), bestRow?.label, coupleRows.some((x) => x.ready) && r.filesCouples.replace("{n}", String(coupleRows.filter((x) => x.ready).length))].filter(Boolean).join(" · "))}</p>
               <button type="button" className="btn mt-4" onClick={() => download({ kind: "all" })} disabled={saving !== null}>↓ {saving === "all" ? r.downloading : everythingLabel}</button>
             </div>
             {canEmail && (

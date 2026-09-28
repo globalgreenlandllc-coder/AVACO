@@ -4,6 +4,7 @@ import { ReportView, type Report } from "@/components/ReportView";
 import { teaserOf, zoneOf } from "@/lib/report";
 import { formatDate, getDict } from "@/lib/i18n";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
+import { INDUSTRY_KEYS } from "@/lib/industries";
 import { matchFit } from "@/lib/match";
 import { matchReport } from "@/lib/match-report";
 
@@ -23,7 +24,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
     emostate: EMO.map(([key, value]) => ({ key, label: key, value })),
   };
   // The industry add-on as a paying client sees it (the chapter itself needs a real report; here only the strip and the picker show).
-  const industry = { industries: industryNames(t), chapterUrl: "/api/preview/industry/{key}", unlockUrl: "/api/preview/unlock", unlocked: ["it"], price: "1 credit · $9", teaser: industryTeaser("it", report.psytype ?? [], t) };
+  const industry = { industries: industryNames(t), chapterUrl: "/api/preview/industry/{key}", unlockUrl: "/api/preview/unlock", unlocked: INDUSTRY_KEYS.slice(0, 6), price: "1 credit · $9", teaser: industryTeaser("it", report.psytype ?? [], t) };
   if (locked) {
     const preview: Report = { ...report, psytype: null, emostate: null, locked: true, teaser: teaserOf(report.psytype, report.emostate) };
     const dates = ["2026-09-14", "2026-09-18", created].map((d, i) => ({ id: String(i), date: formatDate(d, locale).split(/,| at | в /)[0], current: i === 2 }));
