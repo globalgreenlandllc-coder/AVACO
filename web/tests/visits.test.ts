@@ -201,8 +201,17 @@ describe("live traffic", () => {
     expect(live.perMinute.reduce((n, v) => n + v, 0)).toBe(4);
     expect(live.sources).toEqual([{ source: "tiktok", visitors: 1, paid: 1 }, { source: "instagram", visitors: 1, paid: 0 }]);
     expect(live.pages).toEqual([{ path: "/record", visitors: 1 }]);
-    expect(live.dots).toEqual([{ lat: 26, lon: -80, active: true, source: "tiktok", city: "Miami", country: "US" }, { lat: 53, lon: 13, active: false, source: "instagram", city: "Berlin", country: "DE" }]);
+    expect(live.visitors.map((v) => [v.city, v.active, v.source])).toEqual([["Miami", true, "tiktok"], ["Berlin", false, "instagram"], [null, false, "direct"]]);
+    const a = live.visitors[0];
+    expect(a).toMatchObject({ lat: 26, lon: -80, country: "US", paid: true, landing: "/", current: "/record", device: "phone", userId: "user_a" });
+    expect(a.pages.map((p) => p.path)).toEqual(["/", "/record"]);
+    expect(a.lastAt - a.firstAt).toBe(2 * 60_000);
+    expect(live.visitors[2]).toMatchObject({ lat: null, lon: null }); // no position: counted, not placed
+    expect(live.feed[0].key).toBe(a.key);
     expect(live.feed.map((f) => f.path)).toEqual(["/record", "/", "/", "/"]);
+    // a visitor's month: returning when this browser came on an earlier day
+    const again = liveSummary([{ at: at(2), path: "/", visitor: "a", session: "a9", landing: true, source: "direct", device: "phone", country: "US" }], NOW, new Map([["a", { first: at(60 * 24 * 3), sessions: 4 }]]));
+    expect(again.visitors[0]).toMatchObject({ returning: true, sessions30: 4 });
     expect(live.feed[0]).toMatchObject({ source: "tiktok", paid: true, signedIn: true, city: "Miami" });
   });
 });

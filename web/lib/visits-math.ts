@@ -387,7 +387,26 @@ export function insightsFor(s: Stats, x: Extra): string[] {
 
 export interface LiveRow {
   at: Date; path: string; visitor: string; session: string; landing: boolean; source: string | null; device: Device; userId?: string | null;
-  medium?: string | null; click?: string | null; country: string | null; city?: string | null; lat?: number | null; lon?: number | null;
+  medium?: string | null; click?: string | null; campaign?: string | null; content?: string | null; referrer?: string | null; locale?: string | null;
+  country: string | null; city?: string | null; lat?: number | null; lon?: number | null;
+}
+/** One visitor of the last hour, for the live map: where they are, where they came from, and what they have looked at. */
+export interface LiveVisitor {
+  /** A short stand-in for the visitor's id. */
+  key: string;
+  lat: number | null; lon: number | null; city: string | null; country: string | null;
+  /** Seen in the last 5 minutes. */
+  active: boolean;
+  firstAt: number; lastAt: number;
+  source: string; paid: boolean; campaign: string | null; content: string | null; referrer: string | null;
+  device: Device; locale: string | null;
+  /** The page their latest visit started on, and the page they are on now. */
+  landing: string; current: string;
+  /** This hour's pages, oldest first (at most 12). */
+  pages: Array<{ path: string; at: number }>;
+  userId: string | null;
+  /** Filled in by the API: the account's name, and whether the browser was here on an earlier day. */
+  account?: string | null; returning?: boolean; sessions30?: number;
 }
 export interface Live {
   now: number;
@@ -401,15 +420,17 @@ export interface Live {
   sources: Array<{ source: string; visitors: number; paid: number }>;
   /** Where the visitors of the last 5 minutes are now: each one's latest page. */
   pages: Array<{ path: string; visitors: number }>;
-  /** One dot per visitor of the last 30 minutes, at their latest position; `active` in the last 5. */
-  dots: Array<{ lat: number; lon: number; active: boolean; source: string; city: string | null; country: string | null }>;
-  /** The latest page views, newest first. */
-  feed: Array<{ at: number; path: string; source: string; paid: boolean; city: string | null; country: string | null; device: Device; landing: boolean; signedIn: boolean }>;
+  /** Everyone of the last hour, most recent first. */
+  visitors: LiveVisitor[];
+  /** The latest page views, newest first; `key` is the visitor's, so a row can point at them on the map. */
+  feed: Array<{ key: string; at: number; path: string; source: string; paid: boolean; city: string | null; country: string | null; device: Device; landing: boolean; signedIn: boolean }>;
 }
 
 const MIN = 60_000;
-/** The live view from the last hour of visits. */
-export function liveSummary(rows: LiveRow[], now = new Date()): Live {
+const shortKey = (visitor: string) => visitor.replace(/[^a-z0-9]/gi, "").slice(0, 10);
+
+/** The live view from the last hour of visits. `history`: each visitor's first visit and number of visits in 30 days. */
+export function liveSummary(rows: LiveRow[], now = new Date(), history: Map<string, { first: Date; sessions: number }> = new Map()): Live {
   const t = now.getTime();
   const recent = rows.filter((r) => r.at.getTime() > t - 60 * MIN && r.at.getTime() <= t + MIN).sort((a, b) => b.at.getTime() - a.at.getTime());
   const last30 = recent.filter((r) => r.at.getTime() > t - 30 * MIN);
@@ -428,6 +449,30 @@ export function liveSummary(rows: LiveRow[], now = new Date()): Live {
   const byPage = new Map<string, number>();
   for (const r of latestOf(last5)) byPage.set(r.path, (byPage.get(r.path) ?? 0) + 1);
   const activeVisitors = new Set(last5.map((r) => r.visitor));
+
+  const byVisitor = new Map<string, LiveRow[]>();
+  for (const r of recent) byVisitor.set(r.visitor, [...(byVisitor.get(r.visitor) ?? []), r]);
+  const visitors: LiveVisitor[] = [...byVisitor].map(([visitor, list]) => {
+    const asc = [...list].reverse();
+    const latest = list[0];
+    const session = asc.filter((r) => r.session === latest.session);
+    const pages: Array<{ path: string; at: number }> = [];
+    for (const r of asc) if (pages.at(-1)?.path !== r.path) pages.push({ path: r.path, at: r.at.getTime() });
+    const placed = list.find((r) => typeof r.lat === "number" && typeof r.lon === "number");
+    const h = history.get(visitor);
+    return {
+      key: shortKey(visitor),
+      lat: placed?.lat ?? null, lon: placed?.lon ?? null, city: (placed ?? latest).city ?? null, country: latest.country,
+      active: activeVisitors.has(visitor),
+      firstAt: asc[0].at.getTime(), lastAt: latest.at.getTime(),
+      source: latest.source ?? "direct", paid: isPaidVisit(latest), campaign: latest.campaign ?? null, content: latest.content ?? null, referrer: latest.referrer ?? null,
+      device: latest.device, locale: latest.locale ?? null,
+      landing: (session.find((r) => r.landing) ?? session[0]).path, current: latest.path,
+      pages: pages.slice(-12),
+      userId: list.find((r) => r.userId)?.userId ?? null,
+      ...(h ? { returning: h.first.getTime() < asc[0].at.getTime() - 30 * MIN || h.sessions > 1, sessions30: h.sessions } : {}),
+    };
+  });
   return {
     now: t,
     active: activeVisitors.size,
@@ -436,7 +481,7 @@ export function liveSummary(rows: LiveRow[], now = new Date()): Live {
     perMinute,
     sources: [...bySource].map(([source, x]) => ({ source, ...x })).sort((a, b) => b.visitors - a.visitors).slice(0, 8),
     pages: [...byPage].map(([path, visitors]) => ({ path, visitors })).sort((a, b) => b.visitors - a.visitors).slice(0, 6),
-    dots: latestOf(last30).filter((r) => typeof r.lat === "number" && typeof r.lon === "number").map((r) => ({ lat: r.lat!, lon: r.lon!, active: activeVisitors.has(r.visitor), source: r.source ?? "direct", city: r.city ?? null, country: r.country })),
-    feed: recent.slice(0, 20).map((r) => ({ at: r.at.getTime(), path: r.path, source: r.source ?? "direct", paid: isPaidVisit(r), city: r.city ?? null, country: r.country, device: r.device, landing: r.landing, signedIn: Boolean(r.userId) })),
+    visitors,
+    feed: recent.slice(0, 20).map((r) => ({ key: shortKey(r.visitor), at: r.at.getTime(), path: r.path, source: r.source ?? "direct", paid: isPaidVisit(r), city: r.city ?? null, country: r.country, device: r.device, landing: r.landing, signedIn: Boolean(r.userId) })),
   };
 }

@@ -4,9 +4,9 @@
  * from, visitors per minute over the last hour, and the page views as they happen. Asks /api/admin/live every two
  * seconds while the tab is visible, and at once when the tab comes back into view.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Bars } from "./AdminCharts";
-import { WORLD_ROWS, WORLD_STEP, WORLD_TOP } from "@/lib/world-dots";
+import { LiveMap } from "./LiveMap";
 import { PLATFORM_NAMES, platformColor, type Live } from "@/lib/visits-math";
 
 const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "🌐");
@@ -17,6 +17,9 @@ export function LiveTraffic() {
   const [data, setData] = useState<Live | null>(null);
   const [failed, setFailed] = useState(false);
   const [clock, setClock] = useState(() => Date.now());
+  /** Who the map shows: the last 5 minutes, half hour or hour. */
+  const [span, setSpan] = useState(30);
+  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     let stopped = false;
@@ -36,20 +39,8 @@ export function LiveTraffic() {
     return () => { stopped = true; clearTimeout(timer); clearInterval(second); document.removeEventListener("visibilitychange", onShow); };
   }, []);
 
-  // The land, drawn once: one path of small dots.
-  const land = useMemo(() => {
-    let d = "";
-    WORLD_ROWS.forEach((row, r) => {
-      for (let c = 0; c < row.length; c++) {
-        if (row[c] !== "1") continue;
-        const x = c * WORLD_STEP + WORLD_STEP / 2, y = r * WORLD_STEP + WORLD_STEP / 2;
-        d += `M${x - 0.95},${y}a0.95,0.95 0 1,0 1.9,0a0.95,0.95 0 1,0 -1.9,0`;
-      }
-    });
-    return d;
-  }, []);
-  const height = WORLD_ROWS.length * WORLD_STEP;
-  const shown = [...new Set((data?.dots ?? []).map((d) => d.source))];
+  const onMap = (data?.visitors ?? []).filter((v) => clock - v.lastAt <= span * 60_000);
+  const shown = [...new Set(onMap.map((v) => v.source))];
 
   return (
     <section className="card overflow-hidden p-6 sm:p-7" aria-label="Live traffic">
@@ -63,36 +54,30 @@ export function LiveTraffic() {
         <p className="text-xs text-muted">{failed ? "Can't reach the live feed; retrying…" : data ? `Updated ${ago(clock - data.now)} ago · every 2 seconds` : "Connecting…"}</p>
       </div>
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+      <div className="mt-5">
         <div>
-          <svg viewBox={`0 0 360 ${height}`} className="w-full" role="img" aria-label={`World map: ${data?.dots.length ?? 0} visitors in the last 30 minutes, ${data?.active ?? 0} active now.`}>
-            <path d={land} fill="color-mix(in oklab, var(--ink-2) 20%, transparent)" />
-            {(data?.dots ?? []).map((d, i) => {
-              const x = d.lon + 180, y = WORLD_TOP - d.lat;
-              const colour = platformColor(d.source);
-              return (
-                <g key={`${i}-${x}-${y}`}>
-                  {d.active && <circle cx={x} cy={y} r={2.4} fill={colour} className="live-ping" style={{ animationDelay: `${(i % 6) * 0.3}s` }} />}
-                  <circle cx={x} cy={y} r={d.active ? 2.4 : 1.7} fill={colour} opacity={d.active ? 1 : 0.45} stroke="var(--surface)" strokeWidth={0.5}>
-                    <title>{`${d.city ? `${d.city}, ` : ""}${d.country ?? ""} · ${name(d.source)}${d.active ? " · active now" : ""}`}</title>
-                  </circle>
-                </g>
-              );
-            })}
-          </svg>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {[[5, "Now · 5 min"], [30, "30 min"], [60, "1 hour"]].map(([m, label]) => (
+              <button key={m} type="button" onClick={() => setSpan(m as number)} className={`pill !px-3 !py-1 text-xs ${span === m ? "pill-on" : "pill-off"}`}>{label}</button>
+            ))}
+            <span className="text-xs text-muted">{onMap.length} {onMap.length === 1 ? "visitor" : "visitors"} on the map</span>
+          </div>
+          <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} />
           {shown.length > 0 && (
             <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2">
               {shown.map((s) => <span key={s} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: platformColor(s) }} aria-hidden />{name(s)}</span>)}
-              <span className="text-muted">Bright dots: active in the last 5 minutes</span>
+              <span className="text-muted">Pulsing: active in the last 5 minutes</span>
             </p>
           )}
         </div>
 
-        <div className="space-y-5">
+      </div>
+
+      <div className="mt-6 grid items-start gap-6 sm:grid-cols-3">
           <div className="flex items-end gap-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">Active now</p>
-              <p className="font-display text-6xl font-medium tabular-nums">{data?.active ?? "–"}</p>
+              <p className="text-6xl font-semibold tabular-nums leading-none">{data?.active ?? "–"}</p>
             </div>
             <div className="pb-2 text-sm text-ink-2">
               <p><b className="tabular-nums text-ink">{data?.visitors30 ?? "–"}</b> visitors, <b className="tabular-nums text-ink">{data?.views30 ?? "–"}</b> views</p>
@@ -118,7 +103,6 @@ export function LiveTraffic() {
               <ul className="mt-2 space-y-1 text-sm">{data.pages.map((p) => <li key={p.path} className="flex justify-between gap-3"><span className="truncate">{p.path}</span><span className="font-semibold tabular-nums">{p.visitors}</span></li>)}</ul>
             </div>
           )}
-        </div>
       </div>
 
       <div className="mt-6">
@@ -136,7 +120,7 @@ export function LiveTraffic() {
         {data && data.feed.length > 0 ? (
           <ul className="divide-y divide-line text-sm">
             {data.feed.map((f) => (
-              <li key={`${f.at}-${f.path}`} className="live-in flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+              <li key={`${f.at}-${f.path}-${f.key}`} onClick={() => setSelected(f.key)} title="Show on the map" className={`live-in flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-1 py-2 hover:bg-accent-soft ${selected === f.key ? "bg-accent-soft" : ""}`}>
                 <span className="w-10 shrink-0 text-xs tabular-nums text-muted">{ago(clock - f.at)}</span>
                 <span aria-hidden>{flag(f.country)}</span>
                 <span className="min-w-24 text-ink-2">{f.city ?? f.country ?? "Somewhere"}</span>
