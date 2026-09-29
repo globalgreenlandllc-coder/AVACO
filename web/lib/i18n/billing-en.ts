@@ -50,6 +50,10 @@ export const billingEn = {
     need: "Opening the full report takes 1 credit.",
     getCredits: "Get credits",
     from: "from {price}",
+    payNow: "Open my full report · {price}",
+    paying: "Opening secure payment…",
+    orPack: "Or save with a pack of credits",
+    payNote: "Secure payment by Stripe. You come straight back to this report, opened.",
   },
   cap: "You have used your free previews for now. Open one of your reports or get credits to record again.",
   workspace: {

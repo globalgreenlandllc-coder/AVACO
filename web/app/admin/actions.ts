@@ -10,9 +10,11 @@ import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
 import { clearEmailSettings, saveEmailSettings } from "@/lib/email";
 import { getLocale } from "@/lib/i18n";
 import { sendSampleReceipt } from "@/lib/receipts";
-import { saveMatchPricing } from "@/lib/match-billing";
-import { saveIndustryPrice } from "@/lib/industry-billing";
-import { saveBestPricing } from "@/lib/best-billing";
+import { matchCredits, matchPriceCents, saveMatchPricing } from "@/lib/match-billing";
+import { industryPriceCents, saveIndustryPrice } from "@/lib/industry-billing";
+import { bestCredits, bestPriceCents, saveBestPricing } from "@/lib/best-billing";
+import { PACK_NAMES } from "@/lib/pack-names";
+import { readPricingForm, type PricingCurrent } from "@/lib/pricing-form";
 import { buildLanguage, clearDeeplKey, removeLanguage, saveDeeplKey, type LanguageProgress } from "@/lib/translate";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
 
@@ -26,28 +28,50 @@ export async function grantAction(form: FormData) {
   revalidatePath("/admin", "layout");
 }
 
-export async function saveSettingsAction(form: FormData) {
+export interface PricingState {
+  ok: boolean | null;
+  message: string;
+  /** Per box, why it couldn't be read; nothing is saved while there are any. */
+  errors: Record<string, string>;
+  /** What was typed, so a form with an error comes back as the admin left it rather than reset. */
+  fields: Record<string, string>;
+  /** Bumped on every answer, so the boxes are drawn again from what is now saved. */
+  attempt: number;
+}
+
+/**
+ * Saves the pricing form, all of it or nothing. Prices are read the way people type them (lib/pricing-form.ts); a box
+ * that can't be read comes back as an error naming it, never as the old price saved quietly in its place.
+ */
+export async function saveSettingsAction(prev: PricingState, form: FormData): Promise<PricingState> {
   await requireAdmin();
-  const current = await getSettings();
-  let packs: Pack[] = current.packs.map((p) => ({ ...p, credits: Number(form.get(`credits:${p.id}`)) || p.credits, amountCents: Math.round(Number(form.get(`price:${p.id}`)) * 100) || p.amountCents }));
-  // "Personality type report, per report" is the one-credit pack for people: a changed value there wins over the table.
-  const single = current.packs.find((p) => p.audience === "user" && p.credits === 1);
-  const typeCents = Math.round(Number(form.get("typePrice")) * 100);
-  if (single && typeCents >= 50 && typeCents !== single.amountCents) packs = packs.map((p) => (p.id === single.id ? { ...p, amountCents: typeCents } : p));
-  await saveSettings({
-    enabled: form.get("enabled") === "on",
-    currency: String(form.get("currency") ?? current.currency).toLowerCase(),
-    packs,
-    freePreviewsPer30Days: Number(form.get("freePreviews")),
-    workspaceTrialCredits: Number(form.get("trialCredits")),
-  });
-  const addon = Number(form.get("industryPrice"));
-  if (addon > 0) await saveIndustryPrice(Math.round(addon * 100));
-  const matchPrice = Number(form.get("matchPrice")), matchN = Number(form.get("matchCredits"));
-  await saveMatchPricing({ priceCents: matchPrice > 0 ? Math.round(matchPrice * 100) : undefined, credits: matchN >= 1 ? matchN : undefined });
-  const bestPrice = Number(form.get("bestPrice")), bestN = Number(form.get("bestCredits"));
-  await saveBestPricing({ priceCents: bestPrice > 0 ? Math.round(bestPrice * 100) : undefined, credits: bestN >= 1 ? bestN : undefined });
+  const [cfg, industryCents, bestCents, bestN, matchCents, matchN] = await Promise.all([getSettings(), industryPriceCents(), bestPriceCents(), bestCredits(), matchPriceCents(), matchCredits()]);
+  const current: PricingCurrent = {
+    enabled: cfg.enabled, currency: cfg.currency, packs: cfg.packs, freePreviews: cfg.freePreviewsPer30Days, trialCredits: cfg.workspaceTrialCredits,
+    industryCents, bestCents, bestCredits: bestN, matchCents, matchCredits: matchN,
+  };
+  const read = readPricingForm(form, current, PACK_NAMES);
+  const attempt = prev.attempt + 1;
+  if (!read.ok) {
+    const fields: Record<string, string> = {};
+    for (const [k, v] of form.entries()) if (typeof v === "string" && !k.startsWith("$")) fields[k] = v;
+    const n = Object.keys(read.errors).length;
+    return { ok: false, message: `Nothing was saved: ${n === 1 ? "one box needs" : `${n} boxes need`} fixing.`, errors: read.errors, fields, attempt };
+  }
+  const v = read.values;
+  await saveSettings({ enabled: v.enabled, currency: v.currency, packs: v.packs, freePreviewsPer30Days: v.freePreviews, workspaceTrialCredits: v.trialCredits });
+  await saveIndustryPrice(v.industryCents);
+  await saveMatchPricing({ priceCents: v.matchCents, credits: v.matchCredits });
+  await saveBestPricing({ priceCents: v.bestCents, credits: v.bestCredits });
   revalidatePath("/admin", "layout");
+  const single = v.packs.find((p) => p.audience === "user" && p.credits === 1);
+  const money = (cents: number) => `${(cents / 100).toFixed(2)} ${v.currency.toUpperCase()}`;
+  const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  return {
+    ok: true,
+    message: `Saved at ${time} UTC and live now. Personality Analysis ${single ? money(single.amountCents) : "—"} · Career Fit ${money(v.industryCents)} · Best-Fit Industry ${money(v.bestCents)} or ${v.bestCredits} credit${v.bestCredits === 1 ? "" : "s"} · Relationship ${money(v.matchCents)} or ${v.matchCredits} credit${v.matchCredits === 1 ? "" : "s"} · charging ${v.enabled ? "on" : "off"}.`,
+    errors: {}, fields: {}, attempt,
+  };
 }
 
 export async function createPromoAction(form: FormData) {

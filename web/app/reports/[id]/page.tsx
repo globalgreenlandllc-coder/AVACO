@@ -1,4 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
@@ -27,7 +28,7 @@ import { emailConfig } from "@/lib/email";
 import { stageOf } from "@/lib/match-stage";
 
 /** `paid`, `session`, `industry` and `best` are what Stripe Checkout sends the buyer back with (see api/billing/checkout and api/billing/best). */
-type Query = { paid?: string; session?: string; industry?: string; best?: string };
+type Query = { paid?: string; session?: string; industry?: string; best?: string; as?: string };
 
 export default async function ReportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Query> }) {
   const [{ id }, userId, { locale, t }, query] = await Promise.all([params, visitorId(), getDict(), searchParams]);
@@ -66,20 +67,26 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const personIndustries = async () => { const byReport = await industriesByReport(userId); return [...new Set(sameIds.flatMap((id) => byReport.get(id) ?? []))]; };
   const personMatches = async () => (await matchesFor(userId)).filter((m) => sameIds.includes(m.analysisId));
 
-  const full = await hasFullAccess(userId, analysis.id);
+  // An admin can look at any of their reports as a client who hasn't paid: the same preview and paywall, buttons inactive.
+  const admin = await isAdminUser(userId);
+  const asClient = admin && query.as === "client";
+  const full = asClient ? false : await hasFullAccess(userId, analysis.id);
   if (analysis.status === "completed" && analysis.psytype?.length) {
     await noteResult(analysis.id, "self", analysis.psytype[0].key, fieldFits(analysis.psytype, analysis.emostate)[0]?.key).catch(() => {});
   }
 
   let paywall: React.ReactNode;
   if (!full && analysis.status === "completed") {
-    const [credits, cfg] = await Promise.all([balance(asUser(userId)), getSettings()]);
+    const [credits, cfg, cards] = await Promise.all([balance(asUser(userId)), getSettings(), stripeReady()]);
     const cheapest = cfg.packs.filter((p) => p.audience === "user").sort((a, b) => a.amountCents - b.amountCents)[0];
+    // Without credits, one click pays for exactly this report: the single-report pack, straight back here opened.
+    const single = cfg.packs.find((p) => p.audience === "user" && p.credits === 1);
+    const pay = cards && single ? { url: "/api/billing/checkout", pack: single.id, price: money(single.amountCents, cfg.currency, locale) } : undefined;
     paywall = (
       <>
         {paid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{paid === "confirmed" ? t.billing.thanks : t.billing.pending}</p>}
         {paid === "pending" && <RefreshWhile />}
-        <PayWall analysisId={analysis.id} credits={credits} fromPrice={cheapest ? money(cheapest.amountCents, cfg.currency, locale) : ""} t={t.billing} />
+        <PayWall analysisId={analysis.id} credits={asClient ? 0 : credits} fromPrice={cheapest ? money(cheapest.amountCents, cfg.currency, locale) : ""} pay={pay} demo={asClient} t={t.billing} />
       </>
     );
   }
@@ -143,5 +150,10 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     couples: couples.map((m) => ({ id: m.id, href: `/match/${m.id}`, glyph: m.kind === "couple" ? "♥" : "🤝", label: swapWords(readyIds.has(m.id) ? t.reports.extraCouple : t.reports.extraCoupleWaiting, t.content.match.kinds[m.kind]).replace("{name}", m.partnerName) })),
   };
 
-  return <ReportView key={`${locale}-${full}-${profile.person ?? ""}`} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} opened={alreadyOpened} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
+  // For admins only, in English like the rest of the admin tools: the way into the client's view, and the way back.
+  const adminBar = !admin || analysis.status !== "completed" ? null : asClient
+    ? <p data-no-export className="no-print rounded-xl border border-accent px-5 py-4 text-sm">Admin preview: this is exactly what a client sees before paying. The buttons are inactive here. <Link href={`/reports/${analysis.id}`} className="font-semibold text-accent-text hover:underline">Back to the full report</Link></p>
+    : <p data-no-export className="no-print text-sm"><Link href={`/reports/${analysis.id}?as=client`} className="font-semibold text-accent-text hover:underline">Admin: see this report as a client who hasn&apos;t paid →</Link></p>;
+
+  return <ReportView key={`${locale}-${full}-${asClient}-${profile.person ?? ""}`} lead={adminBar} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} opened={alreadyOpened} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
 }

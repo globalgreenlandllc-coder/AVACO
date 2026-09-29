@@ -9,6 +9,8 @@ import { getSettings } from "@/lib/billing";
 import { emailStatus } from "@/lib/email";
 import { TRANSLATABLE } from "@/lib/i18n/languages";
 import { LEGAL } from "@/lib/legal";
+import { PACK_NAMES } from "@/lib/pack-names";
+import { PricingForm } from "@/components/PricingForm";
 import { industryPriceCents } from "@/lib/industry-billing";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
 import { bestCredits, bestPriceCents } from "@/lib/best-billing";
@@ -20,12 +22,10 @@ import { addAdminAction, connectDeeplAction, createPromoAction, disconnectDeeplA
 export const dynamic = "force-dynamic";
 
 const input = "rounded-lg border border-line bg-bg px-3 py-2 text-sm";
-const NAMES: Record<string, string> = { one: "Single report", three: "Three reports", ten: "Ten reports", team25: "Team 25", team100: "Team 100", team500: "Team 500" };
+const NAMES = PACK_NAMES;
 
 export default async function AdminSettings() {
   const [me, cfg, promos, adminList, stripe, origin, deepl, progress, addonCents, matchCents, matchN, mail, bestCents, bestN] = await Promise.all([requireAdmin(), getSettings(), listPromoCodes(), listAdmins(), stripeStatus(), baseUrl(), deeplStatus(), allProgress(), industryPriceCents(), matchPriceCents(), matchCredits(), emailStatus(), bestPriceCents(), bestCredits()]);
-  // The personality type report is sold as the one-credit pack for people; its price field edits that pack.
-  const typeCents = cfg.packs.find((p) => p.audience === "user" && p.credits === 1)?.amountCents ?? 900;
   const envAdmins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   const webhookUrl = `${origin}/api/stripe/webhook`;
   const languageSize = Math.round(dictionaryCharacters() / 1000) * 1000;
@@ -99,52 +99,15 @@ export default async function AdminSettings() {
         )}
       </section>
 
-      <form action={saveSettingsAction} className="card space-y-6 p-7 sm:p-9">
-        <h2 className="font-display text-3xl font-medium">Pricing</h2>
-        <label className="flex cursor-pointer items-start gap-3">
-          <input type="checkbox" name="enabled" defaultChecked={cfg.enabled} className="mt-1 h-4 w-4 accent-[var(--accent)]" />
-          <span><span className="font-medium">Charge for reports</span><span className="block text-sm leading-relaxed text-ink-2">Off: every report is free. On: a person's new recording is a free preview and one credit opens the full report; every recording made for a company uses one of its credits. Reports made before you switch this on stay open.</span></span>
-        </label>
-        {!stripe.connected && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">Stripe is not connected: connect it in the Card payments section above. If you switch charging on now, people can only get credits from promo codes and from grants you make here.</p>}
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[34rem] text-left text-sm">
-            <thead className="text-xs uppercase tracking-widest text-muted"><tr><th className="py-2 font-semibold">Pack</th><th className="px-3 font-semibold">For</th><th className="px-3 font-semibold">Credits</th><th className="px-3 font-semibold">Price ({cfg.currency.toUpperCase()})</th><th className="px-3 text-right font-semibold">Per report</th></tr></thead>
-            <tbody className="divide-y divide-line">
-              {cfg.packs.map((p) => (
-                <tr key={p.id}>
-                  <td className="py-2.5 font-medium">{NAMES[p.id] ?? p.id}</td>
-                  <td className="px-3 text-ink-2">{p.audience === "user" ? "People" : "Companies"}</td>
-                  <td className="px-3"><input name={`credits:${p.id}`} type="number" min="1" step="1" defaultValue={p.credits} className={`${input} w-24`} aria-label={`${p.id} credits`} /></td>
-                  <td className="px-3"><input name={`price:${p.id}`} type="number" min="0.5" step="0.01" defaultValue={(p.amountCents / 100).toFixed(2)} className={`${input} w-28`} aria-label={`${p.id} price`} /></td>
-                  <td className="px-3 text-right tabular-nums text-ink-2">{(p.amountCents / 100 / p.credits).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* The paid reports side by side: the type report (the Single report pack), then its add-ons. */}
-        <div>
-          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-muted">The paid reports</h3>
-          <div className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="text-sm"><span className="text-ink-2">Complete Personality Analysis, per report ({cfg.currency.toUpperCase()})</span><input name="typePrice" type="number" min="0.5" step="0.01" defaultValue={(typeCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">The full report on a person's own voice: their type, emotional state and best fields. Same price as the Single report pack above.</span></label>
-          <label className="text-sm"><span className="text-ink-2">Career Fit, per industry ({cfg.currency.toUpperCase()})</span><input name="industryPrice" type="number" min="0.5" step="0.01" defaultValue={(addonCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Paid straight from the card on a report. A report credit can open a chapter too.</span></label>
-          <label className="text-sm"><span className="text-ink-2">Find My Best-Fit Industry, per report ({cfg.currency.toUpperCase()})</span><input name="bestPrice" type="number" min="0.5" step="0.01" defaultValue={(bestCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Assesses the profile against every industry: the best match with its strongest role and full chapter, and the top five from different fields. Paid straight from the card; also sold inside gifts.</span></label>
-          <label className="text-sm"><span className="text-ink-2">Relationship & Compatibility, per pair ({cfg.currency.toUpperCase()})</span><input name="matchPrice" type="number" min="0.5" step="0.01" defaultValue={(matchCents / 100).toFixed(2)} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">Paid straight from the card on a report; the partner's own report is included.</span></label>
-          </div>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
-          <label className="text-sm"><span className="text-ink-2">Currency (3 letters)</span><input name="currency" defaultValue={cfg.currency} maxLength={3} className={`${input} mt-1.5 w-full uppercase`} /></label>
-          <label className="text-sm"><span className="text-ink-2">Free previews per person, per 30 days</span><input name="freePreviews" type="number" min="0" max="100" defaultValue={cfg.freePreviewsPer30Days} className={`${input} mt-1.5 w-full`} /></label>
-          <label className="text-sm"><span className="text-ink-2">Trial credits for a new company</span><input name="trialCredits" type="number" min="0" max="1000" defaultValue={cfg.workspaceTrialCredits} className={`${input} mt-1.5 w-full`} /></label>
-          <label className="text-sm"><span className="text-ink-2">Find My Best-Fit Industry, in credits</span><input name="bestCredits" type="number" min="1" step="1" defaultValue={bestN} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">What it costs someone who pays with report credits, and what a gift carries for it.</span></label>
-          <label className="text-sm"><span className="text-ink-2">Relationship & Compatibility, in credits</span><input name="matchCredits" type="number" min="1" step="1" defaultValue={matchN} className={`${input} mt-1.5 w-full`} /><span className="mt-1 block text-xs leading-relaxed text-muted">What it costs someone who pays with report credits instead of the card.</span></label>
-        </div>
-        <p className="text-xs leading-relaxed text-muted">Each free preview costs you one AVOCO analysis, so the preview limit is your protection against people who record and never pay.</p>
-        <button type="submit" className="btn">Save pricing</button>
-      </form>
+      <PricingForm
+        save={saveSettingsAction}
+        names={NAMES}
+        stripeConnected={stripe.connected}
+        current={{
+          enabled: cfg.enabled, currency: cfg.currency, packs: cfg.packs, freePreviews: cfg.freePreviewsPer30Days, trialCredits: cfg.workspaceTrialCredits,
+          industryCents: addonCents, bestCents, bestCredits: bestN, matchCents, matchCredits: matchN,
+        }}
+      />
 
       <section className="card space-y-5 p-7 sm:p-9">
         <div className="flex flex-wrap items-center justify-between gap-3">
