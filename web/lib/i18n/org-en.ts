@@ -109,4 +109,30 @@ export const orgEn = {
     stationNext: "Next person",
   },
   join: { title: "Join {company}", go: "Join as a viewer", done: "You're in." },
+  /** The API page (/docs/api), in plain words for whoever lands there from the footer; the technical guide below it stays in English. */
+  apiPage: {
+    eyebrow: "For companies · API",
+    title: "Connect AVOCO to your own software",
+    lead: "Your hiring system, app or website can send a voice recording to AVOCO and get the person's result back by itself, with no one opening the site. You don't need this to use AVOCO: everything also works right here in the browser.",
+    stepsTitle: "How to start",
+    steps: [
+      { title: "Create a company workspace", text: "Your company's space on AVOCO. Every recording your software sends lands there, in a group called \"API\"." },
+      { title: "Create an API key", text: "A workspace admin creates it under Settings → API access. It is shown only once: keep it somewhere safe." },
+      { title: "Hand the key to your developer", text: "Along with a link to this page. The technical guide below is all they need: two requests." },
+    ],
+    getsTitle: "What comes back for each person",
+    gets: [
+      "The eight personality types, each scored from 0 to 100",
+      "The fourteen emotional scales, unless your workspace hides them",
+      "The fields of work that fit the person best",
+    ],
+    getsNote: "The full written report stays in your workspace, where your team reads it.",
+    consentTitle: "Consent comes first",
+    consent: "Send only recordings of people who agreed to the analysis. Your software confirms their consent with every recording.",
+    open: "Open company workspaces",
+    ask: "Questions? Write to us",
+    devEyebrow: "For developers",
+    devTitle: "Technical guide",
+    devNote: "The technical guide is in English, like the code in it.",
+  },
 };
