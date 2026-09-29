@@ -3,6 +3,9 @@
  * body before anything is parsed. Crediting is idempotent: Stripe retries, and a retry changes nothing.
  */
 import { completePurchase } from "@/lib/billing";
+
+// A kept recording is handed to AVOCO after the answer to Stripe (lib/billing.ts kickHeldRecording), which takes about half a minute.
+export const maxDuration = 120;
 import { stripeKeys, verifyStripeSignature } from "@/lib/stripe";
 
 export async function POST(req: Request) {

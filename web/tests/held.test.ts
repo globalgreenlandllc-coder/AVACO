@@ -71,6 +71,15 @@ describe("a recording kept at the paywall", () => {
     expect(await B.balance(B.asUser("user_a"))).toBe(0);
   });
 
+  it("says where a kept recording stands", async () => {
+    const p = await B.startPurchase(B.asUser("user_a"), "one", null, null, { audioUrl: URL_A, person: null });
+    expect(await B.heldRecordingState(p.id)).toMatchObject({ report: null, starting: false, paidAt: null, audioUrl: URL_A });
+    await B.completePurchase(p.id, { amountCents: 900, currency: "usd" });
+    const state = await B.heldRecordingState(p.id);
+    expect(state.report).toBe(calls.ids[0]);
+    expect(state.paidAt).toBeInstanceOf(Date);
+  });
+
   it("leaves ordinary purchases alone", async () => {
     const p = await B.startPurchase(B.asUser("user_a"), "three");
     await B.completePurchase(p.id, { amountCents: 1900, currency: "usd" });

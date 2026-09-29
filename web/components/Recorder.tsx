@@ -10,6 +10,7 @@ import { Thinking } from "./Thinking";
 import { VoiceScope } from "./VoiceScope";
 import { Waveform } from "./Waveform";
 import { peaksFromBlob } from "@/lib/waveform";
+import { forgetHeld, keepHeld, readHeld, type Held } from "@/lib/held";
 
 type Phase = "idle" | "recording" | "recorded" | "sending";
 /**
@@ -28,17 +29,6 @@ export function isNoisy(frameDb: number[]): boolean {
 }
 type ErrorKey = keyof Dict["record"]["errors"];
 
-/** A recording kept at the paywall: already uploaded, so it only needs a credit. Remembered in this browser for a week. */
-interface Held { audioUrl: string; person: string | null; at: number }
-const HELD_KEY = "avoco-held-recording", HELD_DAYS = 7;
-function readHeld(): Held | null {
-  try {
-    const v = JSON.parse(localStorage.getItem(HELD_KEY) ?? "null") as Held | null;
-    return v && typeof v.audioUrl === "string" && typeof v.at === "number" && Date.now() - v.at < HELD_DAYS * 86_400_000 ? v : null;
-  } catch { return null; }
-}
-function keepHeld(h: Held) { try { localStorage.setItem(HELD_KEY, JSON.stringify(h)); } catch { /* the panel still works for this visit */ } }
-function forgetHeld() { try { localStorage.removeItem(HELD_KEY); } catch { /* nothing was kept */ } }
 
 const RING = 2 * Math.PI * 54;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -237,7 +227,8 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     if (!res?.ok) { setHoldError(t.held.failed); setHoldBusy(null); return; }
     const { id } = await res.json();
     forgetHeld();
-    try { if (peaks) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(peaks)); } catch { /* a stand-in is drawn */ }
+    const shape = item.peaks ?? peaks;
+    try { if (shape) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(shape)); } catch { /* a stand-in is drawn */ }
     router.push(doneUrl.replace("{id}", id));
     router.refresh();
   }
@@ -285,7 +276,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
       if (res.status === 402 && paywall) {
         // Out of free previews: keep the recording (it is uploaded) and offer the credits right here, so nothing is lost.
-        const kept = { audioUrl: stored.url, person: otherName ?? null, at: Date.now() };
+        const kept: Held = { audioUrl: stored.url, person: otherName ?? null, at: Date.now(), peaks: peaks ?? null };
         keepHeld(kept);
         setHeld(kept);
         setProgress(null);

@@ -19,7 +19,8 @@ const CHANNEL_BARS = 9;
 /** "Measured" heights per channel and bar, the same on the server and in the browser. */
 const settled = (c: number, b: number) => 0.35 + 0.6 * Math.abs(Math.sin(c * 3.7 + b * 1.3));
 
-export function Analysing({ t, startedAt, thoughts, queued = false }: { t: Dict["report"]["live"]; startedAt: number; thoughts: string[]; queued?: boolean }) {
+/** `peaks`: the recording's shape when the caller has it (components/HeldWaiting.tsx); otherwise it is looked up by the report id in the address. */
+export function Analysing({ t, startedAt, thoughts, queued = false, peaks: given = null }: { t: Dict["report"]["live"]; startedAt: number; thoughts: string[]; queued?: boolean; peaks?: number[] | null }) {
   // The server and the browser read the clock at different moments, so the first paint uses the
   // moment the recording started (0 s) and the real clock takes over once the page is live.
   const [now, setNow] = useState<number | null>(null);
@@ -36,6 +37,7 @@ export function Analysing({ t, startedAt, thoughts, queued = false }: { t: Dict[
     } catch { /* the stand-in stays */ }
     return () => { clearInterval(clockId); clearInterval(thoughtId); };
   }, []);
+  useEffect(() => { if (given?.length) setPeaks(given); }, [given]);
 
   const seconds = now === null ? 0 : Math.max(0, (now - startedAt) / 1000);
   const stage = queued ? 0 : STAGE_AT.filter((s) => seconds >= s).length - 1;

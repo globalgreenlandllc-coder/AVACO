@@ -160,7 +160,7 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
     else if (p.unlockIndustry) await unlockIndustry(owner.id, p.unlockAnalysisId, p.unlockIndustry).catch(() => {});
   }
   // A recording kept at the paywall: analysed now and opened with one of the credits just bought.
-  if (p.recordingUrl && owner.kind === "user") await startHeldRecording(p.id).catch((err) => console.error("Held recording not started", err));
+  if (p.recordingUrl && owner.kind === "user") await kickHeldRecording(p.id);
   // Only the call that recorded the payment sends the receipt, so the webhook and the return page never send two.
   if (fresh) sendReceiptLater(p.id);
   return fresh ? "credited" : "already";
@@ -191,6 +191,27 @@ export async function startHeldRecording(purchaseId: string): Promise<string | n
     await db().update(purchases).set({ recordingStartedAt: null }).where(eq(purchases.id, p.id));
     throw err;
   }
+}
+
+/**
+ * Starts a kept recording without making anyone wait: handing a recording to AVOCO takes about half a minute, so in a
+ * request it runs after the response (the webhook answers Stripe at once, the return page shows the analysing console).
+ * Outside a request (tests, scripts) it simply runs.
+ */
+export async function kickHeldRecording(purchaseId: string): Promise<void> {
+  const run = () => startHeldRecording(purchaseId).then(() => undefined).catch((err) => console.error("Held recording not started", err));
+  try {
+    const { after } = await import("next/server");
+    after(run);
+  } catch {
+    await run();
+  }
+}
+
+/** Where a kept recording stands: its report once started, whether a start is under way (claimed in the last 2 minutes), and when it was paid. */
+export async function heldRecordingState(purchaseId: string): Promise<{ report: string | null; starting: boolean; paidAt: Date | null; audioUrl: string | null }> {
+  const [p] = await db().select({ report: purchases.unlockAnalysisId, startedAt: purchases.recordingStartedAt, paidAt: purchases.paidAt, audioUrl: purchases.recordingUrl }).from(purchases).where(eq(purchases.id, purchaseId));
+  return { report: p?.report ?? null, starting: Boolean(p?.startedAt && Date.now() - p.startedAt.getTime() < 120_000), paidAt: p?.paidAt ?? null, audioUrl: p?.audioUrl ?? null };
 }
 
 /** The report a kept recording became, if it was bought and analysed already: the recorder forgets it then. */
