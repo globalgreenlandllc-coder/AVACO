@@ -18,6 +18,7 @@ import { PersonName } from "./PersonName";
 import { CountUp, Reveal } from "./Motion";
 import { Profile } from "./Profile";
 import { Radar } from "./Radar";
+import { Trust } from "./Trust";
 
 export interface Report {
   id: string;
@@ -431,6 +432,9 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
           </div>
         </Reveal>
       )}
+
+      {/* Trust and reliability, read from the eight types: part of the report, so it prints and downloads with it. */}
+      {psy.length === 8 && <Trust types={psy} typeName={(key) => psy.find((row) => row.key === key)?.name ?? key} t={t.trust} />}
 
       <Reveal as="section" className="card card-flow p-8 sm:p-12">
         <h2 className="font-display text-3xl font-medium sm:text-4xl">{method.title}</h2>

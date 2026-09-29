@@ -10,6 +10,7 @@ import { giftEn } from "./gift-en";
 import { receiptEn } from "./receipt-en";
 import { peopleEn } from "./people-en";
 import { finderEn } from "./finder-en";
+import { trustEn } from "./trust-en";
 export const en = {
   brand: "AVOCO",
   notFound: { title: "This page isn't here", text: "The link may be old, or the report it pointed to was deleted. Your reports are always on My reports.", home: "Back to the start", reports: "My reports" },
@@ -299,6 +300,8 @@ export const en = {
   footer: "Voice analysis by AVOCO. Not a medical or psychological diagnosis.",
   language: "Language",
   deep: deepEn,
+  /** Trust and reliability, read from the type mix (lib/trust.ts). */
+  trust: trustEn,
   types: typesEn,
   org: orgEn,
   billing: billingEn,

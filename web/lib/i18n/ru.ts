@@ -10,6 +10,7 @@ import { giftRu } from "./gift-ru";
 import { receiptRu } from "./receipt-ru";
 import { peopleRu } from "./people-ru";
 import { finderRu } from "./finder-ru";
+import { trustRu } from "./trust-ru";
 import type { Dict } from "./en";
 
 export const ru: Dict = {
@@ -300,6 +301,7 @@ export const ru: Dict = {
   footer: "Анализ голоса AVOCO. Не является медицинским или психологическим диагнозом.",
   language: "Язык",
   deep: deepRu,
+  trust: trustRu,
   types: typesRu,
   org: orgRu,
   billing: billingRu,
