@@ -1,8 +1,8 @@
 "use client";
 /**
  * Live traffic for Admin → Statistics: who is on the site right now, on a world map coloured by where each visitor came
- * from, visitors per minute over the last hour, and the page views as they happen. Asks /api/admin/live every five
- * seconds while the tab is visible.
+ * from, visitors per minute over the last hour, and the page views as they happen. Asks /api/admin/live every two
+ * seconds while the tab is visible, and at once when the tab comes back into view.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Bars } from "./AdminCharts";
@@ -26,11 +26,14 @@ export function LiveTraffic() {
         const res = await fetch("/api/admin/live", { cache: "no-store" }).catch(() => null);
         if (res?.ok) { setData(await res.json()); setFailed(false); } else setFailed(true);
       }
-      if (!stopped) timer = setTimeout(tick, 5000);
+      if (!stopped) timer = setTimeout(tick, 2000);
     };
     void tick();
+    // Back to the tab: fresh numbers now, not at the next tick.
+    const onShow = () => { if (document.visibilityState === "visible") { clearTimeout(timer); void tick(); } };
+    document.addEventListener("visibilitychange", onShow);
     const second = setInterval(() => setClock(Date.now()), 1000);
-    return () => { stopped = true; clearTimeout(timer); clearInterval(second); };
+    return () => { stopped = true; clearTimeout(timer); clearInterval(second); document.removeEventListener("visibilitychange", onShow); };
   }, []);
 
   // The land, drawn once: one path of small dots.
@@ -57,7 +60,7 @@ export function LiveTraffic() {
           <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: "#e5484d" }}>Live</span>
           <span className="font-semibold">Traffic right now</span>
         </p>
-        <p className="text-xs text-muted">{failed ? "Can't reach the live feed; retrying…" : data ? `Updated ${ago(clock - data.now)} ago · every 5 seconds` : "Connecting…"}</p>
+        <p className="text-xs text-muted">{failed ? "Can't reach the live feed; retrying…" : data ? `Updated ${ago(clock - data.now)} ago · every 2 seconds` : "Connecting…"}</p>
       </div>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
