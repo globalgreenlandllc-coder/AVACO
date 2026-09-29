@@ -307,6 +307,9 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
         )}
       </div>
 
+      {visitors.some((v) => v.lat === null || v.lon === null) && (
+        <p className="mt-2 text-xs text-muted">{plural(visitors.filter((v) => v.lat === null || v.lon === null).length, "visitor", "visitors")} without a known location: counted, but not on the map.</p>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-ink-2">
         {(Object.keys(STATUS) as Array<keyof typeof STATUS>).map((key) => (
           <span key={key} className="flex items-center gap-1.5">

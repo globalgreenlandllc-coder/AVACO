@@ -1,5 +1,6 @@
 /** Admin → Statistics: a number with its change against the previous period, and the funnel from visitor to paying customer. */
 import { Bars, type Bar } from "./AdminCharts";
+import { Flash } from "./Flash";
 
 export function KpiDelta({ label, value, previous, sub, format = String }: { label: string; value: number; previous?: number | null; sub?: string; format?: (v: number) => string }) {
   const pct = previous != null && previous > 0 ? Math.round(((value - previous) / previous) * 100) : null;
@@ -8,7 +9,7 @@ export function KpiDelta({ label, value, previous, sub, format = String }: { lab
     <div className="card p-6">
       <p className="text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
       <p className="mt-3 flex items-baseline gap-3">
-        <span className="font-display text-4xl font-medium tabular-nums">{format(value)}</span>
+        <Flash value={value} className="font-display text-4xl font-medium tabular-nums">{format(value)}</Flash>
         {pct != null && <span className={`text-sm font-semibold tabular-nums ${tone}`} title="Against the previous period">{pct > 0 ? "▲" : pct < 0 ? "▼" : "•"} {Math.abs(pct)}%</span>}
         {pct == null && previous === 0 && value > 0 && <span className="text-sm font-semibold text-muted">new</span>}
       </p>

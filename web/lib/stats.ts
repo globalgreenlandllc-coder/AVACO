@@ -36,10 +36,17 @@ export interface Statistics {
  * accounts are left out, so a test account of the team never counts as a sign-up. `ids`: the accounts of the last
  * 30 days, for crediting each sign-up to where its person first came from.
  */
+/** Clerk's newest 500 accounts and the total, kept for a minute: live mode refreshes the page every 15 seconds. */
+let clerkMemo: { at: number; total: number; list: { data: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUserList"]>>["data"] } } | null = null;
+
 async function signups(now: number): Promise<{ total: number | null; created: number[]; ids: Set<string>; capped: boolean }> {
   try {
-    const client = await clerkClient();
-    const [total, list] = await Promise.all([client.users.getCount(), client.users.getUserList({ orderBy: "-created_at", limit: 500 })]);
+    if (!clerkMemo || Date.now() - clerkMemo.at > 60_000) {
+      const client = await clerkClient();
+      const [count, users] = await Promise.all([client.users.getCount(), client.users.getUserList({ orderBy: "-created_at", limit: 500 })]);
+      clerkMemo = { at: Date.now(), total: count, list: { data: users.data } };
+    }
+    const { total, list } = clerkMemo;
     const floor = now - 60 * DAY;
     const recent = list.data.filter((u) => u.createdAt >= floor);
     const kept = (await Promise.all(recent.map(async (u) => {

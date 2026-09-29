@@ -1,3 +1,5 @@
+import { Flash } from "./Flash";
+
 /** Charts for the admin portal: real text for every number, one hue, a fixed baseline, and the numbers that matter written out under each chart. */
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -90,7 +92,7 @@ export function Kpi({ label, value, sub }: { label: string; value: string; sub?:
   return (
     <div className="card p-6">
       <p className="text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
-      <p className="mt-3 font-display text-4xl font-medium tabular-nums">{value}</p>
+      <p className="mt-3 font-display text-4xl font-medium tabular-nums"><Flash value={value}>{value}</Flash></p>
       {sub && <p className="mt-1 text-xs text-ink-2">{sub}</p>}
     </div>
   );

@@ -1,5 +1,6 @@
 import { DailyBars, Kpi, RankBars } from "@/components/AdminCharts";
 import { AdPlatforms } from "@/components/AdPlatforms";
+import { LiveMode } from "@/components/LiveMode";
 import { LiveTraffic } from "@/components/LiveTraffic";
 import { SourcesReport } from "@/components/SourcesReport";
 import { TrackingLinks } from "@/components/TrackingLinks";
@@ -22,6 +23,7 @@ export default async function AdminStats() {
 
   return (
     <div className="space-y-10">
+      <div className="-mb-4 flex justify-end"><LiveMode every={15} /></div>
       <LiveTraffic />
 
       <section className="card border-accent p-7">

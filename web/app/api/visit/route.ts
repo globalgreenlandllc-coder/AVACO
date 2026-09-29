@@ -22,6 +22,8 @@ const done = (setVid: string | null) => {
 export async function POST(req: NextRequest) {
   let fresh: string | null = null;
   try {
+    // Served by Vercel or not at all: a development server (every page view of a local test run) never counts.
+    if (!req.headers.get("x-vercel-id") && !process.env.RECORD_LOCAL_VISITS) return done(null);
     const text = await req.text();
     if (text.length > 2000) return done(null);
     const body = JSON.parse(text) as Record<string, unknown>;
