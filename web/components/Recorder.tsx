@@ -28,6 +28,18 @@ export function isNoisy(frameDb: number[]): boolean {
 }
 type ErrorKey = keyof Dict["record"]["errors"];
 
+/** A recording kept at the paywall: already uploaded, so it only needs a credit. Remembered in this browser for a week. */
+interface Held { audioUrl: string; person: string | null; at: number }
+const HELD_KEY = "avoco-held-recording", HELD_DAYS = 7;
+function readHeld(): Held | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(HELD_KEY) ?? "null") as Held | null;
+    return v && typeof v.audioUrl === "string" && typeof v.at === "number" && Date.now() - v.at < HELD_DAYS * 86_400_000 ? v : null;
+  } catch { return null; }
+}
+function keepHeld(h: Held) { try { localStorage.setItem(HELD_KEY, JSON.stringify(h)); } catch { /* the panel still works for this visit */ } }
+function forgetHeld() { try { localStorage.removeItem(HELD_KEY); } catch { /* nothing was kept */ } }
+
 const RING = 2 * Math.PI * 54;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -52,9 +64,14 @@ export interface RecorderProps {
    * new. Someone else's recording needs their agreement, so the consent sentence names them. `initial` preselects a person.
    */
   whose?: { known: string[]; initial?: string | null; t: Dict["people"]; /** The account holder's first name, shown on the "me" choice. */ myName?: string | null };
+  /**
+   * The account holder's own recorder with billing on. When the free previews are used up the recording is kept (it is
+   * already uploaded) and these packs are offered right there; the payment analyses it and opens the report.
+   */
+  paywall?: { packs: Array<{ id: string; credits: number; price: string; perReport: string }>; featured: string | null; canPay: boolean };
 }
 
-export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText, onStart, whose }: RecorderProps) {
+export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api/analyses", doneUrl = "/reports/{id}", consentText, extraConsent, limitText, payText, onStart, whose, paywall }: RecorderProps) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -79,6 +96,23 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
   const [step, setStep] = useState(0);
   const [uploaded, setUploaded] = useState(0);
   const [error, setError] = useState<ErrorKey | null>(null);
+  const [held, setHeld] = useState<Held | null>(null);
+  const [waiting, setWaiting] = useState<Held | null>(null);
+  const [holdBusy, setHoldBusy] = useState<string | null>(null);
+  const [holdError, setHoldError] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const hasPaywall = Boolean(paywall);
+
+  // A recording kept here before (the paywall, then the page was left): offer it again, unless it was bought and analysed since.
+  useEffect(() => {
+    if (!hasPaywall) return;
+    const h = readHeld();
+    if (!h) return;
+    fetch(`/api/held?url=${encodeURIComponent(h.audioUrl)}`)
+      .then((r) => (r.ok ? r.json() : { report: null }))
+      .then((s: { report: string | null }) => { if (s.report) forgetHeld(); else setWaiting(h); })
+      .catch(() => setWaiting(h));
+  }, [hasPaywall]);
 
   const recorder = useRef<MediaRecorder | null>(null);
   const cleanup = useRef<(() => void) | null>(null);
@@ -194,8 +228,45 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     setPhase("recorded");
   }
 
+  /** Sends a kept recording for analysis, with no new upload: its report on success, the packs again while there is no credit. */
+  async function analyseHeld(item: Held) {
+    setHoldError(null);
+    setHoldBusy("analyse");
+    const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: item.audioUrl, consent: true, person: item.person ?? undefined }) }).catch(() => null);
+    if (res?.status === 402) { setHeld(item); setWaiting(null); setHoldBusy(null); return; }
+    if (!res?.ok) { setHoldError(t.held.failed); setHoldBusy(null); return; }
+    const { id } = await res.json();
+    forgetHeld();
+    try { if (peaks) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(peaks)); } catch { /* a stand-in is drawn */ }
+    router.push(doneUrl.replace("{id}", id));
+    router.refresh();
+  }
+
+  /** Card payment for a pack, carrying the kept recording: back from Stripe, it is analysed and opened (app/record/resume). */
+  async function buy(packId: string, item: Held) {
+    setHoldError(null);
+    setHoldBusy(packId);
+    const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack: packId, recording: { audioUrl: item.audioUrl, person: item.person } }) }).catch(() => null);
+    const body = await res?.json().catch(() => null);
+    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    setHoldError(t.held.failed);
+    setHoldBusy(null);
+  }
+
+  /** A promo or gift code: credits first, then the kept recording goes straight to analysis. */
+  async function redeemCode(item: Held) {
+    if (!code.trim()) return;
+    setHoldError(null);
+    setHoldBusy("code");
+    const res = await fetch("/api/billing/redeem", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: code.trim() }) }).catch(() => null);
+    if (!res?.ok) { setHoldError(t.held.badCode); setHoldBusy(null); return; }
+    await analyseHeld(item);
+  }
+
   async function analyse() {
     if (!clip || !agreed) return;
+    // Already uploaded and kept at the paywall: try it again without uploading twice.
+    if (held) { await analyseHeld(held); return; }
     setError(null);
     setMessage(null);
     setPhase("sending");
@@ -212,10 +283,20 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       setProgress(t.starting);
       const res = await fetch(createUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioUrl: stored.url, consent: true, extraConsent: extraConsent ? true : undefined, person: otherName ?? undefined }) });
       if (res.status === 429 && limitText) { setMessage(limitText); setProgress(null); setPhase("recorded"); return; }
+      if (res.status === 402 && paywall) {
+        // Out of free previews: keep the recording (it is uploaded) and offer the credits right here, so nothing is lost.
+        const kept = { audioUrl: stored.url, person: otherName ?? null, at: Date.now() };
+        keepHeld(kept);
+        setHeld(kept);
+        setProgress(null);
+        setPhase("recorded");
+        return;
+      }
       if (res.status === 402 && (payText || limitText)) { setMessage(payText ?? limitText ?? null); setProgress(null); setPhase("recorded"); return; }
       if (res.status === 502 || res.status === 503) { setError("unavailable"); setProgress(null); setPhase("recorded"); return; }
       if (!res.ok) throw new Error(`analyses ${res.status}`);
       const { id } = await res.json();
+      forgetHeld();
       // The report page shows this very recording being analysed (components/Analysing.tsx).
       try { if (peaks) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(peaks)); } catch { /* it then draws a stand-in */ }
       router.push(doneUrl.replace("{id}", id));
@@ -255,6 +336,17 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       <div className="flex flex-col items-center text-center">
         {/* The type is read from the natural voice (pitch and timbre): a put-on voice is the one thing a person can do
             that changes it, so this sits right above the button, and stays up while they record. */}
+        {waiting && !held && phase === "idle" && (
+          <div className="mb-6 w-full max-w-md rounded-2xl border border-accent bg-surface px-5 py-4 text-left" role="status">
+            <p className="font-semibold">{t.held.waitingTitle}</p>
+            <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.held.waitingText.replace("{when}", new Date(waiting.at).toLocaleString(typeof document === "undefined" ? undefined : document.documentElement.lang))}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn !px-5 !py-2" onClick={() => void analyseHeld(waiting)} disabled={Boolean(holdBusy)}>{holdBusy === "analyse" ? t.held.working : t.held.analyseNow}</button>
+              <button type="button" className="btn btn-quiet !px-5 !py-2" onClick={() => { forgetHeld(); setWaiting(null); }} disabled={Boolean(holdBusy)}>{t.held.discard}</button>
+            </div>
+            {holdError && <p role="alert" className="mt-2 text-sm text-danger">{holdError}</p>}
+          </div>
+        )}
         {phase !== "sending" && (
           <div className="mb-8 flex w-full max-w-md items-start gap-3 rounded-2xl border border-accent bg-accent-soft px-5 py-4 text-left">
             <svg className="mt-0.5 shrink-0 text-accent-text" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -365,6 +457,33 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
         </div>
       )}
 
+      {held && paywall && (
+        <section className="mt-6 rounded-2xl border border-accent bg-accent-soft p-6 sm:p-7" aria-live="polite">
+          <p className="font-semibold">{t.held.title}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{t.held.text}</p>
+          {paywall.canPay ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {paywall.packs.map((p) => (
+                <button key={p.id} type="button" onClick={() => void buy(p.id, held)} disabled={Boolean(holdBusy)}
+                  className={`flex flex-col items-start rounded-2xl border bg-surface p-4 text-left transition-colors hover:border-accent disabled:opacity-60 ${p.id === paywall.featured ? "border-accent" : "border-line"}`}>
+                  <span className="eyebrow min-h-4 !text-accent-text">{p.id === paywall.featured ? t.held.bestValue : ""}</span>
+                  <span className="mt-1 font-semibold">{p.credits === 1 ? t.held.report : t.held.reports.replace("{n}", String(p.credits))}</span>
+                  <span className="font-display text-3xl font-medium tabular-nums">{p.price}</span>
+                  <span className="min-h-4 text-xs text-muted">{p.credits > 1 ? t.held.each.replace("{price}", p.perReport) : ""}</span>
+                  <span className="btn mt-3 w-full !py-2 text-center">{holdBusy === p.id ? t.held.opening : t.held.choose}</span>
+                </button>
+              ))}
+            </div>
+          ) : <p className="mt-4 text-sm text-ink-2">{t.held.noCard}</p>}
+          <form className="mt-5 flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void redeemCode(held); }}>
+            <label className="sr-only" htmlFor="held-code">{t.held.code}</label>
+            <input id="held-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t.held.codePlaceholder} autoComplete="off" className="w-full max-w-60 rounded-lg border border-line bg-surface px-3 py-2 text-sm" />
+            <button type="submit" className="btn btn-quiet !px-4 !py-2 text-sm" disabled={Boolean(holdBusy) || !code.trim()}>{holdBusy === "code" || holdBusy === "analyse" ? t.held.working : t.held.apply}</button>
+          </form>
+          {holdError && <p role="alert" className="mt-3 text-sm text-danger">{holdError}</p>}
+          <p className="mt-4 text-xs leading-relaxed text-muted">{t.held.secure} <a href="/reports" className="font-semibold text-accent-text hover:underline">{t.held.orReports}</a></p>
+        </section>
+      )}
       {message && <p role="alert" className="mt-6 rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">{message}</p>}
       {error && <p role="alert" className="mt-6 rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">{t.errors[error]}</p>}
     </div>

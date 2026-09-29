@@ -1,12 +1,22 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { Recorder } from "@/components/Recorder";
+import { getSettings } from "@/lib/billing";
 import { activeGift } from "@/lib/gifts";
+import { packViews } from "@/lib/money";
+import { stripeReady } from "@/lib/stripe";
 import { getDict } from "@/lib/i18n";
 import { cleanName, knownNames } from "@/lib/people";
 import { visitorId } from "@/lib/visitor";
 
 export default async function RecordPage({ searchParams }: { searchParams: Promise<{ person?: string }> }) {
-  const [{ t }, { userId }, visitor, query] = await Promise.all([getDict(), auth(), visitorId(), searchParams]);
+  const [{ t, locale }, { userId }, visitor, query, cfg] = await Promise.all([getDict(), auth(), visitorId(), searchParams, getSettings()]);
+  // With billing on: the packs the recorder offers when the free previews run out, so a finished recording is never lost.
+  const packs = cfg.packs.filter((p) => p.audience === "user");
+  const paywall = userId && cfg.enabled ? {
+    packs: packViews(packs, cfg.currency, locale),
+    featured: packs.filter((p) => p.credits > 1).sort((a, b) => a.amountCents / a.credits - b.amountCents / b.credits)[0]?.id ?? null,
+    canPay: await stripeReady().catch(() => false),
+  } : undefined;
   // Whose voice: "me", or a name used before, one click each; "Record Anna" on My reports arrives with ?person=Anna.
   const me = userId ? await currentUser().catch(() => null) : null;
   const whose = visitor ? { known: await knownNames(visitor), initial: cleanName(query.person), t: t.people, myName: me?.firstName ?? null } : undefined;
@@ -23,7 +33,7 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
             <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.gift.record.text} {t.gift.record.left.replace("{n}", String(gift.reports - gift.reportsUsed))}.</p>
           </div>
         )}
-        <div className="mt-8"><Recorder t={t.record} payText={t.billing.cap} whose={whose} /></div>
+        <div className="mt-8"><Recorder t={t.record} payText={t.billing.cap} whose={whose} paywall={paywall} /></div>
       </div>
       <aside className="lg:pt-32">
         <p className="eyebrow">{t.record.promptsTitle}</p>

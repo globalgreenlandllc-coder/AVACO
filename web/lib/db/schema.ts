@@ -137,6 +137,14 @@ export const purchases = pgTable("purchases", {
   giftId: uuid("gift_id"),
   /** A relationship match bought straight from the card: paid for the moment the payment lands (lib/match-billing.ts). */
   matchId: uuid("match_id"),
+  /**
+   * A recording made after the free previews ran out (components/Recorder.tsx): already uploaded, analysed and opened
+   * the moment this purchase is paid (lib/billing.ts startHeldRecording), so nobody has to record again. Whoever gets
+   * there first, the webhook or the return page, claims it with `recordingStartedAt`; the report lands in unlockAnalysisId.
+   */
+  recordingUrl: text("recording_url"),
+  recordingPerson: text("recording_person"),
+  recordingStartedAt: ts("recording_started_at"),
   createdAt: ts("created_at").notNull().defaultNow(),
   paidAt: ts("paid_at"),
 });

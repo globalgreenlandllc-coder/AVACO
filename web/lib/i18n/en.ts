@@ -134,6 +134,19 @@ export const en = {
     starting: "Starting analysis…",
     /** The live view while recording (components/VoiceScope.tsx) and the shape of the recording afterwards. */
     scope: { signal: "Signal", pitch: "Pitch", room: "Room", hz: "{n} Hz", quiet: "quiet", fair: "fair", noisy: "noisy", listening: "listening…", waveform: "Your recording" },
+    /** The free previews ran out after recording: the recording is kept and the packs are offered right there (components/Recorder.tsx). */
+    held: {
+      title: "Your recording is kept",
+      text: "You have used this month's free previews. Choose credits and this recording is analysed straight away, and your full report opens with one of them. No need to record again.",
+      report: "1 report", reports: "{n} reports", each: "{price} per report", bestValue: "Best value", choose: "Choose", opening: "Opening checkout…", working: "One moment…",
+      code: "Have a code?", codePlaceholder: "Promo or gift code", apply: "Apply and analyse", badCode: "That code didn't work. Check it and try again.",
+      secure: "Secure card payment by Stripe; you come straight back to your report.", orReports: "Or open one of your reports",
+      noCard: "Card payments aren't available right now. Use a code, or open one of your reports.",
+      failed: "Something went wrong. Your recording is still kept; try again in a moment.",
+      waitingTitle: "A recording is waiting", waitingText: "Recorded {when}. You agreed to its analysis when you made it.", analyseNow: "Analyse it now", discard: "Discard",
+      confirming: "Confirming your payment…", starting: "Payment received. Starting the analysis of your recording…", notFound: "We couldn't find this payment.",
+      keptNote: "Your recording is kept and is analysed as soon as the payment is confirmed. This page moves on by itself.", myReports: "My reports",
+    },
     busy: {"thinking": "Getting your voice ready", "steps": ["Converting the recording", "Uploading", "Handing over to the analysis"], "uploadPct": "{n}% uploaded"},
     errors: {
       mic: "We couldn't access the microphone. Allow microphone access in your browser and try again.",

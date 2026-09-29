@@ -5,9 +5,11 @@
  * Billing can be switched off in the admin portal; then every report is free and none of this gates anything.
  */
 import "server-only";
-import { and, count, eq, gte, inArray, isNull, sql, sum } from "drizzle-orm";
+import { and, count, eq, gte, inArray, isNotNull, isNull, lt, or, sql, sum } from "drizzle-orm";
 import { isAdminUser } from "./admin";
 import { isOpenVisitor } from "./visitor";
+import { gateway } from "./gateway";
+import { cleanName, setPerson } from "./people";
 import { retrieveCheckout } from "./stripe";
 import { sendReceiptLater } from "./receipts";
 import { creditLedger, db, gifts, industryAccess, matches, promoCodes, purchases, reportAccess, reportStats, selfRecordings, settings, type LedgerReason, type OwnerKind } from "./db";
@@ -116,13 +118,16 @@ export async function workspaceTrial(workspaceId: string): Promise<void> {
 // ---------- purchases ----------
 
 /** `unlockAnalysisId` is the report the buyer was looking at; `unlockIndustry`, the industry chapter they were about to open on it. */
-export async function startPurchase(owner: Owner, packId: string, unlockAnalysisId?: string | null, unlockIndustry?: string | null) {
+/** `recording`: a recording kept after the free previews ran out, analysed and opened once this purchase is paid. */
+export async function startPurchase(owner: Owner, packId: string, unlockAnalysisId?: string | null, unlockIndustry?: string | null, recording?: { audioUrl: string; person: string | null } | null) {
   const cfg = await getSettings();
   const pack = cfg.packs.find((p) => p.id === packId && p.audience === owner.kind);
   if (!pack) throw new BadCode("Unknown pack");
   const [row] = await db().insert(purchases).values({
     id: crypto.randomUUID(), ownerKind: owner.kind, ownerId: owner.id, pack: pack.id, credits: pack.credits,
     amountCents: pack.amountCents, currency: cfg.currency, unlockAnalysisId: unlockAnalysisId ?? null, unlockIndustry: unlockAnalysisId ? unlockIndustry ?? null : null,
+    recordingUrl: owner.kind === "user" && !unlockAnalysisId && recording ? recording.audioUrl : null,
+    recordingPerson: owner.kind === "user" && !unlockAnalysisId && recording ? recording.person : null,
   }).returning();
   return row;
 }
@@ -154,9 +159,45 @@ export async function completePurchase(purchaseId: string, paid: { amountCents: 
     if (p.unlockIndustry === BEST_KEY) await unlockBest(owner.id, p.unlockAnalysisId, p.credits).catch(() => {});
     else if (p.unlockIndustry) await unlockIndustry(owner.id, p.unlockAnalysisId, p.unlockIndustry).catch(() => {});
   }
+  // A recording kept at the paywall: analysed now and opened with one of the credits just bought.
+  if (p.recordingUrl && owner.kind === "user") await startHeldRecording(p.id).catch((err) => console.error("Held recording not started", err));
   // Only the call that recorded the payment sends the receipt, so the webhook and the return page never send two.
   if (fresh) sendReceiptLater(p.id);
   return fresh ? "credited" : "already";
+}
+
+/**
+ * Starts the analysis of a recording that waited for this purchase and opens it with one credit. Returns the report's
+ * id, or null while it isn't paid yet or another call (the webhook or the return page) is starting it right now. Safe
+ * to call any number of times: one claim wins, and a claim left behind by a call that died is taken over after 2 minutes.
+ */
+export async function startHeldRecording(purchaseId: string): Promise<string | null> {
+  const [p] = await db().select().from(purchases).where(eq(purchases.id, purchaseId));
+  if (!p) return null;
+  if (p.unlockAnalysisId) return p.unlockAnalysisId;
+  if (!p.recordingUrl || p.ownerKind !== "user" || p.status !== "paid") return null;
+  const [claimed] = await db().update(purchases).set({ recordingStartedAt: new Date() })
+    .where(and(eq(purchases.id, p.id), isNull(purchases.unlockAnalysisId), or(isNull(purchases.recordingStartedAt), lt(purchases.recordingStartedAt, new Date(Date.now() - 120_000)))))
+    .returning({ id: purchases.id });
+  if (!claimed) return null;
+  try {
+    const created = await gateway.createAnalysis({ audioUrl: p.recordingUrl, owner: p.ownerId });
+    await noteSelfRecording(p.ownerId, created.id);
+    if (cleanName(p.recordingPerson)) await setPerson(p.ownerId, created.id, p.recordingPerson).catch(() => null);
+    await db().update(purchases).set({ unlockAnalysisId: created.id }).where(eq(purchases.id, p.id));
+    await unlock(p.ownerId, created.id).catch(() => {});
+    return created.id;
+  } catch (err) {
+    await db().update(purchases).set({ recordingStartedAt: null }).where(eq(purchases.id, p.id));
+    throw err;
+  }
+}
+
+/** The report a kept recording became, if it was bought and analysed already: the recorder forgets it then. */
+export async function heldRecordingReport(userId: string, audioUrl: string): Promise<string | null> {
+  const [row] = await db().select({ id: purchases.unlockAnalysisId }).from(purchases)
+    .where(and(eq(purchases.ownerKind, "user"), eq(purchases.ownerId, userId), eq(purchases.recordingUrl, audioUrl), isNotNull(purchases.unlockAnalysisId))).limit(1);
+  return row?.id ?? null;
 }
 
 /**

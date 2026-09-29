@@ -5,6 +5,7 @@
 import { errorResponse, json, requireUser } from "@/lib/api";
 import { asUser, asWorkspace, attachStripeSession, getSettings, startPurchase } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
+import { cleanName } from "@/lib/people";
 import { getDict } from "@/lib/i18n";
 import { industryNames } from "@/lib/industry-chapter";
 import { INDUSTRY_PACK, startIndustryPurchase } from "@/lib/industry-billing";
@@ -29,12 +30,14 @@ export async function POST(req: Request) {
     // The industry add-on is bought on its own, at its own price, straight from the card on the report; every other pack is credits.
     const addon = body?.pack === INDUSTRY_PACK;
     if (addon && (!unlockId || !industry)) return json({ error: "bad_request", message: "Choose an industry on a report first" }, 400);
+    // A recording kept at the paywall (the recorder has already uploaded it): the payment analyses it and opens the report.
+    const recording = !workspaceId && !unlockId && !addon && isOwnUpload(body?.recording?.audioUrl) ? { audioUrl: body.recording.audioUrl as string, person: cleanName(body.recording.person) } : null;
     const purchase = addon
       ? await startIndustryPurchase(asUser(user.userId), unlockId!, industry!)
-      : await startPurchase(workspaceId ? asWorkspace(workspaceId) : asUser(user.userId), String(body?.pack ?? ""), unlockId, industry);
+      : await startPurchase(workspaceId ? asWorkspace(workspaceId) : asUser(user.userId), String(body?.pack ?? ""), unlockId, industry, recording);
 
     const origin = await baseUrl();
-    const back = workspaceId ? `/w/${workspaceId}` : unlockId ? `/reports/${unlockId}` : "/credits";
+    const back = workspaceId ? `/w/${workspaceId}` : unlockId ? `/reports/${unlockId}` : recording ? "/record/resume" : "/credits";
     const withIndustry = industry ? `&industry=${industry}` : "";
     const session = await createCheckout({
       purchaseId: purchase.id,
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
       currency: (await getSettings()).currency,
       // Stripe fills in {CHECKOUT_SESSION_ID}; the page the buyer lands on confirms the payment itself instead of waiting for the webhook.
       successUrl: `${origin}${back}?paid=1&session={CHECKOUT_SESSION_ID}${withIndustry}`,
-      cancelUrl: `${origin}${back}${industry ? `?industry=${industry}` : ""}`,
+      cancelUrl: recording ? `${origin}/record` : `${origin}${back}${industry ? `?industry=${industry}` : ""}`,
       // The buyer's sign-in email, filled in on the payment page, and their language: the receipt goes there, in that language.
       ...(await checkoutContact(user.userId)),
     });
@@ -52,4 +55,10 @@ export async function POST(req: Request) {
   } catch (err) {
     return errorResponse(err);
   }
+}
+
+/** Only a recording this site uploaded (Vercel Blob) can ride along with a purchase: nothing else is sent to AVOCO. */
+function isOwnUpload(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  try { const u = new URL(url); return u.protocol === "https:" && u.hostname.endsWith(".blob.vercel-storage.com"); } catch { return false; }
 }
