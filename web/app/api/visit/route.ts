@@ -9,7 +9,7 @@ import { db, visits } from "@/lib/db";
 import { partnerHosts } from "@/lib/partners";
 import { excludeVisitor, isExcludedVisitor } from "@/lib/visit-exclusions";
 import { openHosts, visitorId } from "@/lib/visitor";
-import { deviceOf, normalizePath, referrerPage, sourceOf, type Site } from "@/lib/visits-math";
+import { CLICK_IDS, deviceOf, normalizePath, referrerPage, sourceOf, type Site } from "@/lib/visits-math";
 
 const VID = "avoco_vid";
 const str = (v: unknown) => (typeof v === "string" && v ? v : null);
@@ -37,17 +37,23 @@ export async function POST(req: NextRequest) {
     if (account && (await isAdminUser(account))) { await excludeVisitor(visitor, account); return done(fresh); }
     if (await isExcludedVisitor(visitor)) return done(fresh);
     const ownHosts = [host, ...partnerHosts(), ...openHosts()];
+    const click = typeof body.click === "string" && Object.hasOwn(CLICK_IDS, body.click) ? body.click : null;
     const session = typeof body.session === "string" && /^[A-Za-z0-9-]{4,64}$/.test(body.session) ? body.session : visitor;
     await db().insert(visits).values({
       id: crypto.randomUUID(),
       site, path, visitor, session, userId: account,
       landing: body.landing === true,
-      source: sourceOf(str(body.utmSource), str(body.referrer), ownHosts),
+      source: sourceOf(str(body.utmSource), str(body.referrer), ownHosts, { click, userAgent: req.headers.get("user-agent") }),
       campaign: str(body.utmCampaign)?.slice(0, 60) ?? null,
-      medium: str(body.utmMedium)?.slice(0, 40) ?? null,
+      // An ad's click id without a utm_medium still marks the visit as paid (fbclid excepted: every Meta link carries it).
+      medium: str(body.utmMedium)?.slice(0, 40) ?? (click && CLICK_IDS[click]?.paid ? "paid" : null),
+      click,
       content: str(body.utmContent)?.slice(0, 60) ?? null,
       referrer: referrerPage(str(body.referrer), ownHosts),
       country: req.headers.get("x-vercel-ip-country")?.slice(0, 2).toUpperCase() ?? null,
+      city: town(req.headers.get("x-vercel-ip-city")),
+      lat: degree(req.headers.get("x-vercel-ip-latitude"), 90),
+      lon: degree(req.headers.get("x-vercel-ip-longitude"), 180),
       device: deviceOf(req.headers.get("user-agent"), typeof body.width === "number" ? body.width : null),
       locale: str(body.locale)?.slice(0, 8) ?? null,
     });
@@ -55,4 +61,16 @@ export async function POST(req: NextRequest) {
     console.error("Visit not recorded", err);
   }
   return done(fresh);
+}
+
+/** The edge's town name (URL-encoded by Vercel), when it has one. */
+function town(raw: string | null): string | null {
+  if (!raw) return null;
+  try { return decodeURIComponent(raw).slice(0, 60) || null; } catch { return null; }
+}
+
+/** A position rounded to whole degrees (about 100 km): enough for a dot on a world map, never an address. */
+function degree(raw: string | null, limit: number): number | null {
+  const v = Number(raw);
+  return raw && Number.isFinite(v) && Math.abs(v) <= limit ? Math.round(v) : null;
 }

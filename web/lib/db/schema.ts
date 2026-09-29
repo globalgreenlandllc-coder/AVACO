@@ -320,8 +320,13 @@ export const visits = pgTable(
     content: text("content"),
     /** The referring page (host and path, no query), when another site linked here. */
     referrer: text("referrer"),
-    /** Two-letter country from the edge, when known. */
+    /** Which ad click id the landing link carried (fbclid, ttclid, twclid, gclid…): the platform, and for most a paid click. */
+    click: text("click"),
+    /** Two-letter country from the edge, when known; the town, and the position rounded to whole degrees, for the live map. */
     country: text("country"),
+    city: text("city"),
+    lat: integer("lat"),
+    lon: integer("lon"),
     device: text("device").$type<"phone" | "tablet" | "desktop">().notNull().default("desktop"),
     locale: text("locale"),
   },

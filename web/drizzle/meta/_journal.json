@@ -127,6 +127,13 @@
       "when": 1790717083791,
       "tag": "0017_held_recording",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790720551452,
+      "tag": "0018_visit_platforms",
+      "breakpoints": true
     }
   ]
 }

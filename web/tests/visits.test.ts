@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { channelOf, deviceOf, insightsFor, normalizePath, referrerPage, sourceOf, summarize, type VisitRow } from "@/lib/visits-math";
+import { channelOf, deviceOf, insightsFor, isPaidVisit, liveSummary, normalizePath, referrerPage, sourceOf, summarize, type VisitRow } from "@/lib/visits-math";
 
 const NOW = new Date("2026-09-27T15:00:00Z");
 const H = 3_600_000, D = 24 * H;
@@ -17,7 +17,7 @@ describe("visit maths", () => {
 
   it("names the source", () => {
     const own = ["www.avocousa.us", "avoco-partners.vercel.app"];
-    expect(sourceOf("IG_Story", "https://l.instagram.com/", own)).toBe("ig_story");
+    expect(sourceOf("IG_Story", "https://l.instagram.com/", own)).toBe("instagram"); // spellings of one platform fold into it
     expect(sourceOf(null, "https://l.instagram.com/?u=x", own)).toBe("instagram");
     expect(sourceOf(null, "https://www.google.co.uk/", own)).toBe("google");
     expect(sourceOf(null, "https://t.co/abc", own)).toBe("x");
@@ -130,5 +130,79 @@ describe("visit maths", () => {
     expect(lines).toContain("Most sessions start from instagram: 67%.");
     expect(lines).toContain("Almost nobody comes back yet: 0% of visitors returned on another day.");
     expect(lines.some((l) => l.startsWith("Busiest: "))).toBe(true);
+  });
+});
+
+describe("ad platforms", () => {
+  const own = ["www.avocousa.us"];
+  const IG_APP = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 305.0.0.0";
+  const FB_APP = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 [FBAN/FBIOS;FBAV/440.0]";
+  const TT_APP = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Mobile Safari/537.36 musical_ly_2023 BytedanceWebview/d8a21c6";
+
+  it("folds utm spellings, Meta's placeholders included, into one platform", () => {
+    for (const [utm, platform] of [["ig", "instagram"], ["Instagram", "instagram"], ["fb", "facebook"], ["meta", "facebook"], ["an", "facebook"], ["tw", "x"], ["twitter", "x"], ["x", "x"], ["tt", "tiktok"], ["tiktok_ads", "tiktok"], ["newsletter", "newsletter"], ["xmas", "xmas"]]) {
+      expect(sourceOf(utm, null, own)).toBe(platform);
+    }
+  });
+
+  it("recognises ad click ids and the apps' own browsers when there is no tag", () => {
+    expect(sourceOf(null, null, own, { click: "ttclid" })).toBe("tiktok");
+    expect(sourceOf(null, null, own, { click: "twclid" })).toBe("x");
+    expect(sourceOf(null, null, own, { click: "gclid" })).toBe("google");
+    expect(sourceOf(null, null, own, { click: "fbclid", userAgent: IG_APP })).toBe("instagram");
+    expect(sourceOf(null, null, own, { click: "fbclid", userAgent: FB_APP })).toBe("facebook");
+    expect(sourceOf(null, "", own, { userAgent: TT_APP })).toBe("tiktok");
+    expect(sourceOf(null, "", own, { userAgent: IG_APP })).toBe("instagram");
+    expect(sourceOf(null, "https://www.google.com/", own, { userAgent: IG_APP })).toBe("google"); // a referrer outranks the app
+    expect(sourceOf("newsletter", null, own, { click: "ttclid" })).toBe("newsletter"); // a tag outranks everything
+    expect(sourceOf(null, "", own, { userAgent: "Mozilla/5.0 (Macintosh) Safari" })).toBe("direct");
+  });
+
+  it("tells ads from organic visits", () => {
+    expect(isPaidVisit({ medium: "paid" })).toBe(true);
+    expect(isPaidVisit({ medium: "CPC" })).toBe(true);
+    expect(isPaidVisit({ medium: "paid_social" })).toBe(true);
+    expect(isPaidVisit({ medium: "social" })).toBe(false);
+    expect(isPaidVisit({ click: "ttclid" })).toBe(true);
+    expect(isPaidVisit({ click: "fbclid" })).toBe(false); // Meta adds it to every link
+    expect(isPaidVisit({})).toBe(false);
+  });
+
+  it("lists the four advertised platforms always, with ads and organic apart and what their visitors did", () => {
+    const rows: VisitRow[] = [
+      row({ at: new Date(NOW.getTime() - 3 * H), visitor: "a", session: "a1", landing: true, source: "tiktok", medium: "paid", campaign: "launch" }),
+      row({ at: new Date(NOW.getTime() - 3 * H + 60_000), visitor: "a", session: "a1", path: "/record", source: "tiktok", medium: "paid", userId: "user_a" }),
+      row({ at: new Date(NOW.getTime() - 2 * H), visitor: "b", session: "b1", landing: true, source: "tiktok" }),
+      row({ at: new Date(NOW.getTime() - 5 * H), visitor: "c", session: "c1", landing: true, source: "instagram", click: "fbclid" }),
+      row({ at: new Date(NOW.getTime() - 1 * H), visitor: "c", session: "c2", landing: true, source: "tiktok", medium: "paid" }), // came back from TikTok: still Instagram's
+    ];
+    const s = summarize(rows, NOW, new Set(["user_a"]), { signedUp: new Set(["user_a"]), paid: new Set(["user_a"]) });
+    expect(s.platforms.map((p) => p.platform)).toEqual(["tiktok", "instagram", "facebook", "x"]);
+    expect(s.platforms[0]).toMatchObject({ platform: "tiktok", sessions: 3, visitors: 2, paid: 1, organic: 1, signups: 1, recorded: 1, customers: 1, campaigns: ["launch"] });
+    expect(s.platforms[1]).toMatchObject({ platform: "instagram", visitors: 1, paid: 0, organic: 1 });
+    expect(s.platforms[3]).toMatchObject({ platform: "x", visitors: 0, sessions: 0 });
+  });
+});
+
+describe("live traffic", () => {
+  it("counts who is on now, per minute, where from and where on the map", () => {
+    const at = (minutesAgo: number) => new Date(NOW.getTime() - minutesAgo * 60_000);
+    const live = liveSummary([
+      { at: at(1), path: "/record", visitor: "a", session: "a1", landing: false, source: "tiktok", medium: "paid", device: "phone", country: "US", city: "Miami", lat: 26, lon: -80, userId: "user_a" },
+      { at: at(3), path: "/", visitor: "a", session: "a1", landing: true, source: "tiktok", medium: "paid", device: "phone", country: "US", city: "Miami", lat: 26, lon: -80 },
+      { at: at(12), path: "/", visitor: "b", session: "b1", landing: true, source: "instagram", device: "desktop", country: "DE", city: "Berlin", lat: 53, lon: 13 },
+      { at: at(45), path: "/", visitor: "c", session: "c1", landing: true, source: "direct", device: "desktop", country: "GB", city: null, lat: null, lon: null },
+      { at: at(90), path: "/", visitor: "old", session: "o1", landing: true, source: "x", device: "phone", country: "US" },
+    ], NOW);
+    expect(live.active).toBe(1);
+    expect(live.visitors30).toBe(2);
+    expect(live.views30).toBe(3);
+    expect(live.perMinute).toHaveLength(60);
+    expect(live.perMinute.reduce((n, v) => n + v, 0)).toBe(4);
+    expect(live.sources).toEqual([{ source: "tiktok", visitors: 1, paid: 1 }, { source: "instagram", visitors: 1, paid: 0 }]);
+    expect(live.pages).toEqual([{ path: "/record", visitors: 1 }]);
+    expect(live.dots).toEqual([{ lat: 26, lon: -80, active: true, source: "tiktok", city: "Miami", country: "US" }, { lat: 53, lon: 13, active: false, source: "instagram", city: "Berlin", country: "DE" }]);
+    expect(live.feed.map((f) => f.path)).toEqual(["/record", "/", "/", "/"]);
+    expect(live.feed[0]).toMatchObject({ source: "tiktok", paid: true, signedIn: true, city: "Miami" });
   });
 });

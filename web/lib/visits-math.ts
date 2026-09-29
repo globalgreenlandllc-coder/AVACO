@@ -10,6 +10,8 @@ export interface VisitRow {
   source: string | null; country: string | null; device: Device; locale: string | null;
   /** A tagged link's campaign, medium and content; the referring page. Absent on rows from before they were kept. */
   campaign?: string | null; medium?: string | null; content?: string | null; referrer?: string | null;
+  /** Which ad click id the landing link carried (fbclid, ttclid…), and the visitor's town and whole-degree position, from the edge. */
+  click?: string | null; city?: string | null; lat?: number | null; lon?: number | null;
 }
 
 const DAY = 86_400_000;
@@ -25,12 +27,51 @@ export function normalizePath(raw: string): string {
 const isId = (seg: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg) || (/^[A-Za-z0-9_-]{16,}$/.test(seg) && /\d/.test(seg));
 
 /** Where a session came from: the campaign's own word (utm_source) when there is one, otherwise the referring site. */
-export function sourceOf(utmSource: string | null | undefined, referrer: string | null | undefined, ownHosts: string[]): string {
+/**
+ * Click ids the ad platforms add to a link: which platform, and whether the click was paid. fbclid is added to every
+ * link clicked in Facebook or Instagram, paid or not, so it names the platform but doesn't prove an ad.
+ */
+export const CLICK_IDS: Record<string, { platform: string; paid: boolean }> = {
+  ttclid: { platform: "tiktok", paid: true }, twclid: { platform: "x", paid: true }, gclid: { platform: "google", paid: true },
+  gbraid: { platform: "google", paid: true }, wbraid: { platform: "google", paid: true }, msclkid: { platform: "bing", paid: true },
+  fbclid: { platform: "facebook", paid: false },
+};
+
+/** utm_source spellings that mean one platform, including Meta's {{site_source_name}} values (fb, ig, msg, an). */
+const ALIASES: Array<[RegExp, string]> = [
+  [/^(ig|insta|instagram)([._-]|$)/, "instagram"],
+  [/^(fb|facebook|meta|msg|messenger|an)([._-]|$)/, "facebook"],
+  [/^(x|tw|twitter)([._-]|$)/, "x"],
+  [/^(tt|tiktok|tik[._-]tok)([._-]|$)/, "tiktok"],
+  [/^(google|gads|adwords)([._-]|$)/, "google"],
+  [/^(yt|youtube)([._-]|$)/, "youtube"],
+];
+
+/** The in-app browsers of the big apps, which often send no referrer at all: a visit from inside the app still counts for it. */
+export function inAppPlatform(userAgent: string | null | undefined): string | null {
+  const ua = userAgent ?? "";
+  if (/Instagram/i.test(ua)) return "instagram";
+  if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A/.test(ua)) return "facebook";
+  if (/musical_ly|BytedanceWebview|TikTok|trill_/i.test(ua)) return "tiktok";
+  if (/Twitter/i.test(ua)) return "x";
+  if (/LinkedInApp/i.test(ua)) return "linkedin";
+  if (/Snapchat/i.test(ua)) return "snapchat";
+  return null;
+}
+
+/**
+ * Where a session came from, most certain first: a tagged link's utm_source (its spellings folded into one platform),
+ * an ad click id, the referring site, the app's own browser, and otherwise direct.
+ */
+export function sourceOf(utmSource: string | null | undefined, referrer: string | null | undefined, ownHosts: string[], hints: { click?: string | null; userAgent?: string | null } = {}): string {
   const utm = (utmSource ?? "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 40);
-  if (utm) return utm;
+  if (utm) return ALIASES.find(([re]) => re.test(utm))?.[1] ?? utm;
+  const app = inAppPlatform(hints.userAgent);
+  const click = hints.click ? CLICK_IDS[hints.click] : undefined;
+  if (click) return click.platform === "facebook" && app === "instagram" ? "instagram" : click.platform;
   let host = "";
   try { host = referrer ? new URL(referrer).hostname.toLowerCase() : ""; } catch { host = ""; }
-  if (!host) return "direct";
+  if (!host) return app ?? "direct";
   const h = host.replace(/^(www|m|l|lm|mobile|out|away|amp)\./, "");
   const own = ownHosts.map((o) => o.toLowerCase().replace(/^www\./, "")).filter(Boolean);
   if (own.some((o) => h === o || h.endsWith(`.${o}`))) return "direct";
@@ -43,6 +84,17 @@ export function sourceOf(utmSource: string | null | undefined, referrer: string 
   for (const [re, name] of known) if (re.test(h)) return name;
   return h.slice(0, 60);
 }
+
+/** An ad visit: a tagged link marked paid (utm_medium cpc, paid, paid_social…) or a paid click id. */
+const PAID_MEDIUM = /^(cpc|ppc|paid|paid[._-]?(social|search|media)|paidsocial|ads?|display|cpm|cpv|sponsored|promoted|boost(ed)?)$/;
+export const isPaidVisit = (r: { medium?: string | null; click?: string | null }) => Boolean((r.medium && PAID_MEDIUM.test(r.medium.toLowerCase())) || (r.click && CLICK_IDS[r.click]?.paid));
+
+/** The platforms the company advertises on, always shown; others join the list once they bring someone. */
+export const AD_PLATFORMS = ["instagram", "facebook", "tiktok", "x"] as const;
+export const PLATFORM_NAMES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", x: "X (Twitter)", google: "Google", youtube: "YouTube", linkedin: "LinkedIn", snapchat: "Snapchat", direct: "Direct" };
+/** Each platform's own colour, so a dot on the live map or a row in a list is recognised at a glance. */
+export const PLATFORM_COLORS: Record<string, string> = { instagram: "#e1306c", facebook: "#1877f2", tiktok: "#fe2c55", x: "var(--ink)", google: "#34a853", youtube: "#ff0000", linkedin: "#0a66c2", snapchat: "#f5c518", direct: "var(--muted)" };
+export const platformColor = (source: string) => PLATFORM_COLORS[source] ?? "var(--bar-active)";
 
 const KNOWN_REFERRERS = ["google", "instagram", "facebook", "x", "tiktok", "youtube", "linkedin", "bing", "yandex", "duckduckgo", "telegram", "whatsapp", "reddit", "pinterest"];
 const SEARCH = new Set(["google", "bing", "yandex", "duckduckgo", "yahoo", "baidu", "ecosia", "brave"]);
@@ -109,6 +161,11 @@ export interface Stats {
    */
   sources: Array<{ source: string; channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; paid: number }>;
   channels: Array<{ channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; paid: number }>;
+  /**
+   * The ad platforms, each visitor credited to the platform of their first visit: from ads (paid) or not (organic),
+   * and what they did after. The four advertised platforms are always listed.
+   */
+  platforms: Array<{ platform: string; sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; customers: number; campaigns: string[] }>;
   /** Tagged links: utm_campaign with its source and medium. */
   campaigns: Array<{ campaign: string; source: string; medium: string | null; sessions: number; visitors: number; signups: number }>;
   /** The pages on other sites that sent people here. */
@@ -191,6 +248,22 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     credit(chanBy.get(s.channel)!, visitor);
     if (s.first.campaign) { const c = campBy.get(`${s.first.campaign}|${s.source}|${s.first.medium ?? ""}`); if (c && isOneOf(visitor, people.signedUp ?? new Set())) c.signups++; }
   }
+  // The ad platforms: sessions where each came from; visitors, sign-ups, recordings and customers by first visit.
+  const platBy = new Map<string, { sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; customers: number; campaigns: Map<string, number> }>();
+  const plat = (key: string) => { const x = platBy.get(key) ?? { sessions: 0, visitors: 0, paid: 0, organic: 0, signups: 0, recorded: 0, customers: 0, campaigns: new Map<string, number>() }; platBy.set(key, x); return x; };
+  for (const key of AD_PLATFORMS) plat(key);
+  const followed = new Set<string>([...AD_PLATFORMS, "google", "youtube", "linkedin", "snapchat"]);
+  for (const s of sessionInfo) if (followed.has(s.source)) plat(s.source).sessions++;
+  for (const [visitor, s] of firstSession) {
+    if (!followed.has(s.source)) continue;
+    const x = plat(s.source);
+    x.visitors++;
+    if (isPaidVisit(s.first)) x.paid++; else x.organic++;
+    if (isOneOf(visitor, people.signedUp ?? new Set())) x.signups++;
+    if (recordedVisitor(visitor)) x.recorded++;
+    if (isOneOf(visitor, people.paid ?? new Set())) x.customers++;
+    if (s.first.campaign) x.campaigns.set(s.first.campaign, (x.campaigns.get(s.first.campaign) ?? 0) + 1);
+  }
   const devBy = new Map<Device, { visitors: Set<string>; reached: number; finished: number }>();
   for (const s of sessionInfo) { const x = devBy.get(s.device) ?? { visitors: new Set(), reached: 0, finished: 0 }; x.visitors.add(s.visitor); if (s.reached) x.reached++; if (s.finished) x.finished++; devBy.set(s.device, x); }
   const siteBy = new Map<Site, { views: number; visitors: Set<string> }>();
@@ -226,6 +299,10 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     pages: [...pagesBy].map(([path, p]) => ({ path, views: p.views, visitors: p.visitors.size })).sort((a, b) => b.views - a.views).slice(0, 10),
     landings: [...landBy].map(([path, l]) => ({ path, sessions: l.sessions, bounce: l.sessions ? l.bounced / l.sessions : 0 })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
     sources: [...srcBy].map(([source, x]) => ({ source, channel: [...x.channels].sort((a, b) => b[1] - a[1])[0][0], sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, paid: x.paid })).sort((a, b) => b.sessions - a.sessions).slice(0, 12),
+    platforms: [...platBy]
+      .filter(([key, x]) => (AD_PLATFORMS as readonly string[]).includes(key) || x.sessions > 0)
+      .map(([platform, x]) => ({ platform, sessions: x.sessions, visitors: x.visitors, paid: x.paid, organic: x.organic, signups: x.signups, recorded: x.recorded, customers: x.customers, campaigns: [...x.campaigns].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c) }))
+      .sort((a, b) => b.visitors - a.visitors || AD_PLATFORMS.indexOf(a.platform as never) - AD_PLATFORMS.indexOf(b.platform as never)),
     channels: [...chanBy].map(([channel, x]) => ({ channel, sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, paid: x.paid })).sort((a, b) => b.visitors - a.visitors || b.sessions - a.sessions),
     campaigns: [...campBy.values()].map((c) => ({ campaign: c.campaign, source: c.source, medium: c.medium, sessions: c.sessions, visitors: c.visitors.size, signups: c.signups })).sort((a, b) => b.sessions - a.sessions).slice(0, 10),
     referrers: [...refBy].map(([referrer, x]) => ({ referrer, sessions: x.sessions, visitors: x.visitors.size })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
@@ -304,4 +381,62 @@ export function insightsFor(s: Stats, x: Extra): string[] {
   }
   if (out.length === 0) out.push(`${m.visitors} visitors and ${m.views} page views in 30 days. Comparisons appear once there are more.`);
   return out;
+}
+
+// ---------- live traffic (components/LiveTraffic.tsx, app/api/admin/live) ----------
+
+export interface LiveRow {
+  at: Date; path: string; visitor: string; session: string; landing: boolean; source: string | null; device: Device; userId?: string | null;
+  medium?: string | null; click?: string | null; country: string | null; city?: string | null; lat?: number | null; lon?: number | null;
+}
+export interface Live {
+  now: number;
+  /** Visitors seen in the last 5 minutes. */
+  active: number;
+  views30: number;
+  visitors30: number;
+  /** Visitors per minute over the last hour, oldest first. */
+  perMinute: number[];
+  /** The last 30 minutes by where each visitor came from. */
+  sources: Array<{ source: string; visitors: number; paid: number }>;
+  /** Where the visitors of the last 5 minutes are now: each one's latest page. */
+  pages: Array<{ path: string; visitors: number }>;
+  /** One dot per visitor of the last 30 minutes, at their latest position; `active` in the last 5. */
+  dots: Array<{ lat: number; lon: number; active: boolean; source: string; city: string | null; country: string | null }>;
+  /** The latest page views, newest first. */
+  feed: Array<{ at: number; path: string; source: string; paid: boolean; city: string | null; country: string | null; device: Device; landing: boolean; signedIn: boolean }>;
+}
+
+const MIN = 60_000;
+/** The live view from the last hour of visits. */
+export function liveSummary(rows: LiveRow[], now = new Date()): Live {
+  const t = now.getTime();
+  const recent = rows.filter((r) => r.at.getTime() > t - 60 * MIN && r.at.getTime() <= t + MIN).sort((a, b) => b.at.getTime() - a.at.getTime());
+  const last30 = recent.filter((r) => r.at.getTime() > t - 30 * MIN);
+  const last5 = recent.filter((r) => r.at.getTime() > t - 5 * MIN);
+  const latestOf = (list: LiveRow[]) => { const m = new Map<string, LiveRow>(); for (const r of list) if (!m.has(r.visitor)) m.set(r.visitor, r); return [...m.values()]; };
+  const perMinute = Array.from({ length: 60 }, (_, i) => {
+    const from = t - (60 - i) * MIN, to = from + MIN;
+    return new Set(recent.filter((r) => r.at.getTime() > from && r.at.getTime() <= to).map((r) => r.visitor)).size;
+  });
+  const bySource = new Map<string, { visitors: number; paid: number }>();
+  for (const r of latestOf(last30)) {
+    const x = bySource.get(r.source ?? "direct") ?? { visitors: 0, paid: 0 };
+    x.visitors++; if (isPaidVisit(r)) x.paid++;
+    bySource.set(r.source ?? "direct", x);
+  }
+  const byPage = new Map<string, number>();
+  for (const r of latestOf(last5)) byPage.set(r.path, (byPage.get(r.path) ?? 0) + 1);
+  const activeVisitors = new Set(last5.map((r) => r.visitor));
+  return {
+    now: t,
+    active: activeVisitors.size,
+    views30: last30.length,
+    visitors30: new Set(last30.map((r) => r.visitor)).size,
+    perMinute,
+    sources: [...bySource].map(([source, x]) => ({ source, ...x })).sort((a, b) => b.visitors - a.visitors).slice(0, 8),
+    pages: [...byPage].map(([path, visitors]) => ({ path, visitors })).sort((a, b) => b.visitors - a.visitors).slice(0, 6),
+    dots: latestOf(last30).filter((r) => typeof r.lat === "number" && typeof r.lon === "number").map((r) => ({ lat: r.lat!, lon: r.lon!, active: activeVisitors.has(r.visitor), source: r.source ?? "direct", city: r.city ?? null, country: r.country })),
+    feed: recent.slice(0, 20).map((r) => ({ at: r.at.getTime(), path: r.path, source: r.source ?? "direct", paid: isPaidVisit(r), city: r.city ?? null, country: r.country, device: r.device, landing: r.landing, signedIn: Boolean(r.userId) })),
+  };
 }

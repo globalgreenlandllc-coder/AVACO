@@ -1,5 +1,9 @@
 import { DailyBars, Kpi, RankBars } from "@/components/AdminCharts";
+import { AdPlatforms } from "@/components/AdPlatforms";
+import { LiveTraffic } from "@/components/LiveTraffic";
 import { SourcesReport } from "@/components/SourcesReport";
+import { TrackingLinks } from "@/components/TrackingLinks";
+import { baseUrl } from "@/lib/page";
 import { Funnel, HourBars, KpiDelta } from "@/components/StatsCharts";
 import { statistics } from "@/lib/stats";
 
@@ -9,7 +13,7 @@ const SITES: Record<string, string> = { main: "Main site (avocousa.us)", partner
 const DEVICES: Record<string, string> = { phone: "Phone", tablet: "Tablet", desktop: "Desktop" };
 
 export default async function AdminStats() {
-  const s = await statistics();
+  const [s, origin] = await Promise.all([statistics(), baseUrl()]);
   const v = s.visits;
   const region = new Intl.DisplayNames(["en"], { type: "region" });
   const language = new Intl.DisplayNames(["en"], { type: "language" });
@@ -18,6 +22,8 @@ export default async function AdminStats() {
 
   return (
     <div className="space-y-10">
+      <LiveTraffic />
+
       <section className="card border-accent p-7">
         <p className="eyebrow !text-accent-text">What stands out · last 30 days</p>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed">
@@ -60,6 +66,8 @@ export default async function AdminStats() {
         <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Most viewed pages</h2><RankBars rows={v.pages.map((r) => ({ label: r.path, value: r.views, note: `${r.visitors} visitors` }))} empty="No views yet." /></div>
       </section>
 
+      <AdPlatforms platforms={v.platforms} />
+      <TrackingLinks origin={origin} />
       <SourcesReport v={v} />
 
       <section className="grid gap-6 lg:grid-cols-2">
