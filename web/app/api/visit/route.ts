@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       referrer: referrerPage(str(body.referrer), ownHosts),
       country: req.headers.get("x-vercel-ip-country")?.slice(0, 2).toUpperCase() ?? null,
       city: town(req.headers.get("x-vercel-ip-city")),
+      region: req.headers.get("x-vercel-ip-country-region")?.trim().toUpperCase().slice(0, 3) || null,
       lat: degree(req.headers.get("x-vercel-ip-latitude"), 90),
       lon: degree(req.headers.get("x-vercel-ip-longitude"), 180),
       device: deviceOf(req.headers.get("user-agent"), typeof body.width === "number" ? body.width : null),

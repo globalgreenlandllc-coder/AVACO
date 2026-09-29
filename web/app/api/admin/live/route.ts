@@ -1,8 +1,8 @@
 /** GET — the live traffic view (components/LiveTraffic.tsx): the last hour of visits, summarised, each visitor with their story. Admins only. */
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { isAdminUser } from "@/lib/admin";
-import { db, visits } from "@/lib/db";
+import { creditLedger, db, visits } from "@/lib/db";
 import { userLabels } from "@/lib/page";
 import { liveSummary, type LiveRow } from "@/lib/visits-math";
 
@@ -15,15 +15,21 @@ export async function GET() {
   const rows = await d.select({
     at: visits.at, path: visits.path, visitor: visits.visitor, session: visits.session, landing: visits.landing, source: visits.source, device: visits.device,
     userId: visits.userId, medium: visits.medium, click: visits.click, campaign: visits.campaign, content: visits.content, referrer: visits.referrer, locale: visits.locale,
-    country: visits.country, city: visits.city, lat: visits.lat, lon: visits.lon,
+    country: visits.country, city: visits.city, region: visits.region, lat: visits.lat, lon: visits.lon,
   }).from(visits).where(gte(visits.at, new Date(Date.now() - 61 * 60_000))).orderBy(desc(visits.at)).limit(5000);
   // Each visitor's month: when this browser first came, and how many visits it made.
   const ids = [...new Set(rows.map((r) => r.visitor))];
   const history = ids.length
-    ? await d.select({ visitor: visits.visitor, first: sql<string>`min(${visits.at})`, sessions: sql<number>`count(distinct ${visits.session})::int` })
+    ? await d.select({ visitor: visits.visitor, first: sql<string>`min(${visits.at})`, sessions: sql<number>`count(distinct ${visits.session})::int`, userId: sql<string | null>`max(${visits.userId})` })
       .from(visits).where(and(inArray(visits.visitor, ids), gte(visits.at, new Date(Date.now() - 30 * 86_400_000)))).groupBy(visits.visitor)
     : [];
-  const live = liveSummary(rows as LiveRow[], new Date(), new Map(history.map((h) => [h.visitor, { first: new Date(h.first), sessions: Number(h.sessions) }])));
+  const live = liveSummary(rows as LiveRow[], new Date(), new Map(history.map((h) => [h.visitor, { first: new Date(h.first), sessions: Number(h.sessions), userId: h.userId }])));
+  // Green pins: accounts that have bought credits (a report, a pack, an add-on).
+  const accounts = [...new Set(live.visitors.map((v) => v.userId).filter((u): u is string => Boolean(u)))];
+  const buyers = new Set(accounts.length
+    ? (await d.select({ id: creditLedger.ownerId }).from(creditLedger).where(and(eq(creditLedger.ownerKind, "user"), eq(creditLedger.reason, "purchase"), inArray(creditLedger.ownerId, accounts))).groupBy(creditLedger.ownerId)).map((r) => r.id)
+    : []);
+  live.visitors = live.visitors.map((v) => ({ ...v, status: v.userId && buyers.has(v.userId) ? "paid" : v.status }));
   // Signed-in visitors by name, for the admin's eyes only.
   const labels = await userLabels([...new Set(live.visitors.map((v) => v.userId).filter((u): u is string => Boolean(u)))]);
   live.visitors = live.visitors.map((v) => ({ ...v, account: v.userId ? labels.get(v.userId) ?? "Signed in" : null, userId: null }));

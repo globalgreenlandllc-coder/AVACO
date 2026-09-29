@@ -40,7 +40,6 @@ export function LiveTraffic() {
   }, []);
 
   const onMap = (data?.visitors ?? []).filter((v) => clock - v.lastAt <= span * 60_000);
-  const shown = [...new Set(onMap.map((v) => v.source))];
 
   return (
     <section className="card overflow-hidden p-6 sm:p-7" aria-label="Live traffic">
@@ -63,12 +62,6 @@ export function LiveTraffic() {
             <span className="text-xs text-muted">{onMap.length} {onMap.length === 1 ? "visitor" : "visitors"} on the map</span>
           </div>
           <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} />
-          {shown.length > 0 && (
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2">
-              {shown.map((s) => <span key={s} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: platformColor(s) }} aria-hidden />{name(s)}</span>)}
-              <span className="text-muted">Pulsing: active in the last 5 minutes</span>
-            </p>
-          )}
         </div>
 
       </div>

@@ -325,6 +325,8 @@ export const visits = pgTable(
     /** Two-letter country from the edge, when known; the town, and the position rounded to whole degrees, for the live map. */
     country: text("country"),
     city: text("city"),
+    /** The state or province (ISO 3166-2 code without the country: "FL"), when the edge knows it. */
+    region: text("region"),
     lat: integer("lat"),
     lon: integer("lon"),
     device: text("device").$type<"phone" | "tablet" | "desktop">().notNull().default("desktop"),

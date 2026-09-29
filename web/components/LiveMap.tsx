@@ -1,16 +1,20 @@
 "use client";
 /**
- * The live map: countries (Natural Earth 1:110m, projected once into public/maps/world-110m.json) tinted by how many
- * visitors each has, and a marker per place with its visitors, coloured by where they came from and pulsing while
- * active. Scroll, pinch or the buttons zoom; drag moves; a click on a marker opens who is there and what they did.
+ * The live map. The world in Natural Earth projection with its rounded outline, ocean and a 30° grid; countries
+ * (1:110m, switching to a finer 1:50m layer once zoomed) and, zoomed in over North America, the US states, each
+ * shaded by how many visitors it has. A marker per place, coloured by where its visitors came from and pulsing while
+ * active, named once zoomed. Scroll, pinch or the buttons zoom; drag moves; hovering names what is under the pointer;
+ * a click on a marker, on a country in the list or on a row of the feed opens who is there and what they did.
+ * The map files are drawn once from Natural Earth and us-atlas (public/maps) and load only on this admin page.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PLATFORM_NAMES, platformColor, type LiveVisitor } from "@/lib/visits-math";
+import { PLATFORM_NAMES, type LiveVisitor } from "@/lib/visits-math";
 
-interface WorldMap { scale: number; translate: [number, number]; view: [number, number, number, number]; countries: Array<{ c: string | null; n: string; d: string }> }
+interface Shape { c?: string | null; r?: string | null; n: string; d: string }
+interface WorldMap { scale: number; translate: [number, number]; view: [number, number, number, number]; sphere: string; graticule: string; countries: Shape[] }
 interface View { x: number; y: number; w: number; h: number }
-let mapFile: Promise<WorldMap> | null = null;
-const loadMap = () => (mapFile ??= fetch("/maps/world-110m.json").then((r) => r.json() as Promise<WorldMap>));
+const files = new Map<string, Promise<unknown>>();
+const load = <T,>(name: string) => { if (!files.has(name)) files.set(name, fetch(`/maps/${name}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(name))))); return files.get(name) as Promise<T>; };
 
 const region = typeof Intl !== "undefined" ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
 const language = typeof Intl !== "undefined" ? new Intl.DisplayNames(["en"], { type: "language" }) : null;
@@ -19,19 +23,31 @@ const languageName = (code: string | null) => { try { return code ? language?.of
 const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "🌐");
 const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)} min` : `${Math.round(ms / 3_600_000)} h`);
 const name = (source: string) => PLATFORM_NAMES[source] ?? source;
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const OCEAN = "color-mix(in oklab, #bcd6e2 38%, var(--surface))";
+const LAND = "color-mix(in oklab, var(--ink-2) 11%, var(--surface))";
+/** Pin colours: a visitor, someone who signed up, someone who paid. */
+const STATUS = { visitor: { colour: "#e5484d", label: "Visitor" }, "signed-up": { colour: "#2f6fed", label: "Signed up" }, paid: { colour: "#2fa35a", label: "Paid" } } as const;
+/** A map pin, tip at 0,0, head centred 15 above it. */
+const PIN = "M0 0C-1.6-5-8-9.4-8-15A8 8 0 1 1 8-15C8-9.4 1.6-5 0 0Z";
+const shade = (n: number, most: number) => `color-mix(in oklab, var(--accent) ${Math.round(38 + 52 * (n / most))}%, var(--surface))`;
 
 export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void }) {
   const [map, setMap] = useState<WorldMap | null>(null);
+  const [fine, setFine] = useState<Shape[] | null>(null);
+  const [states, setStates] = useState<Shape[] | null>(null);
   const [view, setView] = useState<View | null>(null);
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
   const viewRef = useRef<View | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const flight = useRef<number | null>(null);
-  useEffect(() => { void loadMap().then(setMap).catch(() => setMap(null)); }, []);
+  useEffect(() => { void load<WorldMap>("world-110m.json").then(setMap).catch(() => setMap(null)); }, []);
 
   const full = useMemo<View | null>(() => (map ? { x: map.view[0], y: map.view[1], w: map.view[2], h: map.view[3] } : null), [map]);
   useEffect(() => { if (full && !viewRef.current) { viewRef.current = full; setView(full); } }, [full]);
 
-  // Natural Earth 1, the same projection the map file was drawn with.
+  // Natural Earth 1, the same projection the map files were drawn with.
   const project = useCallback((lon: number, lat: number): [number, number] => {
     if (!map) return [0, 0];
     const l = (lon * Math.PI) / 180, p = (lat * Math.PI) / 180, p2 = p * p, p4 = p2 * p2;
@@ -42,7 +58,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
 
   const clamp = useCallback((v: View): View => {
     if (!full) return v;
-    const w = Math.min(full.w, Math.max(full.w / 24, v.w)), h = (w * full.h) / full.w;
+    const w = Math.min(full.w, Math.max(full.w / 40, v.w)), h = (w * full.h) / full.w;
     return { w, h, x: Math.min(full.x + full.w - w, Math.max(full.x, v.x)), y: Math.min(full.y + full.h - h, Math.max(full.y, v.y)) };
   }, [full]);
   const apply = useCallback((v: View) => { const c = clamp(v); viewRef.current = c; setView(c); }, [clamp]);
@@ -52,7 +68,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
     if (flight.current) cancelAnimationFrame(flight.current);
     const start = performance.now();
     const step = (t: number) => {
-      const k = Math.min(1, (t - start) / 450), e = 1 - (1 - k) ** 3;
+      const k = Math.min(1, (t - start) / 500), e = 1 - (1 - k) ** 3;
       apply({ x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, w: from.w + (to.w - from.w) * e, h: from.h + (to.h - from.h) * e });
       if (k < 1) flight.current = requestAnimationFrame(step);
     };
@@ -68,52 +84,21 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
     return { x: v.x + ((clientX - r.left) / r.width) * v.w, y: v.y + ((clientY - r.top) / r.height) * v.h };
   };
 
+  // Zoomed in: the finer countries, and over North America the states.
+  const zoom = full && view ? full.w / view.w : 1;
+  const usBox = useMemo(() => { if (!map) return null; const [ax, ay] = project(-126, 50), [bx, by] = project(-66, 24); return { x0: Math.min(ax, bx), x1: Math.max(ax, bx), y0: ay, y1: by }; }, [map, project]);
+  const overUS = Boolean(view && usBox && view.x < usBox.x1 && view.x + view.w > usBox.x0 && view.y < usBox.y1 && view.y + view.h > usBox.y0);
+  useEffect(() => { if (zoom >= 1.8 && !fine) void load<{ countries: Shape[] }>("world-50m.json").then((m) => setFine(m.countries)).catch(() => undefined); }, [zoom >= 1.8, fine]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (zoom >= 1.8 && overUS && !states) void load<{ states: Shape[] }>("us-states.json").then((m) => setStates(m.states)).catch(() => undefined); }, [zoom >= 1.8, overUS, states]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Scroll and trackpad pinch zoom around the pointer (a native listener, so the page doesn't scroll instead).
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg || !view) return;
-    const onWheel = (e: WheelEvent) => { e.preventDefault(); const p = toMap(e.clientX, e.clientY); zoomAround(p.x, p.y, Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0022))); };
+    const onWheel = (e: WheelEvent) => { e.preventDefault(); setTip(null); const p = toMap(e.clientX, e.clientY); zoomAround(p.x, p.y, Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0022))); };
     svg.addEventListener("wheel", onWheel, { passive: false });
     return () => svg.removeEventListener("wheel", onWheel);
   }, [Boolean(view), zoomAround]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Dragging moves the map; two fingers pinch.
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const drag = useRef<{ x: number; y: number; view: View; moved: boolean; pinch?: number; place: string | null } | null>(null);
-  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const pts = [...pointers.current.values()];
-    const place = (e.target as Element).closest?.("[data-place]")?.getAttribute("data-place") ?? null;
-    drag.current = { x: e.clientX, y: e.clientY, view: viewRef.current!, moved: false, pinch: pts.length === 2 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : undefined, place: pts.length === 1 ? place : null };
-  };
-  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!drag.current || !pointers.current.has(e.pointerId)) return;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const pts = [...pointers.current.values()];
-    if (pts.length === 2 && drag.current.pinch) {
-      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      const mid = toMap((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
-      zoomAround(mid.x, mid.y, drag.current.pinch / dist);
-      drag.current.pinch = dist; drag.current.moved = true;
-      return;
-    }
-    const r = svgRef.current!.getBoundingClientRect(), d = drag.current;
-    const dx = e.clientX - d.x, dy = e.clientY - d.y;
-    if (!d.moved && Math.abs(dx) + Math.abs(dy) > 3) { d.moved = true; svgRef.current?.setPointerCapture(e.pointerId); }
-    if (!d.moved) return;
-    apply({ ...d.view, x: d.view.x - (dx / r.width) * d.view.w, y: d.view.y - (dy / r.height) * d.view.h });
-  };
-  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
-    pointers.current.delete(e.pointerId);
-    const d = drag.current;
-    if (pointers.current.size > 0) return;
-    drag.current = null;
-    // A press and release on a marker without dragging: open (or close) that place.
-    if (d && !d.moved && d.place) {
-      const place = placesRef.current.find((p) => p.key === d.place);
-      if (place) onSelect(place.visitors.some((v) => v.key === selectedRef.current) ? null : place.visitors[0].key);
-    }
-  };
 
   // Places: visitors at the same whole-degree spot share a marker.
   const places = useMemo(() => {
@@ -128,118 +113,222 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
     }
     return [...by.values()].map((p) => ({ ...p, visitors: p.visitors.sort((a, b) => b.lastAt - a.lastAt), active: p.visitors.some((v) => v.active) }));
   }, [visitors, project]);
+  // Every visitor has a pin: at their town, fanned out in a small ring when several share it, drawn south to north.
+  const pins = useMemo(() => places.flatMap((p) => p.visitors.map((v, i) => {
+    const n = p.visitors.length, ring = i < 8 ? 0 : 1, slot = ring ? i - 8 : i, count = ring ? n - 8 : Math.min(n, 8);
+    const angle = -Math.PI / 2 + (slot / Math.max(1, count)) * Math.PI * 2, radius = n === 1 ? 0 : ring ? 20 : 11;
+    return { v, place: p.key, x: p.x, y: p.y, dx: Math.cos(angle) * radius, dy: Math.sin(angle) * radius * 0.7 };
+  })).sort((a, b) => a.y + a.dy - (b.y + b.dy)), [places]);
   const placesRef = useRef(places);
   placesRef.current = places;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const perCountry = useMemo(() => { const m = new Map<string, number>(); for (const v of visitors) if (v.country) m.set(v.country, (m.get(v.country) ?? 0) + 1); return m; }, [visitors]);
-  const most = Math.max(1, ...perCountry.values());
+  const perState = useMemo(() => { const m = new Map<string, number>(); for (const v of visitors) if (v.country === "US" && v.region) m.set(v.region, (m.get(v.region) ?? 0) + 1); return m; }, [visitors]);
+  const mostCountry = Math.max(1, ...perCountry.values()), mostState = Math.max(1, ...perState.values());
+  const stateName = (code: string | null) => (code ? states?.find((s) => s.r === code)?.n ?? code : null);
   const open = places.find((p) => p.visitors.some((v) => v.key === selected)) ?? null;
 
-  // Selecting someone (here or in the feed) brings their place into view.
-  useEffect(() => {
-    if (!open || !full || !viewRef.current) return;
-    const v = viewRef.current, w = Math.min(v.w, full.w / 5);
-    const inside = open.x > v.x + v.w * 0.1 && open.x < v.x + v.w * 0.9 && open.y > v.y + v.h * 0.1 && open.y < v.y + v.h * 0.9;
-    if (!inside || v.w > full.w / 5) flyTo({ x: open.x - w * 0.3, y: open.y - (w * full.h) / full.w / 2, w, h: (w * full.h) / full.w });
-  }, [open?.key, full, flyTo]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fitAll = () => {
-    if (!full || places.length === 0) { if (full) flyTo(full); return; }
-    const xs = places.map((p) => p.x), ys = places.map((p) => p.y);
-    const pad = 40, w0 = Math.max(...xs) - Math.min(...xs) + pad * 2, h0 = Math.max(...ys) - Math.min(...ys) + pad * 2;
-    const w = Math.max(full.w / 10, w0, (h0 * full.w) / full.h), h = (w * full.h) / full.w;
-    flyTo({ x: (Math.min(...xs) + Math.max(...xs)) / 2 - w / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 - h / 2, w, h });
+  // Dragging moves the map; two fingers pinch. A press and release on a marker without dragging opens it.
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const drag = useRef<{ x: number; y: number; view: View; moved: boolean; pinch?: number; place: string | null } | null>(null);
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts = [...pointers.current.values()];
+    const place = (e.target as Element).closest?.("[data-visitor]")?.getAttribute("data-visitor") ?? null;
+    drag.current = { x: e.clientX, y: e.clientY, view: viewRef.current!, moved: false, pinch: pts.length === 2 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : undefined, place: pts.length === 1 ? place : null };
+  };
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    // What is under the pointer, named at once.
+    if (!drag.current?.moved && boxRef.current) {
+      const text = (e.target as Element).closest?.("[data-tip]")?.getAttribute("data-tip") ?? null;
+      const r = boxRef.current.getBoundingClientRect();
+      setTip(text ? { text, x: e.clientX - r.left, y: e.clientY - r.top } : null);
+    }
+    if (!drag.current || !pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts = [...pointers.current.values()];
+    if (pts.length === 2 && drag.current.pinch) {
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const mid = toMap((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
+      zoomAround(mid.x, mid.y, drag.current.pinch / dist);
+      drag.current.pinch = dist; drag.current.moved = true;
+      return;
+    }
+    const r = svgRef.current!.getBoundingClientRect(), d = drag.current;
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved && Math.abs(dx) + Math.abs(dy) > 3) { d.moved = true; setTip(null); svgRef.current?.setPointerCapture(e.pointerId); }
+    if (!d.moved) return;
+    apply({ ...d.view, x: d.view.x - (dx / r.width) * d.view.w, y: d.view.y - (dy / r.height) * d.view.h });
+  };
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(e.pointerId);
+    const d = drag.current;
+    if (pointers.current.size > 0) return;
+    drag.current = null;
+    if (d && !d.moved && d.place) onSelect(d.place === selectedRef.current ? null : d.place);
   };
 
-  if (!map || !full || !view) return <div className="grid aspect-[2.27] place-items-center rounded-2xl bg-accent-soft text-sm text-muted">Loading the map…</div>;
-  const k = view.w / full.w; // markers and borders keep their size on screen while zooming
-  const zoom = Math.round(full.w / view.w * 10) / 10;
+  // Selecting someone (here, in the list or in the feed) brings their place into view, left of the card.
+  useEffect(() => {
+    if (!open || !full || !viewRef.current) return;
+    const v = viewRef.current, w = Math.min(v.w, full.w / 6);
+    const inside = open.x > v.x + v.w * 0.08 && open.x < v.x + v.w * 0.55 && open.y > v.y + v.h * 0.1 && open.y < v.y + v.h * 0.9;
+    if (!inside || v.w > full.w / 6) flyTo({ x: open.x - w * 0.3, y: open.y - (w * full.h) / full.w / 2, w, h: (w * full.h) / full.w });
+  }, [open?.key, full, flyTo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const flyToBox = (x0: number, y0: number, x1: number, y1: number) => {
+    if (!full) return;
+    const pad = 0.12, w0 = (x1 - x0) * (1 + pad * 2), h0 = (y1 - y0) * (1 + pad * 2);
+    const w = Math.max(full.w / 30, w0, (h0 * full.w) / full.h), h = (w * full.h) / full.w;
+    flyTo({ x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h });
+  };
+  const fitAll = () => {
+    if (!full) return;
+    if (places.length === 0) { flyTo(full); return; }
+    const xs = places.map((p) => p.x), ys = places.map((p) => p.y);
+    flyToBox(Math.min(...xs) - 20, Math.min(...ys) - 20, Math.max(...xs) + 20, Math.max(...ys) + 20);
+  };
+  const flyToCountry = (cc: string) => {
+    if (cc === "US" && usBox) { flyToBox(usBox.x0, usBox.y0, usBox.x1, usBox.y1); return; }
+    const el = svgRef.current?.querySelector<SVGGraphicsElement>(`[data-country="${cc}"]`);
+    if (el) { const b = el.getBBox(); flyToBox(b.x, b.y, b.x + b.width, b.y + b.height); }
+  };
+
+  if (!map || !full || !view) return <div className="grid aspect-[2.26] place-items-center rounded-2xl text-sm text-muted" style={{ background: OCEAN }}>Loading the map…</div>;
+  const k = view.w / full.w; // markers, borders and labels keep their size on screen at any zoom
+  const shapes = zoom >= 1.8 && fine ? fine : map.countries;
+  const showStates = zoom >= 1.8 && overUS && states;
+  const labelled = zoom >= 2.5;
+  const topCountries = [...perCountry].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   return (
     <div>
-    <div className="relative">
-      <svg
-        ref={svgRef}
-        viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
-        className="block w-full touch-none select-none rounded-2xl bg-accent-soft"
-        style={{ aspectRatio: `${full.w} / ${full.h}`, cursor: drag.current?.moved ? "grabbing" : "grab" }}
-        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-        onDoubleClick={(e) => { const p = toMap(e.clientX, e.clientY); const v = viewRef.current!; flyTo({ w: v.w / 2, h: v.h / 2, x: p.x - v.w / 4, y: p.y - v.h / 4 }); }}
-        role="img" aria-label={`World map: ${visitors.length} visitors, ${places.length} places.`}
-      >
-        <g>
-          {map.countries.map((c, i) => {
-            const n = c.c ? perCountry.get(c.c) ?? 0 : 0;
+      <div ref={boxRef} className="relative overflow-hidden rounded-2xl border border-line" style={{ background: "var(--surface)" }} onPointerLeave={() => setTip(null)}>
+        <svg
+          ref={svgRef}
+          viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+          className="block w-full touch-none select-none"
+          style={{ aspectRatio: `${full.w} / ${full.h}`, cursor: "grab" }}
+          onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
+          onDoubleClick={(e) => { const p = toMap(e.clientX, e.clientY); const v = viewRef.current!; flyTo({ w: v.w / 2, h: v.h / 2, x: p.x - v.w / 4, y: p.y - v.h / 4 }); }}
+          role="img" aria-label={`World map: ${plural(visitors.length, "visitor", "visitors")} in ${plural(places.length, "place", "places")}.`}
+        >
+          <path d={map.sphere} fill={OCEAN} />
+          <path d={map.graticule} fill="none" stroke="color-mix(in oklab, var(--ink-2) 14%, transparent)" strokeWidth={0.5 * k} />
+          <g>
+            {shapes.map((c, i) => {
+              const n = c.c ? perCountry.get(c.c) ?? 0 : 0;
+              // With the states drawn, they carry the shading and the country itself stays plain.
+              const plain = !n || (showStates && c.c === "US");
+              return <path key={`${c.c ?? c.n}-${i}`} d={c.d} data-country={c.c ?? undefined} data-tip={`${c.n}${n ? ` · ${plural(n, "visitor", "visitors")}` : ""}`} fill={plain ? LAND : shade(n, mostCountry)} stroke="var(--surface)" strokeWidth={0.7 * k} strokeLinejoin="round" />;
+            })}
+          </g>
+          {showStates && (
+            <g>
+              {states!.map((s) => {
+                const n = perState.get(s.r ?? "") ?? 0;
+                return <path key={s.r} d={s.d} data-tip={`${s.n}${n ? ` · ${plural(n, "visitor", "visitors")}` : ""}`} fill={n ? shade(n, mostState) : "transparent"} stroke="color-mix(in oklab, var(--surface) 70%, var(--ink-2))" strokeWidth={0.45 * k} strokeLinejoin="round" />;
+              })}
+            </g>
+          )}
+          {pins.map(({ v, x, y, dx, dy }) => {
+            const colour = STATUS[v.status].colour, on = v.key === selected, size = (on ? 1.3 : 1) * k;
+            const px = x + dx * k, py = y + dy * k;
+            const tipText = `${v.city ?? countryName(v.country)}${v.country === "US" && v.region ? `, ${stateName(v.region)}` : ""} · ${STATUS[v.status].label}${v.account ? ` (${v.account.split(" · ")[0]})` : ""} · ${name(v.source)}${v.paid ? " ad" : ""}${v.active ? " · active now" : ""}`;
             return (
-              <path key={`${c.c ?? c.n}-${i}`} d={c.d} strokeWidth={0.6 * k} stroke="var(--surface)"
-                fill={n ? `color-mix(in oklab, var(--accent) ${Math.round(35 + 55 * (n / most))}%, var(--surface))` : "color-mix(in oklab, var(--ink-2) 13%, var(--surface))"}>
-                <title>{`${c.n}${n ? ` · ${n} ${n === 1 ? "visitor" : "visitors"}` : ""}`}</title>
-              </path>
+              <g key={v.key} data-visitor={v.key} data-tip={tipText} className="cursor-pointer" opacity={v.active || on ? 1 : 0.72}>
+                {v.active && <ellipse cx={px} cy={py} rx={7 * k} ry={2.6 * k} fill={colour} className="live-ping" />}
+                <ellipse cx={px} cy={py} rx={3.2 * k} ry={1.2 * k} fill="rgba(0,0,0,.25)" />
+                <g transform={`translate(${px} ${py}) scale(${size})`}>
+                  <path d={PIN} fill={colour} stroke={on ? "var(--ink)" : "#fff"} strokeWidth={on ? 1.8 : 1.2} />
+                  <circle cx={0} cy={-15} r={3.2} fill="#fff" />
+                </g>
+              </g>
             );
           })}
-        </g>
-        {places.map((p) => {
-          const colour = platformColor(p.visitors[0].source), r = (p.visitors.length > 1 ? 7 : 5.5) * k, on = open?.key === p.key;
-          return (
-            <g key={p.key} data-place={p.key} className="cursor-pointer">
-              {p.active && <circle cx={p.x} cy={p.y} r={r} fill={colour} className="live-ping" />}
-              <circle cx={p.x} cy={p.y} r={on ? r * 1.35 : r} fill={colour} opacity={p.active ? 1 : 0.55} stroke={on ? "var(--ink)" : "var(--surface)"} strokeWidth={(on ? 2 : 1.2) * k} />
-              {p.visitors.length > 1 && <text x={p.x} y={p.y + 3.2 * k} textAnchor="middle" fontSize={9 * k} fontWeight={700} fill="#fff" pointerEvents="none">{p.visitors.length}</text>}
-              <title>{`${p.visitors[0].city ?? countryName(p.visitors[0].country)} · ${p.visitors.length} ${p.visitors.length === 1 ? "visitor" : "visitors"}`}</title>
-            </g>
-          );
-        })}
-      </svg>
+          {labelled && places.map((p) => (
+            <text key={`label-${p.key}`} x={p.x + 12 * k} y={p.y - 10 * k} fontSize={11 * k} fontWeight={600} fill="var(--ink)" stroke="var(--surface)" strokeWidth={3 * k} paintOrder="stroke" pointerEvents="none">
+              {p.visitors[0].city ?? countryName(p.visitors[0].country)}{p.visitors.length > 1 ? ` · ${p.visitors.length}` : ""}
+            </text>
+          ))}
+        </svg>
 
-      {/* Zoom controls */}
-      <div className="absolute left-3 top-3 flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
-        {[
-          ["+", "Zoom in", () => zoomAround(view.x + view.w / 2, view.y + view.h / 2, 0.6)],
-          ["−", "Zoom out", () => zoomAround(view.x + view.w / 2, view.y + view.h / 2, 1 / 0.6)],
-          ["◎", "Fit the visitors", fitAll],
-          ["⟲", "Whole world", () => flyTo(full)],
-        ].map(([label, title, fn]) => (
-          <button key={title as string} type="button" title={title as string} aria-label={title as string} onClick={fn as () => void} className="grid h-8 w-8 place-items-center border-b border-line text-base font-semibold text-ink-2 last:border-b-0 hover:bg-accent-soft">{label as string}</button>
-        ))}
-      </div>
-      {zoom > 1 && <span className="absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-ink-2">{zoom}×</span>}
+        {/* Zoom controls */}
+        <div className="absolute left-3 top-3 flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+          {[
+            ["+", "Zoom in", () => zoomAround(view.x + view.w / 2, view.y + view.h / 2, 0.6)],
+            ["−", "Zoom out", () => zoomAround(view.x + view.w / 2, view.y + view.h / 2, 1 / 0.6)],
+            ["◎", "Fit the visitors", fitAll],
+            ["⟲", "Whole world", () => flyTo(full)],
+          ].map(([label, title, fn]) => (
+            <button key={title as string} type="button" title={title as string} aria-label={title as string} onClick={fn as () => void} className="grid h-8 w-8 place-items-center border-b border-line text-base font-semibold text-ink-2 last:border-b-0 hover:bg-accent-soft">{label as string}</button>
+          ))}
+        </div>
+        {zoom > 1.05 && <span className="absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-ink-2 shadow-sm">{Math.round(zoom * 10) / 10}×{showStates ? " · US states" : zoom >= 1.8 ? " · detailed" : ""}</span>}
 
-      {/* Who is at the chosen place */}
-      {open && (
-        <div className="absolute right-3 top-3 z-10 w-[22rem] max-w-[calc(100%-4.5rem)] rounded-2xl border border-line bg-surface p-4 shadow-lg">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold leading-snug">{flag(open.visitors[0].country)} {open.visitors[0].city ?? "Town unknown"}, {countryName(open.visitors[0].country)}</p>
-              <p className="text-xs text-muted">{open.visitors.length === 1 ? "1 visitor here" : `${open.visitors.length} visitors here`} in the last hour</p>
+        {/* The name of what is under the pointer */}
+        {tip && !open && (
+          <span className="pointer-events-none absolute z-20 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1 text-xs font-semibold text-surface shadow" style={{ left: tip.x + 14, top: tip.y + 12 }}>{tip.text}</span>
+        )}
+
+        {/* Who is at the chosen place */}
+        {open && (
+          <div className="absolute right-3 top-3 z-10 w-[22rem] max-w-[calc(100%-4.5rem)] rounded-2xl border border-line bg-surface p-4 shadow-lg">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold leading-snug">{flag(open.visitors[0].country)} {open.visitors[0].city ?? "Town unknown"}{open.visitors[0].country === "US" && open.visitors[0].region ? `, ${stateName(open.visitors[0].region)}` : ""}, {countryName(open.visitors[0].country)}</p>
+                <p className="text-xs text-muted">{plural(open.visitors.length, "visitor", "visitors")} here in the last hour</p>
+              </div>
+              <button type="button" aria-label="Close" onClick={() => onSelect(null)} className="grid h-7 w-7 place-items-center rounded-full text-lg text-muted hover:bg-accent-soft">×</button>
             </div>
-            <button type="button" aria-label="Close" onClick={() => onSelect(null)} className="grid h-7 w-7 place-items-center rounded-full text-lg text-muted hover:bg-accent-soft">×</button>
+            <ul className="mt-3 max-h-80 space-y-2.5 overflow-auto pr-1">
+              {[...open.visitors].sort((a, b) => (a.key === selected ? -1 : b.key === selected ? 1 : 0)).slice(0, 8).map((v) => (
+                <li key={v.key} className={`rounded-xl border p-3 text-sm ${v.key === selected ? "border-accent" : "border-line"}`}>
+                  <p className="flex items-center gap-2">
+                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: STATUS[v.status].colour }}>{STATUS[v.status].label}</span>
+                    <span className="font-semibold">{name(v.source)}</span>
+                    <span className="text-xs text-ink-2">· {v.paid ? "ad" : "organic"}</span>
+                    <span className={`ml-auto text-[11px] ${v.active ? "font-bold uppercase tracking-wider text-accent-text" : "text-muted"}`}>{v.active ? "active now" : `${ago(now - v.lastAt)} ago`}</span>
+                  </p>
+                  {(v.campaign || v.content) && <p className="mt-1 text-xs text-ink-2">Campaign <b>{v.campaign ?? "–"}</b>{v.content ? <> · ad <b>{v.content}</b></> : null}</p>}
+                  {v.referrer && <p className="mt-1 break-all text-xs text-ink-2">Link on {v.referrer}</p>}
+                  <p className="mt-1 text-xs text-ink-2">Came in on <b>{v.landing}</b> · now on <b>{v.current}</b></p>
+                  <p className="mt-1 text-xs text-muted">
+                    {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · {plural(v.pages.length, "page", "pages")} in {ago(Math.max(1000, v.lastAt - v.firstAt))}
+                    {v.returning !== undefined && (v.returning ? ` · returning, ${v.sessions30} visits this month` : " · first visit")}
+                  </p>
+                  {v.account && <p className="mt-1 text-xs font-semibold text-accent-text">Signed in: {v.account}</p>}
+                  {v.pages.length > 1 && <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{v.pages.map((p) => p.path).join(" → ")}</p>}
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="mt-3 max-h-80 space-y-2.5 overflow-auto pr-1">
-            {[...open.visitors].sort((a, b) => (a.key === selected ? -1 : b.key === selected ? 1 : 0)).slice(0, 8).map((v) => (
-              <li key={v.key} className={`rounded-xl border p-3 text-sm ${v.key === selected ? "border-accent" : "border-line"}`}>
-                <p className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: platformColor(v.source) }} aria-hidden />
-                  <span className="font-semibold">{name(v.source)}</span>
-                  <span className="text-xs text-ink-2">{v.paid ? "from an ad" : "organic"}</span>
-                  <span className={`ml-auto text-[11px] ${v.active ? "font-bold uppercase tracking-wider text-accent-text" : "text-muted"}`}>{v.active ? "active now" : `${ago(now - v.lastAt)} ago`}</span>
-                </p>
-                {(v.campaign || v.content) && <p className="mt-1 text-xs text-ink-2">Campaign <b>{v.campaign ?? "–"}</b>{v.content ? <> · ad <b>{v.content}</b></> : null}</p>}
-                {v.referrer && <p className="mt-1 break-all text-xs text-ink-2">Link on {v.referrer}</p>}
-                <p className="mt-1 text-xs text-ink-2">Came in on <b>{v.landing}</b> · now on <b>{v.current}</b></p>
-                <p className="mt-1 text-xs text-muted">
-                  {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · {v.pages.length} {v.pages.length === 1 ? "page" : "pages"} in {ago(Math.max(1000, v.lastAt - v.firstAt))}
-                  {v.returning !== undefined && (v.returning ? ` · returning, ${v.sessions30} visits this month` : " · first visit")}
-                </p>
-                {v.account && <p className="mt-1 text-xs font-semibold text-accent-text">Signed in: {v.account}</p>}
-                {v.pages.length > 1 && <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{v.pages.map((p) => p.path).join(" → ")}</p>}
-              </li>
-            ))}
-          </ul>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-ink-2">
+        {(Object.keys(STATUS) as Array<keyof typeof STATUS>).map((key) => (
+          <span key={key} className="flex items-center gap-1.5">
+            <svg viewBox="-9 -24 18 25" className="h-4 w-3" aria-hidden><path d={PIN} fill={STATUS[key].colour} stroke="#fff" strokeWidth={1.2} /><circle cx={0} cy={-15} r={3.2} fill="#fff" /></svg>
+            {STATUS[key].label} · <b className="tabular-nums">{visitors.filter((v) => v.status === key).length}</b>
+          </span>
+        ))}
+        <span className="text-muted">Pulsing: active in the last 5 minutes</span>
+      </div>
+
+      {/* Where they are: the countries, most visitors first; a click flies there */}
+      {topCountries.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted">Where they are</span>
+          {topCountries.map(([cc, n]) => (
+            <button key={cc} type="button" onClick={() => flyToCountry(cc)} className="pill pill-off !px-3 !py-1 text-xs" title={`Show ${countryName(cc)}`}>
+              {flag(cc)} {countryName(cc)} · <b className="tabular-nums">{n}</b>
+            </button>
+          ))}
         </div>
       )}
-    </div>
-      <p className="mt-2 text-xs text-muted">Scroll or pinch to zoom, drag to move, double-click to zoom in. Click a marker for who is there; countries are shaded by visitors.</p>
+      <p className="mt-2 text-xs text-muted">Scroll or pinch to zoom, drag to move, double-click to zoom in; zoomed in, the map turns detailed and shows the US states. Hover for names, click a pin for who it is.</p>
     </div>
   );
 }

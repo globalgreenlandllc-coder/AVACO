@@ -188,7 +188,7 @@ describe("live traffic", () => {
   it("counts who is on now, per minute, where from and where on the map", () => {
     const at = (minutesAgo: number) => new Date(NOW.getTime() - minutesAgo * 60_000);
     const live = liveSummary([
-      { at: at(1), path: "/record", visitor: "a", session: "a1", landing: false, source: "tiktok", medium: "paid", device: "phone", country: "US", city: "Miami", lat: 26, lon: -80, userId: "user_a" },
+      { at: at(1), path: "/record", visitor: "a", session: "a1", landing: false, source: "tiktok", medium: "paid", device: "phone", country: "US", city: "Miami", region: "FL", lat: 26, lon: -80, userId: "user_a" },
       { at: at(3), path: "/", visitor: "a", session: "a1", landing: true, source: "tiktok", medium: "paid", device: "phone", country: "US", city: "Miami", lat: 26, lon: -80 },
       { at: at(12), path: "/", visitor: "b", session: "b1", landing: true, source: "instagram", device: "desktop", country: "DE", city: "Berlin", lat: 53, lon: 13 },
       { at: at(45), path: "/", visitor: "c", session: "c1", landing: true, source: "direct", device: "desktop", country: "GB", city: null, lat: null, lon: null },
@@ -203,7 +203,7 @@ describe("live traffic", () => {
     expect(live.pages).toEqual([{ path: "/record", visitors: 1 }]);
     expect(live.visitors.map((v) => [v.city, v.active, v.source])).toEqual([["Miami", true, "tiktok"], ["Berlin", false, "instagram"], [null, false, "direct"]]);
     const a = live.visitors[0];
-    expect(a).toMatchObject({ lat: 26, lon: -80, country: "US", paid: true, landing: "/", current: "/record", device: "phone", userId: "user_a" });
+    expect(a).toMatchObject({ lat: 26, lon: -80, country: "US", region: "FL", paid: true, landing: "/", current: "/record", device: "phone", userId: "user_a" });
     expect(a.pages.map((p) => p.path)).toEqual(["/", "/record"]);
     expect(a.lastAt - a.firstAt).toBe(2 * 60_000);
     expect(live.visitors[2]).toMatchObject({ lat: null, lon: null }); // no position: counted, not placed
@@ -212,6 +212,9 @@ describe("live traffic", () => {
     // a visitor's month: returning when this browser came on an earlier day
     const again = liveSummary([{ at: at(2), path: "/", visitor: "a", session: "a9", landing: true, source: "direct", device: "phone", country: "US" }], NOW, new Map([["a", { first: at(60 * 24 * 3), sessions: 4 }]]));
     expect(again.visitors[0]).toMatchObject({ returning: true, sessions30: 4 });
+    expect(live.visitors.map((v) => v.status)).toEqual(["signed-up", "visitor", "visitor"]);
+    const known = liveSummary([{ at: at(2), path: "/", visitor: "b", session: "b9", landing: true, source: "direct", device: "phone", country: "US" }], NOW, new Map([["b", { first: at(600), sessions: 2, userId: "user_b" }]]));
+    expect(known.visitors[0]).toMatchObject({ userId: "user_b", status: "signed-up" }); // signed in on an earlier visit
     expect(live.feed[0]).toMatchObject({ source: "tiktok", paid: true, signedIn: true, city: "Miami" });
   });
 });
