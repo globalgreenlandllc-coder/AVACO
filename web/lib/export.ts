@@ -3,6 +3,7 @@
  * page's own styles, the fonts in use (embedded, so it works offline) and LIVE_SCRIPT, which repeats in
  * plain JavaScript what React does on the site: chapter pills, opening a row, the radar's hover, the
  * count-up and the scroll reveal. The components mark their parts with data attributes for it.
+ * Where scripts don't run at all (a mail app's preview of the file), the file falls back to its print presentation.
  * Browser only.
  */
 
@@ -176,8 +177,18 @@ export async function buildReportFile(report: HTMLElement, title: string, option
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
+<script>document.documentElement.classList.add("js");</script>
 <style>${await pageCss()}</style>
-<noscript><style>.reveal { opacity: 1; }</style></noscript>
+<style>
+/* Where no script runs (a mail app's file preview, some readers) the file reads like the printed report: every
+   chapter in full, one after another, numbered; the tabs and the row toggles, which need the script, stay away. */
+html:not(.js) .reveal { opacity: 1; }
+html:not(.js) .no-print { display: none !important; }
+html:not(.js) .print\\:block { display: block !important; }
+html:not(.js) .print\\:inline { display: inline !important; }
+html:not(.js) .print\\:mt-8 { margin-top: 2rem !important; }
+html:not(.js) [data-row-summary].print\\:hidden { display: none !important; }
+</style>
 </head>
 <body>
 <main class="mx-auto w-full max-w-5xl px-5 pb-24 pt-8 sm:px-8">${copy.outerHTML}</main>
