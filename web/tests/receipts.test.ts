@@ -51,7 +51,7 @@ describe("the receipt email", () => {
   it("says what was paid, for what, with which card, and links to the purchase and Stripe's receipt", () => {
     const mail = renderReceipt(sample(), receiptEn, "en");
     expect(mail.subject).toBe("Your AVOCO receipt · $9");
-    for (const part of ["Personality type report", "Visa ending in 4242", "AV-1A2B3C4D", "26 September 2026", "18:05 UTC", "dana@example.com", "https://www.avocousa.us/reports/abc", "https://pay.stripe.com/receipts/xyz", "support@avocousa.us"]) {
+    for (const part of ["Complete Personality Analysis", "Visa ending in 4242", "AV-1A2B3C4D", "26 September 2026", "18:05 UTC", "dana@example.com", "https://www.avocousa.us/reports/abc", "https://pay.stripe.com/receipts/xyz", "support@avocousa.us"]) {
       expect(mail.html).toContain(part);
       expect(mail.text).toContain(part);
     }
@@ -61,21 +61,21 @@ describe("the receipt email", () => {
     const mail = renderReceipt(sample({ item: { kind: "match", a: "Ann <b>", b: "Tom \"&\" Co" } }), receiptEn, "en");
     expect(mail.html).toContain("Ann &lt;b&gt; &amp; Tom &quot;&amp;&quot; Co");
     expect(mail.html).not.toContain("Ann <b>");
-    expect(mail.text).toContain("Relationship report · Ann <b> & Tom \"&\" Co");
+    expect(mail.text).toContain("Relationship & Compatibility · Ann <b> & Tom \"&\" Co");
   });
 
   it("is written in the buyer's language", () => {
     const mail = renderReceipt(sample({ amountCents: 1490 }), receiptRu, "ru");
     expect(mail.subject).toContain("Ваш чек AVOCO");
     expect(mail.subject).toContain("14,90");
-    expect(mail.html).toContain("Отчёт о типе личности");
+    expect(mail.html).toContain("Полный анализ личности");
     expect(mail.html).toContain("сентября 2026");
     expect(mail.html).toContain('lang="ru"');
   });
 
   it("lists what is inside a gift, and names its recipient", () => {
     expect(itemLines({ kind: "gift", name: "Mia", reports: 2, industries: 1, matches: 0 }, receiptEn)).toEqual({
-      label: "Gift for Mia", details: ["Personality type reports × 2", "Industry chapters × 1"],
+      label: "Gift for Mia", details: ["Complete Personality Analysis × 2", "Career Fit × 1"],
     });
     expect(itemLines({ kind: "gift", name: null, reports: 1, industries: 0, matches: 1 }, receiptEn).label).toBe("Gift");
   });
@@ -191,7 +191,7 @@ describe("sending the receipt after a payment", () => {
     vi.stubEnv("SMTP_USER", "support@avocousa.us");
     expect(await sendReceipt(p.id)).toEqual({ sent: true, to: "dana@example.com" });
     const mail = smtp.sendMail.mock.calls[0][0] as { html: string };
-    expect(mail.html).toContain("Personality type report");
+    expect(mail.html).toContain("Complete Personality Analysis");
     expect(mail.html).toContain(`https://www.avocousa.us/reports/${A1}`);
   });
 });

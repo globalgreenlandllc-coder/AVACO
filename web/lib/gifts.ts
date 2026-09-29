@@ -60,9 +60,9 @@ export async function createGift(userId: string, input: GiftInput, free = false)
   const recipientName = clean(input.recipientName, 60, "Their name", false);
   const message = clean(input.message, 300, "Message", false);
   const reports = count(input.reports, 1, MAX_REPORTS, "Reports");
-  const industries = count(input.industries ?? 0, 0, MAX_INDUSTRIES, "Industry chapters");
-  const matches = count(input.matches ?? 0, 0, MAX_MATCHES, "Relationship matches");
-  const best = count(input.best ?? 0, 0, MAX_BEST, "Best-match industry");
+  const industries = count(input.industries ?? 0, 0, MAX_INDUSTRIES, "Career Fit");
+  const matches = count(input.matches ?? 0, 0, MAX_MATCHES, "Relationship & Compatibility");
+  const best = count(input.best ?? 0, 0, MAX_BEST, "Best-Fit Industry");
   const price = await giftPrice(reports, industries, matches, undefined, best);
   const [gift] = await db().insert(gifts).values({
     id: crypto.randomUUID(), token: randomBytes(24).toString("base64url"), giverId: userId, giverName,

@@ -60,7 +60,7 @@ export default async function AdminStats() {
             { label: "Signed up", value: s.funnel.signups, note: s.users.capped ? "at least" : "new accounts" },
             { label: "Recorded", value: s.funnel.recorded, note: "accounts that recorded" },
             { label: "Paid", value: s.funnel.paid, note: "bought credits" },
-            { label: "Bought an add-on", value: s.funnel.addons, note: "industry chapter or couple's report" },
+            { label: "Bought an add-on", value: s.funnel.addons, note: "Career Fit, Best-Fit Industry or Relationship & Compatibility" },
           ]} />
         </div>
         <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Most viewed pages</h2><RankBars rows={v.pages.map((r) => ({ label: r.path, value: r.views, note: `${r.visitors} visitors` }))} empty="No views yet." /></div>

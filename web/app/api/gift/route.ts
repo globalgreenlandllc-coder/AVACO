@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const [purchase, origin, { t }] = await Promise.all([startGiftPurchase(gift), baseUrl(), getDict()]);
     const session = await createCheckout({
       purchaseId: purchase.id,
-      name: `AVOCO · ${t.gift.nav} · ${gift.reports} × ${t.gift.form.reports}${gift.industries ? ` + ${gift.industries} × ${t.gift.form.industries}` : ""}`,
+      name: `AVOCO · ${t.gift.nav} · ${gift.reports} × ${t.gift.form.short.reports}${gift.industries ? ` + ${gift.industries} × ${t.gift.form.short.industries}` : ""}${gift.best ? ` + ${gift.best} × ${t.gift.form.short.best}` : ""}${gift.matches ? ` + ${gift.matches} × ${t.gift.form.short.matches}` : ""}`,
       amountCents: purchase.amountCents,
       currency: purchase.currency,
       successUrl: `${origin}/gift/${gift.id}?paid=1&session={CHECKOUT_SESSION_ID}`,

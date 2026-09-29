@@ -61,12 +61,13 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
     setBusy(false);
   }
 
-  const counter = (label: string, help: string, key: "reports" | "industries" | "best" | "matches", min: number, max: number, unit: number) => {
+  const counter = (label: string, tag: string, help: string, key: "reports" | "industries" | "best" | "matches", min: number, max: number, unit: number) => {
     const value = draft[key];
     return (
       <div className="card flex flex-col p-5">
-        <p className="font-semibold">{label}</p>
-        <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{help}</p>
+        <p className="font-semibold leading-snug">{label}</p>
+        <p className="mt-1.5 text-sm leading-snug text-accent-text">{tag}</p>
+        <p className="mt-2 flex-1 text-xs leading-relaxed text-muted">{help}</p>
         <div className="mt-4 flex items-center justify-between gap-3">
           {free ? <span /> : <span className="text-sm text-ink-2">{value} × {fmt(unit)}</span>}
           <div className="flex shrink-0 items-center gap-2">
@@ -90,10 +91,10 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
       <label className="block text-sm"><span className="text-ink-2">{t.message}</span><textarea value={draft.message} onChange={(e) => update({ message: e.target.value })} maxLength={300} rows={3} placeholder={t.messagePlaceholder} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5" /></label>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {counter(t.reports, t.reportsHelp, "reports", 1, maxReports, reportCents)}
-        {counter(t.industries, t.industriesHelp, "industries", 0, maxIndustries, industryCents)}
-        {counter(t.best, t.bestHelp, "best", 0, maxBest, bestCents)}
-        {counter(t.matches, t.matchesHelp, "matches", 0, maxMatches, matchCents)}
+        {counter(t.reports, t.reportsTag, t.reportsHelp, "reports", 1, maxReports, reportCents)}
+        {counter(t.industries, t.industriesTag, t.industriesHelp, "industries", 0, maxIndustries, industryCents)}
+        {counter(t.best, t.bestTag, t.bestHelp, "best", 0, maxBest, bestCents)}
+        {counter(t.matches, t.matchesTag, t.matchesHelp, "matches", 0, maxMatches, matchCents)}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-accent px-6 py-5">

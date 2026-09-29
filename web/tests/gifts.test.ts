@@ -40,7 +40,7 @@ describe("gifts", () => {
   it("refuse nonsense", async () => {
     await expect(createGift("user_dana", { giverName: "", reports: 1 })).rejects.toThrow("Your name");
     await expect(createGift("user_dana", { giverName: "Dana", reports: 0 })).rejects.toThrow("Reports");
-    await expect(createGift("user_dana", { giverName: "Dana", reports: 1, industries: 99 })).rejects.toThrow("Industry");
+    await expect(createGift("user_dana", { giverName: "Dana", reports: 1, industries: 99 })).rejects.toThrow("Career Fit");
   });
 
   it("wait for the payment, then are claimed once into the recipient's account, and open their recordings by themselves", async () => {

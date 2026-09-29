@@ -3,12 +3,12 @@ import { en } from "@/lib/i18n/en";
 import { ru } from "@/lib/i18n/ru";
 import { renderReportMail } from "@/lib/report-mail";
 
-const data = { date: "26 September 2026", pieces: ["Type report", "Industry chapter · Automotive", "Couple's report · Dana and Lena"], url: "https://www.avocousa.us/reports/abc", to: "dana@example.com" };
+const data = { date: "26 September 2026", pieces: ["Complete Personality Analysis", "Career Fit · Automotive", "Compatibility report · Dana and Lena"], url: "https://www.avocousa.us/reports/abc", to: "dana@example.com" };
 
 describe("the email that carries a report file", () => {
   it("names the date, lists what the file holds, links the report and says why it was sent", () => {
     const mail = renderReportMail(data, en.report.mail, "en");
-    expect(mail.subject).toBe("Your AVOCO voice report · 26 September 2026");
+    expect(mail.subject).toBe("Your AVOCO Complete Personality Analysis · 26 September 2026");
     for (const piece of data.pieces) { expect(mail.html).toContain(piece.replace("'", "&#39;")); expect(mail.text).toContain(piece); }
     expect(mail.html).toContain('href="https://www.avocousa.us/reports/abc"');
     expect(mail.text).toContain("https://www.avocousa.us/reports/abc");

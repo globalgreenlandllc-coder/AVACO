@@ -4,7 +4,7 @@ import { getDict } from "@/lib/i18n";
 import { matchByToken } from "@/lib/matches";
 import { OG_SIZE, OgCard, ogFonts, ogLine, ogOptions } from "@/lib/og";
 
-export const alt = "An invitation to an AVOCO couple's report";
+export const alt = "An invitation to an AVOCO compatibility report";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 

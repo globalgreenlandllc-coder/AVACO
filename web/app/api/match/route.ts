@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const origin = await baseUrl();
     const session = await createCheckout({
       purchaseId: purchase.id,
-      name: `AVOCO ${match.kind === "couple" ? "couple's" : "pair"} report · ${match.ownerName} & ${match.partnerName}`,
+      name: `AVOCO · Relationship & Compatibility · ${match.ownerName} & ${match.partnerName}`,
       amountCents: purchase.amountCents,
       currency: (await getSettings()).currency,
       successUrl: `${origin}/match/${match.id}?mode=${mode}&paid=1&session={CHECKOUT_SESSION_ID}`,

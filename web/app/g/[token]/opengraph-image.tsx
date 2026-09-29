@@ -4,7 +4,7 @@ import { giftByToken } from "@/lib/gifts";
 import { getDict } from "@/lib/i18n";
 import { OG_SIZE, OgCard, ogFonts, ogLine, ogOptions } from "@/lib/og";
 
-export const alt = "A gift: an AVOCO voice report";
+export const alt = "A gift: an AVOCO Complete Personality Analysis";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
