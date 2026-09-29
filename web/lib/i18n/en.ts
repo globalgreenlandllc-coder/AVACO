@@ -8,6 +8,7 @@ import { deepEn } from "./deep-en";
 import { legalEn } from "./legal-en";
 import { giftEn } from "./gift-en";
 import { receiptEn } from "./receipt-en";
+import { techEn } from "./tech-en";
 import { peopleEn } from "./people-en";
 import { finderEn } from "./finder-en";
 import { trustEn } from "./trust-en";
@@ -327,6 +328,7 @@ export const en = {
   legal: legalEn,
   gift: giftEn,
   receipt: receiptEn,
+  technology: techEn,
   people: peopleEn,
   finder: finderEn,
   partners: {

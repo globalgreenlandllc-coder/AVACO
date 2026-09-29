@@ -50,6 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <nav className="flex flex-col gap-2" aria-label={t.legal.nav.privacy}>
                 <Link href="/privacy" className="transition-colors hover:text-ink">{t.legal.nav.privacy}</Link>
                 <Link href="/terms" className="transition-colors hover:text-ink">{t.legal.nav.terms}</Link>
+                <Link href="/technology" className="transition-colors hover:text-ink">{t.technology.footerLink}</Link>
                 <Link href="/docs/api" className="transition-colors hover:text-ink">{t.legal.nav.api}</Link>
                 <a href={`mailto:${LEGAL.support}`} className="transition-colors hover:text-ink">{LEGAL.support}</a>
               </nav>

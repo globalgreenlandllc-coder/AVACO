@@ -137,6 +137,7 @@ export default async function Home() {
           <p className="eyebrow !text-accent-text">{h.techEyebrow}</p>
           <h2 className="mt-3 font-display text-4xl font-medium">{h.techTitle}</h2>
           <p className="mt-5 leading-relaxed text-ink-2">{h.tech}</p>
+          <Link href="/technology" className="mt-5 inline-block font-semibold text-accent-text hover:underline">{t.technology.landingLink} →</Link>
         </div>
         <ul className="grid gap-3 self-center sm:grid-cols-2">
           {h.techPoints.map((point) => (

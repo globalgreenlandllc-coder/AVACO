@@ -335,7 +335,7 @@ export const deepEn = {
       },
       {
         title: "How the scores are produced",
-        text: "The recording is cleaned first: levels are normalised, noise is reduced and non-speech is cut out. The features above are then extracted and passed to an ensemble of machine-learning models (neural networks and classical algorithms) trained on recordings of people whose profiles were known. The result is a score from 0 to 100 on each of eight personality types and fourteen emotional scales. The scales are independent of each other: they are not percentages of a whole and don't add up to 100.",
+        text: "The recording is cleaned first: levels are normalised, noise is reduced and non-speech is cut out. The features above are then extracted and passed to an ensemble of machine-learning models, neural networks and classical algorithms, built by Voxera. The result is a score from 0 to 100 on each of eight personality types and fourteen emotional scales. The scales are independent of each other: they are not percentages of a whole and don't add up to 100.",
       },
       {
         title: "How reliable it is",

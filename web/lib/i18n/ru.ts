@@ -8,6 +8,7 @@ import { deepRu } from "./deep-ru";
 import { legalRu } from "./legal-ru";
 import { giftRu } from "./gift-ru";
 import { receiptRu } from "./receipt-ru";
+import { techRu } from "./tech-ru";
 import { peopleRu } from "./people-ru";
 import { finderRu } from "./finder-ru";
 import { trustRu } from "./trust-ru";
@@ -326,6 +327,7 @@ export const ru: Dict = {
   legal: legalRu,
   gift: giftRu,
   receipt: receiptRu,
+  technology: techRu,
   people: peopleRu,
   finder: finderRu,
   partners: {
