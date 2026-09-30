@@ -265,7 +265,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
             <button key={title as string} type="button" title={title as string} aria-label={title as string} onClick={fn as () => void} className="grid h-8 w-8 place-items-center border-b border-line text-base font-semibold text-ink-2 last:border-b-0 hover:bg-accent-soft">{label as string}</button>
           ))}
         </div>
-        {zoom > 1.05 && <span className="absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-ink-2 shadow-sm">{Math.round(zoom * 10) / 10}×{showStates ? " · US states" : zoom >= 1.8 ? " · detailed" : ""}</span>}
+        {zoom > 1.05 && <span className={`absolute bottom-3 left-3 rounded-full ${open ? "hidden sm:block" : ""} bg-surface/90 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-ink-2 shadow-sm`}>{Math.round(zoom * 10) / 10}×{showStates ? " · US states" : zoom >= 1.8 ? " · detailed" : ""}</span>}
 
         {/* The name of what is under the pointer */}
         {tip && !open && (
@@ -273,39 +273,86 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
         )}
 
         {/* Who is at the chosen place */}
-        {open && (
-          <div className="absolute right-3 top-3 z-10 w-[22rem] max-w-[calc(100%-4.5rem)] rounded-2xl border border-line bg-surface p-4 shadow-lg">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold leading-snug">{flag(open.visitors[0].country)} {open.visitors[0].city ?? "Town unknown"}{open.visitors[0].country === "US" && open.visitors[0].region ? `, ${stateName(open.visitors[0].region)}` : ""}, {countryName(open.visitors[0].country)}</p>
-                <p className="text-xs text-muted">{plural(open.visitors.length, "visitor", "visitors")} here in the last hour</p>
+        {open && (() => {
+          // The clicked visitor first and in full: the page they are on now, how long they have been there, and the way
+          // they came, ticking with `now`. The others at this place stay as one row each; a tap on a row brings it up.
+          const list = [...open.visitors].sort((a, b) => (a.key === selected ? -1 : b.key === selected ? 1 : b.lastAt - a.lastAt));
+          const v = list[0], rest = list.slice(1, 8);
+          const here = v.pages.at(-1);
+          const onPage = here ? now - here.at : 0;
+          return (
+            <div className="z-10 m-2 flex max-h-[70vh] flex-col rounded-2xl border border-line bg-surface p-4 shadow-lg sm:absolute sm:right-3 sm:top-3 sm:m-0 sm:max-h-[calc(100%-1.5rem)] sm:w-[24rem] sm:max-w-[calc(100%-4.5rem)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold leading-snug">{flag(v.country)} {v.city ?? "Town unknown"}{v.country === "US" && v.region ? `, ${stateName(v.region)}` : ""}, {countryName(v.country)}</p>
+                  <p className="text-xs text-muted">{plural(open.visitors.length, "visitor", "visitors")} here in the last hour</p>
+                </div>
+                <button type="button" aria-label="Close" onClick={() => onSelect(null)} className="grid h-7 w-7 place-items-center rounded-full text-lg text-muted hover:bg-accent-soft">×</button>
               </div>
-              <button type="button" aria-label="Close" onClick={() => onSelect(null)} className="grid h-7 w-7 place-items-center rounded-full text-lg text-muted hover:bg-accent-soft">×</button>
-            </div>
-            <ul className="mt-3 max-h-80 space-y-2.5 overflow-auto pr-1">
-              {[...open.visitors].sort((a, b) => (a.key === selected ? -1 : b.key === selected ? 1 : 0)).slice(0, 8).map((v) => (
-                <li key={v.key} className={`rounded-xl border p-3 text-sm ${v.key === selected ? "border-accent" : "border-line"}`}>
-                  <p className="flex items-center gap-2">
-                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: STATUS[v.status].colour }}>{STATUS[v.status].label}</span>
+
+              <div className="mt-3 min-h-0 flex-1 overflow-auto pr-1">
+                <div className="rounded-xl border border-accent p-3 text-sm">
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: STATUS[v.status].colour }}>{STATUS[v.status].label}</span>
                     <span className="font-semibold">{name(v.source)}</span>
                     <span className="text-xs text-ink-2">· {v.paid ? "ad" : "organic"}</span>
-                    <span className={`ml-auto text-[11px] ${v.active ? "font-bold uppercase tracking-wider text-accent-text" : "text-muted"}`}>{v.active ? "active now" : `${ago(now - v.lastAt)} ago`}</span>
+                    <span className={`ml-auto flex items-center gap-1.5 whitespace-nowrap text-[11px] ${v.active ? "font-bold uppercase tracking-wider text-accent-text" : "text-muted"}`}>
+                      {v.active && <span className="relative grid h-2.5 w-2.5 place-items-center" aria-hidden><span className="breathe absolute inset-0 rounded-full bg-accent" /><span className="relative h-1.5 w-1.5 rounded-full bg-accent" /></span>}
+                      {v.active ? "on the site now" : `left ${ago(now - v.lastAt)} ago`}
+                    </span>
                   </p>
-                  {(v.campaign || v.content) && <p className="mt-1 text-xs text-ink-2">Campaign <b>{v.campaign ?? "–"}</b>{v.content ? <> · ad <b>{v.content}</b></> : null}</p>}
+
+                  {/* Right now: the page under their fingers, and for how long. */}
+                  <div className="mt-3 rounded-lg bg-accent-soft px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent-text">{v.active ? "Now on" : "Last seen on"}</p>
+                    <p className="mt-0.5 break-all font-semibold">{v.current}</p>
+                    <p className="text-xs text-ink-2">{v.active ? `${ago(Math.max(1000, onPage))} on this page` : `stayed there until ${ago(now - v.lastAt)} ago`} · {plural(v.pages.length, "page", "pages")} in {ago(Math.max(1000, v.lastAt - v.firstAt))}</p>
+                  </div>
+
+                  {/* The way they came: every page of this hour, and how long each one held them. */}
+                  <ol className="mt-3 space-y-1">
+                    {v.pages.map((p, i) => {
+                      const next = v.pages[i + 1];
+                      const last = i === v.pages.length - 1;
+                      const held = next ? next.at - p.at : v.active ? now - p.at : v.lastAt - p.at;
+                      return (
+                        <li key={`${p.at}-${p.path}`} className={`flex items-baseline gap-2 text-xs ${last ? "font-semibold" : "text-ink-2"}`}>
+                          <span className="w-14 shrink-0 tabular-nums text-muted">{ago(now - p.at)} ago</span>
+                          <span className="min-w-0 flex-1 truncate">{p.path}</span>
+                          <span className="shrink-0 tabular-nums text-muted">{last && v.active ? `${ago(Math.max(1000, held))} · now` : ago(Math.max(1000, held))}</span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  {(v.campaign || v.content) && <p className="mt-2 text-xs text-ink-2">Campaign <b>{v.campaign ?? "–"}</b>{v.content ? <> · ad <b>{v.content}</b></> : null}</p>}
                   {v.referrer && <p className="mt-1 break-all text-xs text-ink-2">Link on {v.referrer}</p>}
-                  <p className="mt-1 text-xs text-ink-2">Came in on <b>{v.landing}</b> · now on <b>{v.current}</b></p>
-                  <p className="mt-1 text-xs text-muted">
-                    {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · {plural(v.pages.length, "page", "pages")} in {ago(Math.max(1000, v.lastAt - v.firstAt))}
+                  <p className="mt-2 text-xs text-muted">
+                    {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · came in on {v.landing}
                     {v.returning !== undefined && (v.returning ? ` · returning, ${v.sessions30} visits this month` : " · first visit")}
                     {v.status === "paid" && v.paidAt ? ` · paid ${ago(now - v.paidAt)} ago` : v.customer ? " · paying customer" : ""}
                   </p>
                   {v.account && <p className="mt-1 text-xs font-semibold text-accent-text">Signed in: {v.account}</p>}
-                  {v.pages.length > 1 && <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{v.pages.map((p) => p.path).join(" → ")}</p>}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                </div>
+
+                {rest.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {rest.map((o) => (
+                      <li key={o.key}>
+                        <button type="button" onClick={() => onSelect(o.key)} className="flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-left text-xs hover:border-accent">
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: STATUS[o.status].colour }} aria-hidden />
+                          <span className="font-semibold">{name(o.source)}</span>
+                          <span className="min-w-0 flex-1 truncate text-ink-2">· now on {o.current}</span>
+                          <span className="shrink-0 text-muted">{o.active ? "active" : `${ago(now - o.lastAt)} ago`}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {visitors.some((v) => v.lat === null || v.lon === null) && (
