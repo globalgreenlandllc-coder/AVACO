@@ -4,7 +4,7 @@ import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
 import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
-import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, noteResult, openWelcomeReport, usedWelcomeReport } from "@/lib/billing";
+import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, isWelcomeReport, noteResult, openWelcomeReport, usedWelcomeReport } from "@/lib/billing";
 import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { isAdminUser } from "@/lib/admin";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
@@ -74,6 +74,8 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // An account's first finished report opens in full for free, once (admin → Pricing → "First report free").
   let welcome = false;
   if (!full && !asClient && analysis.status === "completed" && (await openWelcomeReport(userId, analysis.id))) { full = true; welcome = true; }
+  // ...and says so every time it is opened, not only the first time.
+  else if (full && !asClient && analysis.status === "completed") welcome = await isWelcomeReport(userId, analysis.id).catch(() => false);
   if (analysis.status === "completed" && analysis.psytype?.length) {
     await noteResult(analysis.id, "self", analysis.psytype[0].key, fieldFits(analysis.psytype, analysis.emostate)[0]?.key).catch(() => {});
   }
