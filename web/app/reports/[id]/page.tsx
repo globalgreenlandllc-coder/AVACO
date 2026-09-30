@@ -5,7 +5,7 @@ import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
 import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
-import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, isWelcomeReport, noteResult, openWelcomeReport, usedWelcomeReport } from "@/lib/billing";
+import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, noteResult, openWelcomeReport, usedWelcomeReport, welcomeOpenedAt } from "@/lib/billing";
 import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { isAdminUser } from "@/lib/admin";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
@@ -73,10 +73,14 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const asClient = admin && query.as === "client";
   let full = asClient ? false : await hasFullAccess(userId, analysis.id);
   // An account's first finished report opens in full for free, once (admin → Pricing → "First report free").
-  let welcome = false, welcomeNow = false;
-  if (!full && !asClient && analysis.status === "completed" && (await openWelcomeReport(userId, analysis.id))) { full = true; welcome = true; welcomeNow = true; }
+  let welcomeAt: Date | null = null;
+  if (!full && !asClient && analysis.status === "completed" && (await openWelcomeReport(userId, analysis.id))) { full = true; welcomeAt = new Date(); }
   // ...and says so every time it is opened, not only the first time.
-  else if (full && !asClient && analysis.status === "completed") welcome = await isWelcomeReport(userId, analysis.id).catch(() => false);
+  else if (full && !asClient && analysis.status === "completed") welcomeAt = await welcomeOpenedAt(userId, analysis.id).catch(() => null);
+  const welcome = Boolean(welcomeAt);
+  // The free_report event (lib/track.ts) within the hour it opened: the render that opened it can be replaced by the next
+  // one before its event fires, and the event's id keeps a browser from sending it twice.
+  const welcomeNow = welcomeAt !== null && Date.now() - welcomeAt.getTime() < 60 * 60_000;
   if (analysis.status === "completed" && analysis.psytype?.length) {
     await noteResult(analysis.id, "self", analysis.psytype[0].key, fieldFits(analysis.psytype, analysis.emostate)[0]?.key).catch(() => {});
   }

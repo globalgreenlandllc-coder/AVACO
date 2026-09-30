@@ -316,11 +316,11 @@ export async function welcomeReportWaiting(userId: string): Promise<boolean> {
   return !(await usedWelcomeReport(userId));
 }
 
-/** Was this report opened as its account's free first report? */
-export async function isWelcomeReport(userId: string, analysisId: string): Promise<boolean> {
-  const [row] = await db().select({ id: reportAccess.analysisId }).from(reportAccess)
+/** When this report was opened as its account's free first report, or null if it wasn't. */
+export async function welcomeOpenedAt(userId: string, analysisId: string): Promise<Date | null> {
+  const [row] = await db().select({ at: reportAccess.unlockedAt }).from(reportAccess)
     .where(and(eq(reportAccess.analysisId, analysisId), eq(reportAccess.ownerId, userId), eq(reportAccess.source, "welcome"))).limit(1);
-  return Boolean(row);
+  return row?.at ?? null;
 }
 
 /** Opens this report as the account's free first one, if that is still waiting. True when it did. */
