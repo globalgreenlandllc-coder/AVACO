@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { purchaseItem, track } from "@/lib/track";
+import { goToCheckout, purchaseItem, track } from "@/lib/track";
 
 describe("conversion events", () => {
   let store: Record<string, string>;
@@ -29,6 +29,17 @@ describe("conversion events", () => {
     (globalThis as Record<string, unknown>).__avocoNoTrack = true;
     track("record_voice", { event_id: "record_1" });
     expect(layer()).toEqual([]);
+  });
+
+  it("announces a checkout before leaving for Stripe", async () => {
+    const loc = { href: "https://www.avocousa.us/credits" };
+    (globalThis as Record<string, unknown>).location = loc;
+    goToCheckout("https://checkout.stripe.com/c/pay/cs_test_1", "credits");
+    expect(layer()[0]).toMatchObject({ event: "begin_checkout", item: "credits" });
+    expect(loc.href).toBe("https://www.avocousa.us/credits"); // not yet: the tags get a moment to send
+    await new Promise((r) => setTimeout(r, 300));
+    expect(loc.href).toBe("https://checkout.stripe.com/c/pay/cs_test_1");
+    delete (globalThis as Record<string, unknown>).location;
   });
 
   it("names what was bought", () => {
