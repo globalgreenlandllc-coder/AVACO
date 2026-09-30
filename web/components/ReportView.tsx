@@ -344,7 +344,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
               <li key={x.id} className={`rounded-full px-3 py-1.5 text-xs ${x.current ? "bg-accent text-accent-ink font-semibold" : "border border-line text-ink-2"}`}>{x.date} · {x.name} {x.value}</li>
             ))}
             {takes.recordings.length > 8 && (
-              <li><button type="button" data-no-export className="no-print rounded-full border border-accent px-3 py-1.5 text-xs font-semibold text-accent-text" onClick={() => setAllTakes((v) => !v)}>{allTakes ? r.showFewer : r.moreRecordings.replace("{n}", String(takes.recordings.length))}</button></li>
+              <li><button type="button" data-no-export className="no-print rounded-full border border-accent px-3 py-2 text-xs font-semibold text-accent-text" onClick={() => setAllTakes((v) => !v)}>{allTakes ? r.showFewer : r.moreRecordings.replace("{n}", String(takes.recordings.length))}</button></li>
             )}
           </ul>
           <p className="mt-4 text-xs leading-relaxed text-muted">{t.consistency.note}</p>

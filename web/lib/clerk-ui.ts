@@ -25,6 +25,13 @@ export function clerkLocalization(locale: string, t: Dict): typeof enUS {
  */
 export const clerkAppearance = {
   variables: { colorPrimary: "#b4730f", borderRadius: "12px" },
+  // Fields and buttons sized for a thumb, with 16px text in fields so iPhones don't zoom in on them.
+  elements: {
+    formFieldInput: { fontSize: "16px", minHeight: "44px" },
+    formButtonPrimary: { minHeight: "42px", fontSize: "15px" },
+    socialButtonsBlockButton: { minHeight: "42px" },
+    footerActionLink: { display: "inline-block", padding: "0.5rem 0.25rem" },
+  },
   // The logo itself is set on the Clerk application (dashboard: Customization → Branding); public/avoco-logo.* are the files used there.
   layout: { logoPlacement: "outside" as const, logoLinkUrl: "/", termsPageUrl: "/terms", privacyPageUrl: "/privacy" },
 };

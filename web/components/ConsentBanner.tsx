@@ -87,5 +87,5 @@ export function ConsentBanner({ initial, ask, gpc }: { initial: Consent; ask: bo
 
 /** The footer link that opens the choices on any page. */
 export function PrivacyChoicesLink() {
-  return <button type="button" className="hover:text-ink" onClick={() => window.dispatchEvent(new Event(PRIVACY_EVENT))}>Your privacy choices</button>;
+  return <button type="button" className="text-left hover:text-ink" onClick={() => window.dispatchEvent(new Event(PRIVACY_EVENT))}>Your privacy choices</button>;
 }

@@ -162,6 +162,14 @@ main :is(input, textarea, select):not([class*="cl-"]) { transition: border-color
 .pill-on { background: var(--accent); color: var(--accent-ink); }
 .pill-off { border: 1px solid var(--line); color: var(--ink-2); }
 .pill-off:hover { border-color: var(--accent); color: var(--ink); }
+
+/* Phones: fingers, not pointers. Header links, pills, fold toggles and footer links get a 36px minimum, and fields keep 16px text so iOS doesn't zoom in when one is tapped. */
+@media (max-width: 767px) {
+  .site-header a, .site-header button, footer button, .pill { display: inline-flex; align-items: center; min-height: 36px; }
+  summary { padding-block: 0.6rem; }
+  footer nav a, footer nav button { padding-block: 0.45rem; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), select, textarea { font-size: 16px; }
+}
 .gold-panel { border-radius: 28px; background: linear-gradient(160deg, var(--accent), color-mix(in oklab, var(--accent) 78%, #a8650a)); color: var(--accent-ink); }
 .soft-panel { border-radius: 28px; background: var(--accent-soft); }
 
