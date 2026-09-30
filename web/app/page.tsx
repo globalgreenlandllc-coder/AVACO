@@ -245,7 +245,7 @@ export default async function Home() {
               </ul>
             )}
           </div>
-          <Link href={start} className="btn" style={{ background: "var(--cover-bg)", color: "var(--cover-gold)" }}>{startLabel}</Link>
+          <Link href={start} className="btn btn-dark">{startLabel}</Link>
         </div>
       </Reveal>}
 

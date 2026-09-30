@@ -24,7 +24,7 @@ export default async function SamplePage() {
           <h1 className="mt-2 font-display text-3xl font-medium sm:text-4xl">{s.title}</h1>
           <p className="mt-2 leading-relaxed opacity-90">{s.lead}</p>
         </div>
-        <Link href={start} className="btn !bg-[var(--cover-bg)] !text-[var(--cover-gold)]">{s.cta}</Link>
+        <Link href={start} className="btn btn-dark">{s.cta}</Link>
       </section>
 
       <ReportView key={locale} initial={sampleReport()} recordedOn={formatDate(SAMPLE_RECORDED_AT, locale)} t={t} deleteUrl={null} back={{ href: "/", label: s.back }} />
