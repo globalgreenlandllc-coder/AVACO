@@ -7,6 +7,7 @@ const ago = (iso: string, now: number) => {
 };
 
 export function MetaStatus({ status, now }: { status: PixelStatus; now: number }) {
+  if (!status.ok && status.readable === false) return <p className="rounded-xl border border-line px-4 py-3 text-sm text-ink-2">{status.message}</p>;
   if (!status.ok) return <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">Meta wouldn&apos;t say: {status.message}</p>;
   const linked = status.accounts?.some((a) => a.id === AD_ACCOUNT_ID);
   const row = (label: string, value: React.ReactNode, good: boolean | null) => (

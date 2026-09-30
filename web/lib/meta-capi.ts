@@ -88,7 +88,8 @@ export async function sendCapiEvent(e: CapiEvent, b: CapiBrowser, testCode?: str
 export const AD_ACCOUNT_ID = "1617058886555636";
 
 export interface PixelStatus {
-  ok: boolean; message: string;
+  /** ok false with `readable` false: the token may send events but Meta won't let it read the pixel's details. */
+  ok: boolean; message: string; readable?: boolean;
   name?: string; lastFired?: string | null; automaticMatching?: boolean | null; business?: string | null;
   /** The ad accounts the pixel is shared with; null when Meta wouldn't say (the token's permissions). */
   accounts?: Array<{ id: string; name: string }> | null;
@@ -117,10 +118,19 @@ async function graph<T>(path: string): Promise<{ ok: true; data: T } | { ok: fal
  */
 export async function pixelStatus(now = Date.now()): Promise<PixelStatus> {
   const id = pixelId();
-  const pixel = await graph<{ name?: string; last_fired_time?: string; enable_automatic_matching?: boolean; owner_business?: { id: string; name?: string } }>(
-    `${id}?fields=name,last_fired_time,enable_automatic_matching,owner_business{id,name}`);
-  if (!pixel.ok) return { ok: false, message: pixel.message };
-  const p = pixel.data;
+  // One detail per request: Meta refuses a whole request over one field the token may not read.
+  const [basic, matching, owner] = await Promise.all([
+    graph<{ name?: string; last_fired_time?: string }>(`${id}?fields=name,last_fired_time`),
+    graph<{ enable_automatic_matching?: boolean }>(`${id}?fields=enable_automatic_matching`),
+    graph<{ owner_business?: { id: string; name?: string } }>(`${id}?fields=owner_business{id,name}`),
+  ]);
+  if (!basic.ok) {
+    const permission = /permission|\(#10\)|\(#100\)|\(#200\)/i.test(basic.message);
+    return permission
+      ? { ok: false, readable: false, message: "Meta lets this token send events, not read the pixel's details. Sending is what counts; the events show in Events Manager → Overview." }
+      : { ok: false, message: basic.message };
+  }
+  const p = { ...basic.data, ...(matching.ok ? matching.data : {}), ...(owner.ok ? owner.data : {}) };
   const since = Math.floor((now - 24 * 3600_000) / 1000);
   const [shared, byAccount, stats] = await Promise.all([
     p.owner_business?.id ? graph<{ data?: Array<{ id: string; account_id?: string; name?: string }> }>(`${id}/shared_accounts?business=${p.owner_business.id}&fields=account_id,name`) : Promise.resolve(null),

@@ -111,5 +111,7 @@ describe("what Meta reports about the pixel", () => {
     expect(await pixelStatus()).toMatchObject({ ok: true, lastFired: null, automaticMatching: true, accounts: null, events: null });
     vi.stubGlobal("fetch", vi.fn(async () => answer({ error: { message: "Invalid OAuth access token" } }, 400)));
     expect(await pixelStatus()).toEqual({ ok: false, message: "Invalid OAuth access token" });
+    vi.stubGlobal("fetch", vi.fn(async () => answer({ error: { message: "(#100) Missing Permission" } }, 403)));
+    expect(await pixelStatus()).toMatchObject({ ok: false, readable: false }); // a token that may only send: said plainly, not as an error
   });
 });
