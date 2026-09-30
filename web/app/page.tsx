@@ -82,15 +82,26 @@ export default async function Home() {
             {/* On a phone the offer's button comes first, on the first screen: ad visitors decide in seconds. */}
             {/* Wrapped: .btn sets its own display, which would win over a hiding class on the button itself. */}
             <div className="sm:hidden">
-              <Link href={start} className="btn mt-6 w-full" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}{firstFree && !userId ? " →" : ""}</Link>
+              <Link href={start} data-track="hero: start (phone)" data-hero-cta className="btn mt-6 w-full" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}{firstFree && !userId ? " →" : ""}</Link>
               {firstFree && !userId && <p className="mt-2 text-center text-xs" style={{ color: "var(--cover-muted)" }}>{h.freeFact}</p>}
+              {/* What the report gives, at a glance: the sample profile's leading type as a report shows it. */}
+              <div className="mt-5 rounded-2xl border px-4 py-3.5" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 35%, transparent)", background: "color-mix(in oklab, var(--cover-gold) 7%, transparent)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--cover-muted)" }}>{h.sampleResult}</p>
+                <p className="mt-1 flex items-baseline justify-between gap-3">
+                  <span className="font-display text-2xl font-semibold" style={{ color: "var(--cover-ink)" }}>{leader.name}</span>
+                  <span className="text-sm tabular-nums" style={{ color: "var(--cover-gold)" }}>{leader.tag} · {leader.value.toFixed(1)}</span>
+                </p>
+                <span aria-hidden className="mt-2 block h-1.5 w-full rounded-full" style={{ background: "color-mix(in oklab, var(--cover-gold) 18%, transparent)" }}><span className="block h-full rounded-full" style={{ width: `${Math.min(100, leader.value)}%`, background: "var(--cover-gold)" }} /></span>
+                {leader.text && <p className="mt-2 line-clamp-2 text-sm leading-snug" style={{ color: "var(--cover-ink)" }}>{leader.text}</p>}
+                <p className="mt-1.5 text-xs leading-snug" style={{ color: "var(--cover-muted)" }}>{h.sampleResultMore}</p>
+              </div>
             </div>
             <p className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>{h.lead}</p>
             {firstFree && !userId && <p className="mt-4 hidden max-w-xl rounded-2xl border px-4 py-3 text-base leading-relaxed sm:block" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-ink)" }}>{h.freeLine}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
-              <div className="max-sm:hidden"><Link href={start} className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link></div>
-              <Link href="/sample" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>{h.sampleCta}</Link>
-              {!open && <a href="#gift" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>🎁 {t.gift.landing.cta}</a>}
+              <div className="max-sm:hidden"><Link href={start} data-track="hero: start" data-hero-cta className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link></div>
+              <Link href="/sample" data-track="hero: sample report" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>{h.sampleCta}</Link>
+              {!open && <a href="#gift" data-track="hero: gift" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>🎁 {t.gift.landing.cta}</a>}
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm" style={{ color: "var(--cover-muted)" }}>
               {(firstFree ? [h.freeFact, ...h.facts] : h.facts).map((fact) => <li key={fact} className="flex items-center gap-2"><span aria-hidden style={{ color: "var(--cover-gold)" }}>✓</span>{fact}</li>)}
@@ -239,7 +250,7 @@ export default async function Home() {
             </div>
           ))}
         </div>
-        <Link href={start} className="btn mt-8">{h.typesCta}</Link>
+        <Link href={start} data-track="types: find out mine" className="btn mt-8">{h.typesCta}</Link>
       </Reveal>
 
       {/* Price (not on an open host, where everything is free) */}
@@ -256,7 +267,7 @@ export default async function Home() {
               </ul>
             )}
           </div>
-          <Link href={start} className="btn btn-dark">{startLabel}</Link>
+          <Link href={start} data-track="price: start" className="btn btn-dark">{startLabel}</Link>
         </div>
       </Reveal>}
 
@@ -289,7 +300,7 @@ export default async function Home() {
         <h2 className="font-display text-4xl font-medium sm:text-5xl">{h.closingTitle}</h2>
         <p className="mx-auto mt-3 max-w-xl leading-relaxed text-ink-2">{h.closing}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href={start} className="btn">{startLabel}</Link>
+          <Link href={start} data-track="closing: start" className="btn">{startLabel}</Link>
           <Link href="/sample" className="btn btn-quiet">{h.sampleCta}</Link>
         </div>
         <p className="mt-6 text-xs text-muted">{h.disclaimer}</p>

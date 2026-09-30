@@ -140,7 +140,7 @@ describe("ad platforms", () => {
   const TT_APP = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Mobile Safari/537.36 musical_ly_2023 BytedanceWebview/d8a21c6";
 
   it("folds utm spellings, Meta's placeholders included, into one platform", () => {
-    for (const [utm, platform] of [["ig", "instagram"], ["Instagram", "instagram"], ["fb", "facebook"], ["meta", "facebook"], ["an", "facebook"], ["tw", "x"], ["twitter", "x"], ["x", "x"], ["tt", "tiktok"], ["tiktok_ads", "tiktok"], ["newsletter", "newsletter"], ["xmas", "xmas"]]) {
+    for (const [utm, platform] of [["ig", "instagram"], ["Instagram", "instagram"], ["fb", "facebook"], ["meta", "facebook"], ["an", "audience-network"], ["tw", "x"], ["twitter", "x"], ["x", "x"], ["tt", "tiktok"], ["tiktok_ads", "tiktok"], ["newsletter", "newsletter"], ["xmas", "xmas"]]) {
       expect(sourceOf(utm, null, own)).toBe(platform);
     }
   });
@@ -216,5 +216,47 @@ describe("live traffic", () => {
     const known = liveSummary([{ at: at(2), path: "/", visitor: "b", session: "b9", landing: true, source: "direct", device: "phone", country: "US" }], NOW, new Map([["b", { first: at(600), sessions: 2, userId: "user_b" }]]));
     expect(known.visitors[0]).toMatchObject({ userId: "user_b", status: "signed-up" }); // signed in on an earlier visit
     expect(live.feed[0]).toMatchObject({ source: "tiktok", paid: true, signedIn: true, city: "Miami" });
+  });
+});
+
+describe("the landing page as people used it", () => {
+  const land = (session: string, o: Partial<VisitRow>) => row({ at: new Date(NOW.getTime() - H), session, visitor: `v-${session}`, landing: true, ...o });
+  const ad = { source: "facebook", medium: "paid", click: "fbclid" } as const;
+
+  it("counts Meta's Audience Network apart from Facebook", () => {
+    expect(sourceOf("an", null, [])).toBe("audience-network");
+    expect(sourceOf("fb", null, [])).toBe("facebook");
+    expect(sourceOf("msg", null, [])).toBe("facebook");
+    expect(sourceOf("anything", null, [])).toBe("anything"); // only "an" itself, not a word that starts with it
+  });
+
+  it("splits ad sessions from the rest: time on screen, scrolling, taps and the next page", () => {
+    const rows: VisitRow[] = [
+      land("a1", { ...ad, seenS: 0, scrollPct: 4 }), // gone at once
+      land("a2", { ...ad, seenS: 2, scrollPct: 4 }),
+      land("a3", { ...ad, seenS: 12, scrollPct: 60, taps: "hero: start (phone)" }),
+      row({ at: NOW, session: "a3", visitor: "v-a3", path: "/sign-up" }),
+      land("a4", { ...ad, seenS: 40, scrollPct: 100, taps: "hero: sample report\nbar: not now" }),
+      land("o1", { source: "direct", seenS: 7, scrollPct: 30 }),
+      land("old", { ...ad }), // from before the follow-ups: left out
+    ];
+    const s = summarize(rows, NOW);
+    const ads = s.engagement.find((g) => g.group === "ads")!;
+    expect(ads).toMatchObject({ sessions: 4, stayed5: 2, stayed15: 1, scrolledHalf: 2, tapped: 2, movedOn: 1, medianSeconds: 2, seconds: [2, 0, 1, 1] });
+    expect(s.engagement.find((g) => g.group === "others")).toMatchObject({ sessions: 1, stayed5: 1, movedOn: 0 });
+    expect(s.landingTaps.map((x) => x.label).sort()).toEqual(["bar: not now", "hero: sample report", "hero: start (phone)"]);
+  });
+
+  it("groups Meta's sessions by placement", () => {
+    const rows: VisitRow[] = [
+      land("p1", { ...ad, term: "Facebook_Mobile_Feed", seenS: 9 }),
+      land("p2", { ...ad, term: "Facebook_Mobile_Feed", seenS: 1 }),
+      land("p3", { ...ad, source: "audience-network", term: "an_classic", seenS: 0 }),
+      land("p4", { source: "google", medium: "cpc", term: "voice test", seenS: 30 }), // not Meta: no placement row
+    ];
+    expect(summarize(rows, NOW).placements).toEqual([
+      { placement: "Facebook_Mobile_Feed", sessions: 2, stayed5: 1, tapped: 0, movedOn: 0 },
+      { placement: "an_classic", sessions: 1, stayed5: 0, tapped: 0, movedOn: 0 },
+    ]);
   });
 });

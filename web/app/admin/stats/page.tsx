@@ -1,4 +1,5 @@
 import { DailyBars, Kpi, RankBars } from "@/components/AdminCharts";
+import { EngagementReport } from "@/components/EngagementReport";
 import { AdPlatforms } from "@/components/AdPlatforms";
 import { LiveMode } from "@/components/LiveMode";
 import { LiveTraffic } from "@/components/LiveTraffic";
@@ -78,6 +79,7 @@ export default async function AdminStats() {
       <AdPlatforms platforms={v.platforms} />
       <TrackingLinks origin={origin} />
       <SourcesReport v={v} />
+      <EngagementReport v={v} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="card p-7">

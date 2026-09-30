@@ -2,7 +2,7 @@
  * The platform's own data: companies (workspaces), their people and what they recorded.
  * The analyses themselves stay in the gateway; a recording here points at one by id.
  */
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export type Role = "admin" | "manager" | "viewer";
 export type Source = "invite" | "open_link" | "station" | "upload" | "api";
@@ -331,6 +331,16 @@ export const visits = pgTable(
     lon: integer("lon"),
     device: text("device").$type<"phone" | "tablet" | "desktop">().notNull().default("desktop"),
     locale: text("locale"),
+    /** A tagged link's utm_term: for Meta ads, the placement ({{placement}}: Facebook_Mobile_Feed, Instagram_Reels…). */
+    term: text("term"),
+    /**
+     * What happened on the page, from the beacon's follow-ups (components/VisitBeacon.tsx): the seconds it was on
+     * screen, how much of it was scrolled into view (percent), and the buttons and links tapped, one per line. Views
+     * start at 0, so 0 means gone before the first follow-up; null marks views from before these were kept.
+     */
+    seenS: smallint("seen_s"),
+    scrollPct: smallint("scroll_pct"),
+    taps: text("taps"),
   },
   (t) => [index("visits_at_idx").on(t.at.desc()), index("visits_visitor_idx").on(t.visitor, t.at.desc())],
 );

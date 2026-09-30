@@ -82,6 +82,8 @@ export const en = {
     /** The offer while "first report free" is on (lib/billing.ts): the hero, the price section, the sticky bar for visitors. */
     freeEyebrow: "Limited offer · Your first report is free",
     freeFact: "Limited offer: first report free · no card",
+    sampleResult: "Sample result",
+    sampleResultMore: "…and 7 more types, your emotional state today and where you would do your best work",
     freeCta: "Try it free",
     freeLine: "For a limited time: sign up, record 30 seconds of your voice, and read your full personality report free. One per person, no card needed.",
     priceFirstTitle: "Limited offer: your first report is free",

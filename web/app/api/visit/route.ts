@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       medium: str(body.utmMedium)?.slice(0, 40) ?? (click && CLICK_IDS[click]?.paid ? "paid" : null),
       click,
       content: str(body.utmContent)?.slice(0, 60) ?? null,
+      term: str(body.utmTerm)?.slice(0, 60) ?? null,
       referrer: referrerPage(str(body.referrer), ownHosts),
       country: req.headers.get("x-vercel-ip-country")?.slice(0, 2).toUpperCase() ?? null,
       city: town(req.headers.get("x-vercel-ip-city")),
@@ -66,6 +67,9 @@ export async function POST(req: NextRequest) {
       lon: degree(req.headers.get("x-vercel-ip-longitude"), 180),
       device: deviceOf(req.headers.get("user-agent"), typeof body.width === "number" ? body.width : null),
       locale: str(body.locale)?.slice(0, 8) ?? null,
+      // The beacon's follow-ups raise these (app/api/visit/engage); 0 is "gone before the first one".
+      seenS: 0,
+      scrollPct: 0,
     });
   } catch (err) {
     console.error("Visit not recorded", err);

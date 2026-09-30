@@ -66,7 +66,7 @@ export async function statistics(now = new Date()): Promise<Statistics> {
   // Browsers noted as an admin's are left out here too, in case a view of theirs slipped in before they were recognised.
   const excluded = d.select({ visitor: visitExclusions.visitor }).from(visitExclusions);
   const [rows, first, clerk, recordedRows, paid, chapters, couples, buyers, freeRows] = await Promise.all([
-    d.select({ at: visits.at, site: visits.site, path: visits.path, visitor: visits.visitor, session: visits.session, userId: visits.userId, landing: visits.landing, source: visits.source, campaign: visits.campaign, medium: visits.medium, content: visits.content, referrer: visits.referrer, click: visits.click, country: visits.country, device: visits.device, locale: visits.locale })
+    d.select({ at: visits.at, site: visits.site, path: visits.path, visitor: visits.visitor, session: visits.session, userId: visits.userId, landing: visits.landing, source: visits.source, campaign: visits.campaign, medium: visits.medium, content: visits.content, referrer: visits.referrer, click: visits.click, country: visits.country, device: visits.device, locale: visits.locale, term: visits.term, seenS: visits.seenS, scrollPct: visits.scrollPct, taps: visits.taps })
       .from(visits).where(and(gte(visits.at, since(60)), notInArray(visits.visitor, excluded))).orderBy(desc(visits.at)).limit(60000),
     d.select({ at: sql<Date | null>`min(${visits.at})` }).from(visits),
     signups(now.getTime()),

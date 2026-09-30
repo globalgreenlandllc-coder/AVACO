@@ -9,8 +9,8 @@ type Kind = "meta" | "tiktok" | "x" | "organic";
 const PRESETS: Record<Kind, { label: string; params: (campaign: string, platform: string) => string; note: string }> = {
   meta: {
     label: "Facebook & Instagram ads (Meta)",
-    params: () => "utm_source={{site_source_name}}&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}",
-    note: "In Ads Manager, paste the parameters into the ad's \"URL parameters\" field and use the plain address as the website. Meta fills in fb or ig, so Facebook and Instagram are counted apart, with each campaign and ad by name.",
+    params: () => "utm_source={{site_source_name}}&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&utm_term={{placement}}",
+    note: "In Ads Manager, paste the parameters into the ad's \"URL parameters\" field and use the plain address as the website. Meta fills in fb, ig or an (its Audience Network, ads inside other apps), the placement (feed, stories, reels…) and the campaign and ad names, so each is counted apart.",
   },
   tiktok: {
     label: "TikTok ads",

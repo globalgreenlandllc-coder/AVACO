@@ -12,6 +12,8 @@ export interface VisitRow {
   campaign?: string | null; medium?: string | null; content?: string | null; referrer?: string | null;
   /** Which ad click id the landing link carried (fbclid, ttclid…), and the visitor's town and whole-degree position, from the edge. */
   click?: string | null; city?: string | null; lat?: number | null; lon?: number | null;
+  /** A tagged link's utm_term (for Meta, the placement); seconds on screen, percent scrolled into view and the controls tapped (null before these were kept). */
+  term?: string | null; seenS?: number | null; scrollPct?: number | null; taps?: string | null;
 }
 
 const DAY = 86_400_000;
@@ -75,10 +77,14 @@ export const CLICK_IDS: Record<string, { platform: string; paid: boolean }> = {
   fbclid: { platform: "facebook", paid: false },
 };
 
-/** utm_source spellings that mean one platform, including Meta's {{site_source_name}} values (fb, ig, msg, an). */
+/**
+ * utm_source spellings that mean one platform, including Meta's {{site_source_name}} values (fb, ig, msg, an). "an" is
+ * Meta's Audience Network, its ads inside other apps: counted apart from Facebook, since its taps are often accidental.
+ */
 const ALIASES: Array<[RegExp, string]> = [
   [/^(ig|insta|instagram)([._-]|$)/, "instagram"],
-  [/^(fb|facebook|meta|msg|messenger|an)([._-]|$)/, "facebook"],
+  [/^(an|audience[._-]?network)([._-]|$)/, "audience-network"],
+  [/^(fb|facebook|meta|msg|messenger)([._-]|$)/, "facebook"],
   [/^(x|tw|twitter)([._-]|$)/, "x"],
   [/^(tt|tiktok|tik[._-]tok)([._-]|$)/, "tiktok"],
   [/^(google|gads|adwords)([._-]|$)/, "google"],
@@ -129,14 +135,14 @@ export const isPaidVisit = (r: { medium?: string | null; click?: string | null }
 
 /** The platforms the company advertises on, always shown; others join the list once they bring someone. */
 export const AD_PLATFORMS = ["instagram", "facebook", "tiktok", "x"] as const;
-export const PLATFORM_NAMES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", x: "X (Twitter)", google: "Google", youtube: "YouTube", linkedin: "LinkedIn", snapchat: "Snapchat", direct: "Direct" };
+export const PLATFORM_NAMES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", x: "X (Twitter)", google: "Google", youtube: "YouTube", linkedin: "LinkedIn", snapchat: "Snapchat", "audience-network": "Audience Network (Meta)", direct: "Direct" };
 /** Each platform's own colour, so a dot on the live map or a row in a list is recognised at a glance. */
-export const PLATFORM_COLORS: Record<string, string> = { instagram: "#e1306c", facebook: "#1877f2", tiktok: "#fe2c55", x: "var(--ink)", google: "#34a853", youtube: "#ff0000", linkedin: "#0a66c2", snapchat: "#f5c518", direct: "var(--muted)" };
+export const PLATFORM_COLORS: Record<string, string> = { instagram: "#e1306c", facebook: "#1877f2", tiktok: "#fe2c55", x: "var(--ink)", google: "#34a853", youtube: "#ff0000", linkedin: "#0a66c2", snapchat: "#f5c518", "audience-network": "#7b5cff", direct: "var(--muted)" };
 export const platformColor = (source: string) => PLATFORM_COLORS[source] ?? "var(--bar-active)";
 
 const KNOWN_REFERRERS = ["google", "instagram", "facebook", "x", "tiktok", "youtube", "linkedin", "bing", "yandex", "duckduckgo", "telegram", "whatsapp", "reddit", "pinterest"];
 const SEARCH = new Set(["google", "bing", "yandex", "duckduckgo", "yahoo", "baidu", "ecosia", "brave"]);
-const SOCIAL = new Set(["instagram", "facebook", "x", "tiktok", "youtube", "linkedin", "reddit", "pinterest", "threads", "snapchat"]);
+const SOCIAL = new Set(["instagram", "facebook", "audience-network", "x", "tiktok", "youtube", "linkedin", "reddit", "pinterest", "threads", "snapchat"]);
 const MESSAGING = new Set(["telegram", "whatsapp", "messenger", "viber", "signal"]);
 
 /**
@@ -219,6 +225,15 @@ export interface Stats {
   returning: { visitors: number; of: number };
   recording: { reached: number; finished: number };
   accounts: Array<{ userId: string; views: number; sessions: number; days: number; last: Date }>;
+  /**
+   * The landing page as the people who arrived on it used it, from ads and from everywhere else: sessions that began on
+   * the main site's "/" since the follow-ups were kept. `seconds`: how many stayed under 3 s, 3–9, 10–29 and 30 or more.
+   */
+  engagement: Array<{ group: "ads" | "others"; sessions: number; stayed5: number; stayed15: number; scrolledHalf: number; tapped: number; movedOn: number; medianSeconds: number | null; seconds: [number, number, number, number] }>;
+  /** What was tapped on the landing page by those sessions, most often first. */
+  landingTaps: Array<{ label: string; count: number }>;
+  /** Meta's placements (utm_term) for the sessions from Meta's platforms, with what those sessions did. */
+  placements: Array<{ placement: string; sessions: number; stayed5: number; tapped: number; movedOn: number }>;
 }
 
 const isRecordPage = (r: VisitRow) => r.path === "/record" || (r.site === "partner" && (r.path === "/" || r.path === "/partners"));
@@ -290,7 +305,7 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
   const platBy = new Map<string, { sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; free: number; customers: number; campaigns: Map<string, number> }>();
   const plat = (key: string) => { const x = platBy.get(key) ?? { sessions: 0, visitors: 0, paid: 0, organic: 0, signups: 0, recorded: 0, free: 0, customers: 0, campaigns: new Map<string, number>() }; platBy.set(key, x); return x; };
   for (const key of AD_PLATFORMS) plat(key);
-  const followed = new Set<string>([...AD_PLATFORMS, "google", "youtube", "linkedin", "snapchat"]);
+  const followed = new Set<string>([...AD_PLATFORMS, "audience-network", "google", "youtube", "linkedin", "snapchat"]);
   for (const s of sessionInfo) if (followed.has(s.source)) plat(s.source).sessions++;
   for (const [visitor, s] of firstSession) {
     if (!followed.has(s.source)) continue;
@@ -354,6 +369,46 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     returning: { visitors: [...daysBy.values()].filter((d) => d.size >= 2).length, of: daysBy.size },
     recording: { reached: sessionInfo.filter((s) => s.reached).length, finished: sessionInfo.filter((s) => s.finished).length },
     accounts: [...accBy].map(([userId, a]) => ({ userId, views: a.views, sessions: a.sessions.size, days: a.days.size, last: a.last })).sort((a, b) => b.views - a.views).slice(0, 10),
+    ...landingUse(sessionInfo),
+  };
+}
+
+/** The landing page as used by the sessions that began on it, what was tapped there, and Meta's placements. */
+function landingUse(sessionInfo: Array<{ first: VisitRow; pages: number }>): Pick<Stats, "engagement" | "landingTaps" | "placements"> {
+  const kept = (r: VisitRow) => typeof r.seenS === "number";
+  const tapsOf = (r: VisitRow) => (r.taps ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const landing = sessionInfo.filter((s) => s.first.site === "main" && s.first.path === "/" && kept(s.first));
+  const engagement = (["ads", "others"] as const).map((group) => {
+    const list = landing.filter((s) => isPaidVisit(s.first) === (group === "ads"));
+    const secs = list.map((s) => s.first.seenS ?? 0).sort((a, b) => a - b);
+    return {
+      group, sessions: list.length,
+      stayed5: list.filter((s) => (s.first.seenS ?? 0) >= 5).length,
+      stayed15: list.filter((s) => (s.first.seenS ?? 0) >= 15).length,
+      scrolledHalf: list.filter((s) => (s.first.scrollPct ?? 0) >= 50).length,
+      tapped: list.filter((s) => tapsOf(s.first).length > 0).length,
+      movedOn: list.filter((s) => s.pages > 1).length,
+      medianSeconds: secs.length ? secs[Math.floor((secs.length - 1) / 2)] : null,
+      seconds: [secs.filter((x) => x < 3).length, secs.filter((x) => x >= 3 && x < 10).length, secs.filter((x) => x >= 10 && x < 30).length, secs.filter((x) => x >= 30).length] as [number, number, number, number],
+    };
+  });
+  const tapBy = new Map<string, number>();
+  for (const s of landing) for (const tap of tapsOf(s.first)) tapBy.set(tap, (tapBy.get(tap) ?? 0) + 1);
+  const placeBy = new Map<string, { sessions: number; stayed5: number; tapped: number; movedOn: number }>();
+  for (const s of sessionInfo) {
+    const term = s.first.term?.trim();
+    if (!term || !["facebook", "instagram", "audience-network"].includes(s.first.source ?? "")) continue;
+    const x = placeBy.get(term) ?? { sessions: 0, stayed5: 0, tapped: 0, movedOn: 0 };
+    x.sessions++;
+    if ((s.first.seenS ?? 0) >= 5) x.stayed5++;
+    if (tapsOf(s.first).length) x.tapped++;
+    if (s.pages > 1) x.movedOn++;
+    placeBy.set(term, x);
+  }
+  return {
+    engagement,
+    landingTaps: [...tapBy].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count).slice(0, 10),
+    placements: [...placeBy].map(([placement, x]) => ({ placement, ...x })).sort((a, b) => b.sessions - a.sessions).slice(0, 12),
   };
 }
 
