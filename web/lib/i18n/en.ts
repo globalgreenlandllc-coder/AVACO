@@ -173,6 +173,16 @@ export const en = {
       unavailable: "The voice analysis service (AVOCO) is temporarily unavailable, so your recording could not be analysed. Nothing was lost: your recording is still here. Please try again in a few minutes.",
     },
   },
+  /** Sign-in inside a social app's own browser (lib/in-app.ts): Google refuses to sign in there, email works. */
+  inApp: {
+    title: "You're in {app}'s browser",
+    signUp: "Sign up with your email below: it takes 20 seconds. Google sign-in doesn't work inside {app}; Google blocks it there.",
+    signIn: "Sign in with your email below. Google sign-in doesn't work inside {app}; Google blocks it there.",
+    preferGoogle: "Prefer Google?",
+    openAndroid: "Open this page in Chrome",
+    openIos: "Tap ⋯ at the top right, then \"Open in external browser\".",
+    anApp: "this app",
+  },
   reports: {
     title: "My reports",
     empty: "No reports yet. Your first recording takes just 30 seconds.",
