@@ -27,7 +27,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 const OCEAN = "color-mix(in oklab, #bcd6e2 38%, var(--surface))";
 const LAND = "color-mix(in oklab, var(--ink-2) 11%, var(--surface))";
 /** Pin colours: a visitor, someone who signed up, someone who paid. */
-const STATUS = { visitor: { colour: "#e5484d", label: "Visitor" }, "signed-up": { colour: "#2f6fed", label: "Signed up" }, paid: { colour: "#2fa35a", label: "Paid" } } as const;
+const STATUS = { visitor: { colour: "#e5484d", label: "Visitor" }, "signed-up": { colour: "#2f6fed", label: "Signed up" }, paid: { colour: "#2fa35a", label: "Just paid" } } as const;
 /** A map pin, tip at 0,0, head centred 15 above it. */
 const PIN = "M0 0C-1.6-5-8-9.4-8-15A8 8 0 1 1 8-15C8-9.4 1.6-5 0 0Z";
 const shade = (n: number, most: number) => `color-mix(in oklab, var(--accent) ${Math.round(38 + 52 * (n / most))}%, var(--surface))`;
@@ -297,6 +297,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
                   <p className="mt-1 text-xs text-muted">
                     {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · {plural(v.pages.length, "page", "pages")} in {ago(Math.max(1000, v.lastAt - v.firstAt))}
                     {v.returning !== undefined && (v.returning ? ` · returning, ${v.sessions30} visits this month` : " · first visit")}
+                    {v.status === "paid" && v.paidAt ? ` · paid ${ago(now - v.paidAt)} ago` : v.customer ? " · paying customer" : ""}
                   </p>
                   {v.account && <p className="mt-1 text-xs font-semibold text-accent-text">Signed in: {v.account}</p>}
                   {v.pages.length > 1 && <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{v.pages.map((p) => p.path).join(" → ")}</p>}

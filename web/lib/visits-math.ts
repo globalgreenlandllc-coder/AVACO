@@ -405,8 +405,10 @@ export interface LiveVisitor {
   /** This hour's pages, oldest first (at most 12). */
   pages: Array<{ path: string; at: number }>;
   userId: string | null;
-  /** Just a visitor, signed up (the browser has an account), or paid (that account has bought credits). */
+  /** Just a visitor, signed up (the browser has an account), or paid (that account bought credits within this hour). */
   status: "visitor" | "signed-up" | "paid";
+  /** Filled in by the API: when the purchase of this hour landed, and whether the account has ever bought before. */
+  paidAt?: number | null; customer?: boolean;
   /** Filled in by the API: the account's name, and whether the browser was here on an earlier day. */
   account?: string | null; returning?: boolean; sessions30?: number;
 }
