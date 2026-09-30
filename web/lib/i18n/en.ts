@@ -178,8 +178,7 @@ export const en = {
   /** Sign-in inside a social app's own browser (lib/in-app.ts): Google refuses to sign in there, email works. */
   inApp: {
     title: "You're in {app}'s browser",
-    signUp: "Sign up with your email below: it takes 20 seconds. Google sign-in doesn't work inside {app}; Google blocks it there.",
-    signIn: "Sign in with your email below. Google sign-in doesn't work inside {app}; Google blocks it there.",
+    email: "Continue with your email below: it takes 20 seconds. Google sign-in doesn't work inside {app}; Google blocks it there.",
     preferGoogle: "Prefer Google?",
     openAndroid: "Open this page in Chrome",
     openIos: "Tap ⋯ at the top right, then \"Open in external browser\".",
@@ -350,6 +349,9 @@ export const en = {
   billing: billingEn,
   auth: {
     signInTitle: "Sign in to AVOCO",
+    /** The one way in (components/AuthDoor.tsx), for new and returning people alike. */
+    welcomeTitle: "Welcome to AVOCO",
+    welcomeSubtitle: "Type your email. We'll sign you in, or create your account if you're new.",
     signInSubtitle: "Welcome back. Your reports are waiting.",
     signUpTitle: "Create your AVOCO account",
     signUpSubtitle: "Thirty seconds of your voice, a report in about a minute.",

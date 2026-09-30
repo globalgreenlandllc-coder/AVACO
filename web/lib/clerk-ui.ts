@@ -13,8 +13,13 @@ export function clerkLocalization(locale: string, t: Dict): typeof enUS {
   const a = t.auth;
   return {
     ...base,
-    signIn: { ...base.signIn, start: { ...base.signIn?.start, title: a.signInTitle, subtitle: a.signInSubtitle, titleCombined: a.signInTitle, subtitleCombined: a.signInSubtitle } },
-    signUp: { ...base.signUp, start: { ...base.signUp?.start, title: a.signUpTitle, subtitle: a.signUpSubtitle, titleCombined: a.signUpTitle, subtitleCombined: a.signUpSubtitle } },
+    signIn: { ...base.signIn, start: { ...base.signIn?.start, title: a.signInTitle, subtitle: a.signInSubtitle, titleCombined: a.welcomeTitle, subtitleCombined: a.welcomeSubtitle } },
+    signUp: {
+      ...base.signUp,
+      start: { ...base.signUp?.start, title: a.signUpTitle, subtitle: a.signUpSubtitle, titleCombined: a.signUpTitle, subtitleCombined: a.signUpSubtitle },
+      // A new email in the one way in (components/AuthDoor.tsx) continues here: say plainly that the account is being made.
+      continue: { ...base.signUp?.continue, title: a.signUpTitle, subtitle: a.signUpSubtitle },
+    },
   };
 }
 

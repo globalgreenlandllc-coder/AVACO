@@ -176,8 +176,7 @@ export const ru: Dict = {
   },
   inApp: {
     title: "Вы в браузере {app}",
-    signUp: "Зарегистрируйтесь ниже по электронной почте: это 20 секунд. Вход через Google внутри {app} не работает: Google его там блокирует.",
-    signIn: "Войдите ниже по электронной почте. Вход через Google внутри {app} не работает: Google его там блокирует.",
+    email: "Продолжите ниже по электронной почте: это 20 секунд. Вход через Google внутри {app} не работает: Google его там блокирует.",
     preferGoogle: "Хотите через Google?",
     openAndroid: "Откройте эту страницу в Chrome",
     openIos: "Нажмите ⋯ справа вверху, затем «Открыть во внешнем браузере».",
@@ -347,6 +346,9 @@ export const ru: Dict = {
   billing: billingRu,
   auth: {
     signInTitle: "Вход в AVOCO",
+    /** The one way in (components/AuthDoor.tsx), for new and returning people alike. */
+    welcomeTitle: "Добро пожаловать в AVOCO",
+    welcomeSubtitle: "Введите свою почту. Мы вас впустим, а если вы здесь впервые, создадим аккаунт.",
     signInSubtitle: "С возвращением. Ваши отчёты ждут.",
     signUpTitle: "Создайте аккаунт AVOCO",
     signUpSubtitle: "Тридцать секунд голоса, отчёт примерно через минуту.",
