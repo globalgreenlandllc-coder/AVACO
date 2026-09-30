@@ -79,10 +79,16 @@ export default async function Home() {
           <div>
             <p className="cover-eyebrow">{firstFree ? <span className="offer-badge">🎁 {h.freeEyebrow}</span> : h.eyebrow}</p>
             <h1 className="gold-text sheen mt-5 pb-2 font-display text-5xl font-semibold leading-[1.02] sm:text-7xl">{h.title}</h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed" style={{ color: "var(--cover-muted)" }}>{h.lead}</p>
-            {firstFree && !userId && <p className="mt-4 max-w-xl rounded-2xl border px-4 py-3 text-base leading-relaxed" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-ink)" }}>{h.freeLine}</p>}
+            {/* On a phone the offer's button comes first, on the first screen: ad visitors decide in seconds. */}
+            {/* Wrapped: .btn sets its own display, which would win over a hiding class on the button itself. */}
+            <div className="sm:hidden">
+              <Link href={start} className="btn mt-6 w-full" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}{firstFree && !userId ? " →" : ""}</Link>
+              {firstFree && !userId && <p className="mt-2 text-center text-xs" style={{ color: "var(--cover-muted)" }}>{h.freeFact}</p>}
+            </div>
+            <p className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>{h.lead}</p>
+            {firstFree && !userId && <p className="mt-4 hidden max-w-xl rounded-2xl border px-4 py-3 text-base leading-relaxed sm:block" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-ink)" }}>{h.freeLine}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={start} className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link>
+              <div className="max-sm:hidden"><Link href={start} className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link></div>
               <Link href="/sample" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>{h.sampleCta}</Link>
               {!open && <a href="#gift" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>🎁 {t.gift.landing.cta}</a>}
             </div>

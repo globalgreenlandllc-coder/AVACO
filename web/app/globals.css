@@ -165,7 +165,8 @@ main :is(input, textarea, select):not([class*="cl-"]) { transition: border-color
 
 /* Phones: fingers, not pointers. Header links, pills, fold toggles and footer links get a 36px minimum, and fields keep 16px text so iOS doesn't zoom in when one is tapped. */
 @media (max-width: 767px) {
-  .site-header a, .site-header button, footer button, .pill { display: inline-flex; align-items: center; min-height: 36px; }
+  /* :not(.hidden): the header hides some links on phones, and an unlayered rule would otherwise bring them back (and push the page sideways). */
+  .site-header a:not(.hidden), .site-header button:not(.hidden), footer button:not(.hidden), .pill:not(.hidden) { display: inline-flex; align-items: center; min-height: 36px; }
   summary { padding-block: 0.6rem; }
   footer nav a, footer nav button { padding-block: 0.45rem; }
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), select, textarea { font-size: 16px; }

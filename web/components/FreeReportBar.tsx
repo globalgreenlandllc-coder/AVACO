@@ -18,7 +18,10 @@ export function FreeReportBar({ text, cta, close, href }: { text: string; cta: s
     let shown = false;
     const reveal = () => { if (!shown) { shown = true; setShow(true); } };
     const onScroll = () => { if (window.scrollY > Math.min(700, document.body.scrollHeight * 0.3)) reveal(); };
-    const timer = setTimeout(reveal, 6000);
+    // From an ad (a paid tag or an ad click id) or inside a social app's own browser: at once. Anyone else: after a short read.
+    const q = new URLSearchParams(location.search);
+    const fromAd = /^(paid|cpc|ppc|paid[_-]?social|ads?)$/i.test(q.get("utm_medium") ?? "") || ["fbclid", "ttclid", "twclid", "gclid"].some((k) => q.has(k)) || /FBAN|FBAV|Instagram|musical_ly|BytedanceWebview|Twitter/i.test(navigator.userAgent);
+    const timer = setTimeout(reveal, fromAd ? 1200 : 6000);
     window.addEventListener("scroll", onScroll, { passive: true });
     // The cookie choices come first when they are open.
     const poll = setInterval(() => setBlocked(Boolean(document.querySelector("[role=dialog][aria-label='Your privacy choices']"))), 700);
