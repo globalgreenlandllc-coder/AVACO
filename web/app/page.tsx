@@ -246,7 +246,7 @@ export default async function Home() {
             <p className="mt-3 max-w-xl text-sm leading-relaxed opacity-80">{h.priceAfter}</p>
             {billing.enabled && packs.length > 1 && (
               <ul className="mt-6 flex flex-wrap gap-3">
-                {packs.map((p) => <li key={p.id} className="rounded-full border border-current/40 px-4 py-1.5 text-sm">{h.pack.replace("{n}", String(p.credits)).replace("{price}", p.price)}</li>)}
+                {packs.map((p) => <li key={p.id} className="rounded-full border border-current/40 px-4 py-1.5 text-sm">{(p.credits === 1 ? h.packOne : h.pack.replace("{n}", String(p.credits))).replace("{price}", p.price)}</li>)}
               </ul>
             )}
           </div>

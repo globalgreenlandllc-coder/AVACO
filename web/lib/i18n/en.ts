@@ -91,6 +91,7 @@ export const en = {
     barClose: "Not now",
     signUpFree: "Limited offer: your first full report is free. Sign up, record a minute, and it is yours.",
     pack: "{n} reports · {price}",
+    packOne: "1 report · {price}",
     teamsEyebrow: "For companies",
     teamsTitle: "Hiring, teams, coaching",
     teams: "Invite candidates or a whole team with a link, see everyone's profiles side by side and find who fits which role. Industry presets, a team map and an API are included.",
