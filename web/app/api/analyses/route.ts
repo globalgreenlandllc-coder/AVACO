@@ -4,6 +4,7 @@ import { asUser, balance, noteSelfRecording, previewsLeft } from "@/lib/billing"
 import { gateway } from "@/lib/gateway";
 import { coverWithGift } from "@/lib/gifts";
 import { cleanName, setPerson } from "@/lib/people";
+import { isOpenVisitor, openLimitReached } from "@/lib/visitor";
 
 export async function POST(req: Request) {
   const user = await requireUser();
@@ -14,6 +15,8 @@ export async function POST(req: Request) {
     // The checkbox on the recording page. Without it nothing is sent for analysis.
     if (body?.consent !== true) return json({ error: "bad_request", message: "Consent is required" }, 400);
     if (typeof body.audioUrl !== "string") return json({ error: "bad_request", message: "audioUrl is required" }, 400);
+    // The free test site stops at its daily limit (lib/visitor.ts).
+    if (isOpenVisitor(user.userId) && (await openLimitReached())) return json({ error: "limit_reached", message: "Today's limit is reached" }, 429);
 
     // Every recording costs an AVOCO analysis. With billing on, someone who has used their free previews needs a credit to record again.
     if ((await previewsLeft(user.userId)) < 1 && (await balance(asUser(user.userId))) < 1) return json({ error: "payment_required", message: "No free previews left" }, 402);

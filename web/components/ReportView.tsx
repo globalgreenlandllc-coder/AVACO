@@ -86,9 +86,10 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   useEffect(() => {
     if (report.status !== "processing" && report.status !== "queued") return;
     const timer = setInterval(async () => {
-      const res = await fetch(poll, { cache: "no-store" }).catch(() => null);
+      const res = await fetch(`${poll}${poll.includes("?") ? "&" : "?"}wait=1`, { cache: "no-store" }).catch(() => null);
       if (!res?.ok) return;
       const next: Report = await res.json();
+      if ((next as { pending?: boolean }).pending) return; // still processing: nothing new to show
       setReport(next);
       // Finished: let the server render the page again, so a free preview gets its paywall.
       if (next.status !== "processing" && next.status !== "queued") router.refresh();

@@ -3,7 +3,8 @@
  * Public (only the link opens it). Claiming needs an account, because that is where the report will live.
  */
 import type { Metadata } from "next";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { clerkBasics } from "@/lib/clerk-user";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GiftRibbon } from "@/components/GiftRibbon";
@@ -36,7 +37,7 @@ export default async function GiftRecipientPage({ params, searchParams }: { para
     redirect("/record?gift=1");
   }
 
-  const email = userId ? (await currentUser().catch(() => null))?.primaryEmailAddress?.emailAddress ?? "" : "";
+  const email = userId ? (await clerkBasics(userId))?.email ?? "" : "";
   const claimHref = `/g/${gift.token}?claim=1`;
   const signUpHref = `/sign-up?redirect_url=${encodeURIComponent(claimHref)}`;
   const title = (gift.recipientName ? g.titleNamed.replace("{recipient}", gift.recipientName) : g.title).replace("{giver}", gift.giverName);

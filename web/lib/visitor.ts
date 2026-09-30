@@ -7,6 +7,7 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { cookies, headers } from "next/headers";
+import { openRecordingsToday } from "./gateway-db";
 
 export const DEFAULT_OPEN_HOSTS = ["avaco-web.vercel.app"];
 export const OPEN_COOKIE = "avoco_visitor";
@@ -27,4 +28,12 @@ export async function visitorId(): Promise<string | null> {
     return v && /^[a-f0-9-]{36}$/.test(v) ? `open:${v}` : null;
   }
   return (await auth()).userId;
+}
+
+/** The open hosts take this many recordings a day in all (OPEN_DAILY_LIMIT), so a site without sign-in can't run up AVOCO usage. */
+export const openDailyLimit = () => Number(process.env.OPEN_DAILY_LIMIT) || 100;
+
+/** Have the open hosts used today's recordings? Counted across all their visitors, since midnight UTC. */
+export async function openLimitReached(): Promise<boolean> {
+  return (await openRecordingsToday()) >= openDailyLimit();
 }

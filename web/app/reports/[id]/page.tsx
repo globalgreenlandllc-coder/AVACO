@@ -1,4 +1,3 @@
-import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PayWall } from "@/components/PayWall";
@@ -15,6 +14,7 @@ import { fieldFits } from "@/lib/fit";
 import { gateway } from "@/lib/gateway";
 import { formatDate, getDict } from "@/lib/i18n";
 import { money } from "@/lib/money";
+import { clerkBasics } from "@/lib/clerk-user";
 import { isOpenVisitor, visitorId } from "@/lib/visitor";
 import { agreementBand } from "@/lib/consensus";
 import { profileFor, samePersonIds } from "@/lib/profile";
@@ -125,7 +125,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     const price = free ? null : t.match.priceCard.replace("{price}", money(cents, cfg.currency, locale)).replace("{n}", String(needed));
     const statuses = await Promise.all(existing.map(async (e) => { const p = await partnerAnalyses(e).catch(() => []); return { id: e.id, partnerName: e.partnerName, stage: stageOf({ openedAt: e.partnerOpenedAt, startedAt: e.partnerStartedAt, analyses: p }) }; }));
     // "Your first name" in the order form starts as whoever this report is about: the named person, or the account holder.
-    const ownerName = profile.person ?? (isOpenVisitor(userId) ? null : (await currentUser().catch(() => null))?.firstName) ?? undefined;
+    const ownerName = profile.person ?? (isOpenVisitor(userId) ? null : (await clerkBasics(userId))?.firstName) ?? undefined;
     match = { price, freeLabel: free === "admin" ? t.match.freeAdmin.replace("{n}", String(needed)) : t.match.free, credits, needed, canOrder: Boolean(free) || credits >= needed || card, existing: statuses, defaultOwnerName: ownerName, kinds: t.content.match.kinds, worksFor: t.content.match.worksFor };
   }
 

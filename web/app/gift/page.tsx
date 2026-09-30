@@ -1,5 +1,6 @@
 /** The gift builder, and the gifts this person has given so far. Signed-in only (proxy.ts). */
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { clerkBasics } from "@/lib/clerk-user";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GiftForm } from "@/components/GiftForm";
@@ -12,7 +13,7 @@ import { formatDate, getDict } from "@/lib/i18n";
 export default async function GiftPage() {
   const [{ userId }, { t, locale }] = await Promise.all([auth(), getDict()]);
   if (!userId) notFound();
-  const [cfg, admin, user, given] = await Promise.all([getSettings(), isAdminUser(userId), currentUser().catch(() => null), giftsFor(userId)]);
+  const [cfg, admin, user, given] = await Promise.all([getSettings(), isAdminUser(userId), clerkBasics(userId), giftsFor(userId)]);
   const price = await giftPrice(1, 0, 0, cfg);
   const g = t.gift;
   const statusOf = (x: Gift) =>

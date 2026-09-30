@@ -104,6 +104,7 @@ export const en = {
   },
   record: {
     title: "New recording",
+    openLimit: "This free test site has taken all its recordings for today. Please come back tomorrow.",
     lead: "Find a quiet place and talk in your everyday voice, the way you speak with a friend, in any language. What you say doesn't matter, only how you sound.",
     voiceTitle: "Speak in your everyday voice",
     voiceText: "Talk the way you do with a friend. Not louder, higher, deeper or more formal than usual, and not like reading aloud. Your type is read from your natural voice, so a put-on voice can give a different type.",

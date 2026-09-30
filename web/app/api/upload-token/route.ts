@@ -5,6 +5,7 @@
  */
 import { errorResponse, json, requireUser } from "@/lib/api";
 import { gateway } from "@/lib/gateway";
+import { isOpenVisitor, openLimitReached } from "@/lib/visitor";
 
 export async function POST(req: Request) {
   const user = await requireUser();
@@ -13,6 +14,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
     if (body?.type !== "blob.generate-client-token") return json({ error: "bad_request", message: "Unsupported upload event" }, 400);
+    // The free test site stops at its daily limit before anything is uploaded (lib/visitor.ts).
+    if (isOpenVisitor(user.userId) && (await openLimitReached())) return json({ error: "limit_reached", message: "Today's limit is reached" }, 429);
     return json(await gateway.uploadToken(body));
   } catch (err) {
     return errorResponse(err);

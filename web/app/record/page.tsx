@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { Recorder } from "@/components/Recorder";
 import { getSettings } from "@/lib/billing";
 import { activeGift } from "@/lib/gifts";
@@ -6,7 +6,8 @@ import { packViews } from "@/lib/money";
 import { stripeReady } from "@/lib/stripe";
 import { getDict } from "@/lib/i18n";
 import { cleanName, knownNames } from "@/lib/people";
-import { visitorId } from "@/lib/visitor";
+import { clerkBasics } from "@/lib/clerk-user";
+import { isOpenVisitor, openLimitReached, visitorId } from "@/lib/visitor";
 
 export default async function RecordPage({ searchParams }: { searchParams: Promise<{ person?: string }> }) {
   const [{ t, locale }, { userId }, visitor, query, cfg] = await Promise.all([getDict(), auth(), visitorId(), searchParams, getSettings()]);
@@ -18,10 +19,13 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
     canPay: await stripeReady().catch(() => false),
   } : undefined;
   // Whose voice: "me", or a name used before, one click each; "Record Anna" on My reports arrives with ?person=Anna.
-  const me = userId ? await currentUser().catch(() => null) : null;
+  const me = await clerkBasics(userId);
   const whose = visitor ? { known: await knownNames(visitor), initial: cleanName(query.person), t: t.people, myName: me?.firstName ?? null } : undefined;
   // Someone holding a gift: say so, and that the report opens by itself.
   const gift = userId ? await activeGift(userId).catch(() => null) : null;
+  // The free test site: once today's recordings are used, say so instead of offering a recorder that would be refused.
+  const open = Boolean(visitor && isOpenVisitor(visitor));
+  const closed = open && (await openLimitReached().catch(() => false));
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_20rem]">
       <div>
@@ -33,7 +37,7 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
             <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.gift.record.text} {t.gift.record.left.replace("{n}", String(gift.reports - gift.reportsUsed))}.</p>
           </div>
         )}
-        <div className="mt-8"><Recorder t={t.record} payText={t.billing.cap} whose={whose} paywall={paywall} /></div>
+        <div className="mt-8">{closed ? <p className="card p-8 leading-relaxed text-ink-2">{t.record.openLimit}</p> : <Recorder t={t.record} payText={t.billing.cap} limitText={open ? t.record.openLimit : undefined} whose={whose} paywall={paywall} />}</div>
       </div>
       <aside className="lg:pt-32">
         <p className="eyebrow">{t.record.promptsTitle}</p>
