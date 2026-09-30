@@ -78,12 +78,12 @@ export const matchEn: MatchText = {
   kinds: {
     couple: {
       label: "A couple", hint: "Partners, spouses, dating: any two people in love.", who: "your partner",
-      title: "How well do you two match?", lead: "Invite your partner to record a minute of their voice on a private link. You both get their report, and a compatibility report on top: your match score, nine areas of a relationship, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
+      title: "How well do you two match?", lead: "Invite your partner to record 30 seconds of their voice on a private link. You both get their report, and a compatibility report on top: your match score, nine areas of a relationship, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
       eyebrow: "Add-on · Relationship & Compatibility", areasTitle: "Nine areas of a relationship", partnerName: "Your partner's first name", swap: [], words: matchKindWordsEn.couple, categories: {},
     },
     business: {
       label: "Business partners", hint: "Co-founders, co-owners, two people building something together.", who: "your business partner",
-      title: "How well do you work together?", lead: "Invite your business partner to record a minute of their voice on a private link. You both get their report, and a compatibility report on top: your match score, six areas of a partnership, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
+      title: "How well do you work together?", lead: "Invite your business partner to record 30 seconds of their voice on a private link. You both get their report, and a compatibility report on top: your match score, six areas of a partnership, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
       eyebrow: "Add-on · Relationship & Compatibility", areasTitle: "Six areas of a partnership", partnerName: "Your business partner's first name",
       swap: [["Invite my partner", "Invite my business partner"], ["Your partner's", "Your business partner's"], ["your partner's", "your business partner's"], ["your partner", "your business partner"], ["my partner", "my business partner"], ["Nine areas of a relationship", "Six areas of a partnership"]],
       words: matchKindWordsEn.business, categories: {
@@ -97,7 +97,7 @@ export const matchEn: MatchText = {
     },
     colleagues: {
       label: "Colleagues", hint: "Two people who work side by side: a manager and a report, teammates, a duo.", who: "your colleague",
-      title: "How well do you two work together?", lead: "Invite your colleague to record a minute of their voice on a private link. You both get their report, and a compatibility report on top: your match score, five areas of working together, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
+      title: "How well do you two work together?", lead: "Invite your colleague to record 30 seconds of their voice on a private link. You both get their report, and a compatibility report on top: your match score, five areas of working together, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
       eyebrow: "Add-on · Relationship & Compatibility", areasTitle: "Five areas of working together", partnerName: "Your colleague's first name",
       swap: [["Invite my partner", "Invite my colleague"], ["Your partner's", "Your colleague's"], ["your partner's", "your colleague's"], ["your partner", "your colleague"], ["my partner", "my colleague"], ["Nine areas of a relationship", "Five areas of working together"]],
       words: matchKindWordsEn.colleagues, categories: {
@@ -110,7 +110,7 @@ export const matchEn: MatchText = {
     },
     family: {
       label: "Family", hint: "A parent and a child, siblings, relatives: two people who share a family.", who: "your family member",
-      title: "How well do you two get along?", lead: "Invite your family member to record a minute of their voice on a private link. You both get their report, and a compatibility report on top: your match score, six areas of family life, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
+      title: "How well do you two get along?", lead: "Invite your family member to record 30 seconds of their voice on a private link. You both get their report, and a compatibility report on top: your match score, six areas of family life, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
       eyebrow: "Add-on · Relationship & Compatibility", areasTitle: "Six areas of family life", partnerName: "Their first name",
       swap: [["Invite my partner", "Invite my family member"], ["Your partner's", "Their"], ["your partner's", "their"], ["your partner", "your family member"], ["my partner", "my family member"], ["Nine areas of a relationship", "Six areas of family life"]],
       words: matchKindWordsEn.family, categories: {
@@ -121,7 +121,7 @@ export const matchEn: MatchText = {
     },
     friends: {
       label: "Friends", hint: "Close friends, flatmates, travel companions.", who: "your friend",
-      title: "How well do you two get along?", lead: "Invite your friend to record a minute of their voice on a private link. You both get their report, and a compatibility report on top: your match score, five areas of a friendship, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
+      title: "How well do you two get along?", lead: "Invite your friend to record 30 seconds of their voice on a private link. You both get their report, and a compatibility report on top: your match score, five areas of a friendship, who holds which role, where you naturally connect, where you complement each other and where differences may create friction.",
       eyebrow: "Add-on · Relationship & Compatibility", areasTitle: "Five areas of a friendship", partnerName: "Your friend's first name",
       swap: [["Invite my partner", "Invite my friend"], ["Your partner's", "Your friend's"], ["your partner's", "your friend's"], ["your partner", "your friend"], ["my partner", "my friend"], ["Nine areas of a relationship", "Five areas of a friendship"]],
       words: matchKindWordsEn.friends, categories: {

@@ -148,7 +148,7 @@ export const techEn: TechText = {
     title: "Help the analysis hear you",
     items: [
       "A quiet room with soft surroundings, not a bathroom or an empty hall",
-      "Your everyday voice, about something ordinary, for about a minute",
+      "Your everyday voice, about something ordinary, for 30 seconds or more",
       "The phone 10 to 20 centimetres away; a wired microphone beats Bluetooth earbuds",
       "Record again on different days: your type settles as recordings add up",
     ],

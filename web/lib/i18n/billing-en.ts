@@ -23,7 +23,7 @@ export const billingEn = {
   pending: "Payment received. Your credits will appear in a moment; refresh this page.",
   whatYouGet: {
     title: "What one credit opens",
-    lead: "One credit is one Complete Personality Analysis: your full psychotype & personality report, made from a recording of about a minute. Every report holds all of this, and it stays in your account.",
+    lead: "One credit is one Complete Personality Analysis: your full psychotype & personality report, made from 30 seconds of your voice. Every report holds all of this, and it stays in your account.",
     addonsTitle: "Credits open the add-ons too",
     addonsLead: "From inside a report, the same credits open more. Each add-on can also be paid by card on its own, so credits are never required for them.",
     industry: "Career Fit: Choose an Industry",
