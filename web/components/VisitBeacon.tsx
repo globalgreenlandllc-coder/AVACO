@@ -9,10 +9,11 @@ import { useEffect } from "react";
 /** The ad click ids, most telling first: only which one was there is sent, never its value. */
 const CLICK_PARAMS = ["ttclid", "twclid", "gclid", "gbraid", "wbraid", "msclkid", "fbclid"];
 
-export function VisitBeacon() {
+/** `enabled`: analytics is allowed for this visitor (lib/consent.ts); otherwise nothing is counted and no cookie is set. */
+export function VisitBeacon({ enabled = true }: { enabled?: boolean }) {
   const pathname = usePathname();
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/admin")) return;
+    if (!enabled || !pathname || pathname.startsWith("/admin")) return;
     let session = "", landing = false, from: { referrer?: string; utmSource?: string | null; utmCampaign?: string | null; utmMedium?: string | null; utmContent?: string | null; click?: string | null } = {};
     try {
       session = sessionStorage.getItem("avoco-visit") ?? "";
@@ -27,6 +28,6 @@ export function VisitBeacon() {
     const body = JSON.stringify({ path: pathname, session, landing, referrer: from.referrer ?? "", utmSource: from.utmSource ?? null, utmCampaign: from.utmCampaign ?? null, utmMedium: from.utmMedium ?? null, utmContent: from.utmContent ?? null, click: from.click ?? null, width: window.innerWidth, locale: document.documentElement.lang });
     const sent = navigator.sendBeacon?.("/api/visit", new Blob([body], { type: "application/json" }));
     if (!sent) fetch("/api/visit", { method: "POST", body, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => undefined);
-  }, [pathname]);
+  }, [pathname, enabled]);
   return null;
 }

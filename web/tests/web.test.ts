@@ -285,7 +285,13 @@ describe("failure wording", () => {
 describe("translations", () => {
   const shape = (v: unknown): unknown => (Array.isArray(v) ? v.map(shape) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, shape(x)])) : "text");
 
-  it("Russian has exactly the same keys as English", () => expect(shape(ru)).toEqual(shape(en)));
+  // The legal documents are kept up to date in English only (the English version is binding and the translated pages
+  // say so), so the Russian ones may have fewer paragraphs or rows; everything else mirrors English exactly.
+  it("Russian has exactly the same keys as English", () => expect(shape({ ...ru, legal: null })).toEqual(shape({ ...en, legal: null })));
+  it("keeps the Russian legal pages' headings and sections in step with English", () => {
+    for (const kind of ["privacy", "terms"] as const) expect(ru.legal[kind].sections.length).toBe(en.legal[kind].sections.length);
+    expect(Object.keys(ru.legal).sort()).toEqual(Object.keys(en.legal).sort());
+  });
 
   it("covers every AVOCO scale in both languages", () => {
     for (const dict of [en, ru]) {

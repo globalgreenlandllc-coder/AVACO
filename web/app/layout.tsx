@@ -14,6 +14,9 @@ import { baseUrl } from "@/lib/page";
 import { unseenReadyMatches } from "@/lib/matches";
 import { isOpenHost, visitorId } from "@/lib/visitor";
 import { isPartnerHost } from "@/lib/partners";
+import { cookies, headers } from "next/headers";
+import { ConsentBanner, PrivacyChoicesLink } from "@/components/ConsentBanner";
+import { CONSENT_COOKIE, consentFor, consentModeScript, parseConsent } from "@/lib/consent";
 import { availableLanguages } from "@/lib/translate";
 import "./globals.css";
 
@@ -38,19 +41,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Google Tag Manager on the main site only: not on the free partner and open test hosts, and not on a development
   // server (which counts as a partner host), so no test run reaches the ad and analytics accounts.
   const gtm = !open && !partner ? GTM_ID : null;
+  // Cookie choices: a saved one, else the country's rule (a yes first in the EEA, UK and Switzerland); GPC refuses ads.
+  const [jar, hdrs] = await Promise.all([cookies(), headers()]);
+  const privacy = consentFor({ saved: parseConsent(jar.get(CONSENT_COOKIE)?.value), country: hdrs.get("x-vercel-ip-country"), gpc: hdrs.get("sec-gpc") === "1" });
   // Finished couple's reports the person hasn't opened yet: a notice on every page, and a count on "My reports".
   const ready = visitor ? await unseenReadyMatches(visitor).catch(() => []) : [];
   const page = (
       <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
         <head>
           {/* Google Tag Manager, as high in <head> as the page allows (Google's instructions): in the server's HTML, run as the page is read. */}
-          {gtm && <script id="gtm" dangerouslySetInnerHTML={{ __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');` }} />}
+          {gtm && <script id="gtm" dangerouslySetInnerHTML={{ __html: `${consentModeScript(privacy.consent)}(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');` }} />}
         </head>
         <body className="flex flex-col">
           {gtm && (
             <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} /></noscript>
           )}
-          <VisitBeacon />
+          <VisitBeacon enabled={privacy.consent.analytics} />
           <Header locale={locale} t={t} alerts={ready.length} />
           <MatchReadyNotice matches={ready} t={t.match} kinds={t.content.match.kinds} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>
@@ -66,11 +72,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/terms" className="transition-colors hover:text-ink">{t.legal.nav.terms}</Link>
                 <Link href="/technology" className="transition-colors hover:text-ink">{t.technology.footerLink}</Link>
                 <Link href="/docs/api" className="transition-colors hover:text-ink">{t.legal.nav.api}</Link>
+                <PrivacyChoicesLink />
                 <a href={`mailto:${LEGAL.support}`} className="transition-colors hover:text-ink">{LEGAL.support}</a>
               </nav>
               <div className="sm:justify-self-end"><LanguageSwitch locale={locale} label={t.language} languages={languages.map(({ code, name, flag }) => ({ code, name, flag }))} openUp /></div>
             </div>
           </footer>
+          <ConsentBanner initial={privacy.consent} ask={privacy.ask} gpc={privacy.gpc} />
         </body>
       </html>
   );

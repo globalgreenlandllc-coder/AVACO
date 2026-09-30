@@ -11,8 +11,13 @@ describe("legal texts", () => {
   const en = flatten(legalEn);
   const ru = flatten(legalRu);
 
-  it("have the same shape in English and Russian, down to every bullet and table cell", () => {
-    expect(Object.keys(ru).sort()).toEqual(Object.keys(en).sort());
+  // The terms mirror each other exactly. The privacy policy is kept up to date in English first (the English version is
+  // binding, and translated pages say so): the Russian one keeps the same sections but may lack newer paragraphs or rows.
+  it("have the same shape in English and Russian, down to every bullet and table cell (the privacy policy: English first)", () => {
+    const terms = (keys: string[]) => keys.filter((k) => !k.startsWith("privacy"));
+    expect(terms(Object.keys(ru)).sort()).toEqual(terms(Object.keys(en)).sort());
+    for (const path of Object.keys(ru)) expect(en, `${path} exists only in Russian`).toHaveProperty([path]);
+    expect(legalRu.privacy.sections.length).toBe(legalEn.privacy.sections.length);
   });
 
   it("use only placeholders that lib/legal.ts can fill, the same ones in both languages", () => {
@@ -20,7 +25,7 @@ describe("legal texts", () => {
     for (const [path, text] of Object.entries(en)) {
       const used = placeholders(text);
       for (const name of used) expect(known, `${path} uses {${name}}`).toContain(name);
-      expect(placeholders(ru[path]), path).toEqual(used);
+      if (path in ru) expect(placeholders(ru[path]), path).toEqual(used);
     }
   });
 

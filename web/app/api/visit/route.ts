@@ -3,8 +3,10 @@
  * what the statistics need and nothing more (no address, no browser description), and leaves admins' own views out
  * so the numbers stay honest. It never fails a page: whatever happens, the answer is an empty 204.
  */
+import { sql } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminUser } from "@/lib/admin";
+import { CONSENT_COOKIE, OPT_IN_COUNTRIES, parseConsent } from "@/lib/consent";
 import { db, visits } from "@/lib/db";
 import { partnerHosts } from "@/lib/partners";
 import { excludeVisitor, isExcludedVisitor } from "@/lib/visit-exclusions";
@@ -24,6 +26,11 @@ export async function POST(req: NextRequest) {
   try {
     // Served by Vercel or not at all: a development server (every page view of a local test run) never counts.
     if (!req.headers.get("x-vercel-id") && !process.env.RECORD_LOCAL_VISITS) return done(null);
+    // No counting without analytics consent: refused, or not yet given where the law asks first.
+    const saved = parseConsent(req.cookies.get(CONSENT_COOKIE)?.value);
+    if (saved ? !saved.analytics : OPT_IN_COUNTRIES.has(req.headers.get("x-vercel-ip-country")?.toUpperCase() ?? "")) return done(null);
+    // Visit statistics are kept for 26 months (privacy policy): now and then, the older ones go.
+    if (Math.random() < 0.01) void db().delete(visits).where(sql`${visits.at} < now() - interval '26 months'`).catch(() => undefined);
     const text = await req.text();
     if (text.length > 2000) return done(null);
     const body = JSON.parse(text) as Record<string, unknown>;

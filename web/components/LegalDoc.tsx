@@ -60,6 +60,8 @@ export function LegalDoc({ kind, t, locale, vars, signedIn }: { kind: Kind; t: D
         <p className="eyebrow">{l.nav.legal}</p>
         <h1 className="mt-3 font-display text-5xl font-medium sm:text-6xl">{doc.title}</h1>
         <p className="mt-3 text-sm text-muted">{f(l.updated)}</p>
+        {/* The privacy policy is kept up to date in English only; a translation may lag behind it. */}
+        {kind === "privacy" && locale !== "en" && <p className="mt-3 rounded-xl border border-accent px-4 py-2.5 text-sm text-ink-2" lang="en">The English version of this policy is the current and binding one. This translation may not include the latest changes; switch the language to English to read them.</p>}
         <p className="mt-5 text-lg leading-relaxed text-ink-2">{f(doc.lead)}</p>
         {locale !== "en" && <p className="mt-3 text-xs text-muted">{l.languageNote}</p>}
       </header>
