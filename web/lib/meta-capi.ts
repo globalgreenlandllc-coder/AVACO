@@ -84,6 +84,66 @@ export async function sendCapiEvent(e: CapiEvent, b: CapiBrowser, testCode?: str
   }
 }
 
+/** The Avoco ad account the pixel is meant to be connected to (Business settings → Data sources → Datasets). */
+export const AD_ACCOUNT_ID = "1617058886555636";
+
+export interface PixelStatus {
+  ok: boolean; message: string;
+  name?: string; lastFired?: string | null; automaticMatching?: boolean | null; business?: string | null;
+  /** The ad accounts the pixel is shared with; null when Meta wouldn't say (the token's permissions). */
+  accounts?: Array<{ id: string; name: string }> | null;
+  /** Events Meta received in the last 24 hours, by name; null when Meta wouldn't say. */
+  events?: Array<{ event: string; count: number }> | null;
+}
+
+/** GET on Meta's Graph API with the server's token; the token goes in a header, never in the address. */
+async function graph<T>(path: string): Promise<{ ok: true; data: T } | { ok: false; message: string }> {
+  const token = capiToken();
+  if (!token) return { ok: false, message: "META_CAPI_TOKEN is not set on the server." };
+  try {
+    const res = await fetch(`${ENDPOINT}/${path}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000), cache: "no-store" });
+    const body = await res.json().catch(() => null) as (T & { error?: { message?: string } }) | null;
+    if (!res.ok || !body) return { ok: false, message: body?.error?.message ?? `Meta answered ${res.status}` };
+    return { ok: true, data: body };
+  } catch {
+    return { ok: false, message: "Meta could not be reached" };
+  }
+}
+
+/**
+ * What Meta itself says about the pixel, for Admin → Settings: whether events are arriving, the ad accounts it is
+ * connected to, and whether automatic advanced matching is on. Each part is best effort: a token that may read the
+ * pixel but not its sharing still shows the rest.
+ */
+export async function pixelStatus(now = Date.now()): Promise<PixelStatus> {
+  const id = pixelId();
+  const pixel = await graph<{ name?: string; last_fired_time?: string; enable_automatic_matching?: boolean; owner_business?: { id: string; name?: string } }>(
+    `${id}?fields=name,last_fired_time,enable_automatic_matching,owner_business{id,name}`);
+  if (!pixel.ok) return { ok: false, message: pixel.message };
+  const p = pixel.data;
+  const since = Math.floor((now - 24 * 3600_000) / 1000);
+  const [shared, byAccount, stats] = await Promise.all([
+    p.owner_business?.id ? graph<{ data?: Array<{ id: string; account_id?: string; name?: string }> }>(`${id}/shared_accounts?business=${p.owner_business.id}&fields=account_id,name`) : Promise.resolve(null),
+    graph<{ data?: Array<{ id: string }> }>(`act_${AD_ACCOUNT_ID}/adspixels?fields=id`),
+    graph<{ data?: Array<{ data?: Array<{ value: string; count: number }> }> }>(`${id}/stats?aggregation=event&start_time=${since}`),
+  ]);
+  let accounts: PixelStatus["accounts"] = null;
+  if (shared?.ok) accounts = (shared.data.data ?? []).map((a) => ({ id: a.account_id ?? a.id.replace(/^act_/, ""), name: a.name ?? "" }));
+  if (byAccount.ok && (byAccount.data.data ?? []).some((x) => x.id === id) && !accounts?.some((a) => a.id === AD_ACCOUNT_ID)) accounts = [...(accounts ?? []), { id: AD_ACCOUNT_ID, name: "Avoco" }];
+  if (!shared?.ok && !byAccount.ok) accounts = null;
+  let events: PixelStatus["events"] = null;
+  if (stats.ok) {
+    const by = new Map<string, number>();
+    for (const hour of stats.data.data ?? []) for (const e of hour.data ?? []) by.set(e.value, (by.get(e.value) ?? 0) + (Number(e.count) || 0));
+    events = [...by].map(([event, count]) => ({ event, count })).sort((a, b) => b.count - a.count);
+  }
+  return {
+    ok: true, message: "Meta answered",
+    name: p.name, lastFired: p.last_fired_time ?? null, automaticMatching: p.enable_automatic_matching ?? null,
+    business: p.owner_business?.name ?? null, accounts, events,
+  };
+}
+
 /**
  * Reports a step from inside a request: the browser is read now, and the event goes after the response, so a page or
  * an API answer never waits for Meta.

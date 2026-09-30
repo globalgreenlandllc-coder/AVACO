@@ -1,8 +1,9 @@
 import { CopyField } from "@/components/CopyField";
 import { EmailConnect, SampleReceipt } from "@/components/EmailConnect";
 import { KeyConnect } from "@/components/KeyConnect";
+import { MetaStatus } from "@/components/MetaStatus";
 import { MetaTest } from "@/components/MetaTest";
-import { capiToken, pixelId } from "@/lib/meta-capi";
+import { capiToken, pixelId, pixelStatus } from "@/lib/meta-capi";
 import { LanguageBuilder } from "@/components/LanguageBuilder";
 import { LanguageBuilderAll } from "@/components/LanguageBuilderAll";
 import { StripeConnect } from "@/components/StripeConnect";
@@ -113,6 +114,7 @@ export default async function AdminSettings() {
             ? " The server sends the same steps through the Conversions API with the same event ids, so each counts once, even where a browser blocks the pixel."
             : " Add META_CAPI_TOKEN in Vercel to send the server-side copies too."}
         </p>
+        {capiToken() && <MetaStatus status={await pixelStatus()} now={Date.now()} />}
         {capiToken() && (
           <>
             <p className="text-sm leading-relaxed text-ink-2">To check the server&apos;s token: in Events Manager open the pixel → <span className="font-semibold text-ink">Test events</span>, copy the code under &quot;Test server events&quot; (it starts with TEST) and send one here.</p>

@@ -13,7 +13,7 @@ vi.mock("@/lib/admin", () => ({ isAdminUser: async () => request.admin }));
 vi.mock("@/lib/partners", () => ({ isPartnerHost: async () => request.partner }));
 vi.mock("@/lib/visitor", () => ({ isOpenHost: async () => request.open }));
 
-import { capiBrowser, capiPayload, reportToMeta, sendCapiEvent, signupEventId } from "@/lib/meta-capi";
+import { capiBrowser, capiPayload, pixelStatus, reportToMeta, sendCapiEvent, signupEventId } from "@/lib/meta-capi";
 import { hashId } from "@/lib/track";
 
 const browser = { ip: "203.0.113.7", userAgent: "Mozilla/5.0 (iPhone)", fbp: "fb.1.1700000000000.123", fbc: null, url: "https://www.avocousa.us/record" };
@@ -82,5 +82,34 @@ describe("Meta's Conversions API", () => {
     request.headers.set("sec-gpc", "1");
     await reportToMeta({ name: "RecordVoice", id: "record_2" }, "user_1");
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("what Meta reports about the pixel", () => {
+  const answer = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+
+  it("says whether events arrive, whether the Avoco ad account is connected, and what came in", async () => {
+    const fetch = vi.fn(async (url: string) => {
+      if (url.includes("/shared_accounts")) return answer({ data: [{ id: "act_1617058886555636", account_id: "1617058886555636", name: "Avoco" }] });
+      if (url.includes("/adspixels")) return answer({ data: [{ id: "1558938122217068" }] });
+      if (url.includes("/stats")) return answer({ data: [{ data: [{ value: "PageView", count: 30 }, { value: "CompleteRegistration", count: 1 }] }, { data: [{ value: "PageView", count: 12 }] }] });
+      return answer({ name: "AVOCO", last_fired_time: "2026-09-30T20:00:00+0000", enable_automatic_matching: false, owner_business: { id: "999", name: "AVOCO USA" } });
+    });
+    vi.stubGlobal("fetch", fetch);
+    const status = await pixelStatus(Date.parse("2026-09-30T21:00:00Z"));
+    expect(status).toMatchObject({ ok: true, lastFired: "2026-09-30T20:00:00+0000", automaticMatching: false, business: "AVOCO USA", accounts: [{ id: "1617058886555636", name: "Avoco" }] });
+    expect(status.events).toEqual([{ event: "PageView", count: 42 }, { event: "CompleteRegistration", count: 1 }]);
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-token"); // the token never goes in the address
+    expect(String(fetch.mock.calls[0][0])).not.toContain("test-token");
+  });
+
+  it("shows a refusal instead of failing, and keeps what it could read", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url.includes("/shared_accounts") || url.includes("/adspixels") || url.includes("/stats")
+      ? answer({ error: { message: "Missing permissions" } }, 403)
+      : answer({ last_fired_time: null, enable_automatic_matching: true, owner_business: { id: "999" } }))));
+    expect(await pixelStatus()).toMatchObject({ ok: true, lastFired: null, automaticMatching: true, accounts: null, events: null });
+    vi.stubGlobal("fetch", vi.fn(async () => answer({ error: { message: "Invalid OAuth access token" } }, 400)));
+    expect(await pixelStatus()).toEqual({ ok: false, message: "Invalid OAuth access token" });
   });
 });
