@@ -13,7 +13,7 @@ const support = process.env.SUPPORT_EMAIL?.trim() || "support@avocousa.us";
 export const LEGAL = {
   /** Bump the date and version together whenever a text changes in substance. */
   updated: "2026-09-30",
-  version: "1.5",
+  version: "1.6",
   site: "avocousa.us",
   operator: process.env.LEGAL_OPERATOR?.trim() || "AVOCO USA",
   support,
