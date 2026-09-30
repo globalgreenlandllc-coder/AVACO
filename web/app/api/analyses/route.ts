@@ -1,6 +1,6 @@
 /** POST /api/analyses { audioUrl, consent: true, person? } — starts an analysis for the signed-in user; `person` names whose voice it is. */
 import { errorResponse, json, requireUser } from "@/lib/api";
-import { asUser, balance, noteSelfRecording, previewsLeft } from "@/lib/billing";
+import { asUser, balance, noteSelfRecording, previewsLeft, welcomeReportWaiting } from "@/lib/billing";
 import { gateway } from "@/lib/gateway";
 import { coverWithGift } from "@/lib/gifts";
 import { cleanName, setPerson } from "@/lib/people";
@@ -18,8 +18,9 @@ export async function POST(req: Request) {
     // The free test site stops at its daily limit (lib/visitor.ts).
     if (isOpenVisitor(user.userId) && (await openLimitReached())) return json({ error: "limit_reached", message: "Today's limit is reached" }, 429);
 
-    // Every recording costs an AVOCO analysis. With billing on, someone who has used their free previews needs a credit to record again.
-    if ((await previewsLeft(user.userId)) < 1 && (await balance(asUser(user.userId))) < 1) return json({ error: "payment_required", message: "No free previews left" }, 402);
+    // Every recording costs an AVOCO analysis. With billing on, someone who has used their free previews needs a credit to
+    // record again, unless their free first report is still waiting: that report must be recordable, whatever came before.
+    if ((await previewsLeft(user.userId)) < 1 && (await balance(asUser(user.userId))) < 1 && !(await welcomeReportWaiting(user.userId))) return json({ error: "payment_required", message: "No free previews left" }, 402);
 
     const created = await gateway.createAnalysis({ audioUrl: body.audioUrl, owner: user.userId });
     await noteSelfRecording(user.userId, created.id);
