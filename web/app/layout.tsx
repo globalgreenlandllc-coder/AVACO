@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Link from "next/link";
-import Script from "next/script";
 import { Header } from "@/components/Header";
 import { MatchReadyNotice } from "@/components/MatchReadyNotice";
 import { VisitBeacon } from "@/components/VisitBeacon";
@@ -43,13 +42,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const ready = visitor ? await unseenReadyMatches(visitor).catch(() => []) : [];
   const page = (
       <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
+        <head>
+          {/* Google Tag Manager, as high in <head> as the page allows (Google's instructions): in the server's HTML, run as the page is read. */}
+          {gtm && <script id="gtm" dangerouslySetInnerHTML={{ __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');` }} />}
+        </head>
         <body className="flex flex-col">
           {gtm && (
             <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} /></noscript>
-          )}
-          {/* Google Tag Manager: beforeInteractive puts it at the top of <head>, ahead of the site's own scripts. */}
-          {gtm && (
-            <Script id="gtm" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');` }} />
           )}
           <VisitBeacon />
           <Header locale={locale} t={t} alerts={ready.length} />
