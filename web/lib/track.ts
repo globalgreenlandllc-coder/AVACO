@@ -1,6 +1,7 @@
 /**
- * Conversion events for the ad platforms, pushed to Google Tag Manager's data layer (GTM-NJTJ3D4V). Tags in Tag Manager
- * (Meta Pixel, TikTok Pixel, X Pixel, Google Ads, GA4) fire on these; they carry no name, email or recording.
+ * Conversion events for the ad platforms: pushed to Google Tag Manager's data layer (GTM-NJTJ3D4V), where its tags
+ * (TikTok Pixel, X Pixel, Google Ads, GA4) fire on them, and sent to Meta's pixel directly in Meta's own words
+ * (lib/meta-pixel.ts). They carry no name, email or recording.
  *
  *   sign_up          a new account, once          event_id, method ("email" | "google")
  *   record_voice     a recording sent for analysis event_id
@@ -11,6 +12,8 @@
  * Every event has an event_id, so a platform counts it once (also against a server-side copy later). The same id is
  * never pushed twice from one browser. Admins' browsers push nothing.
  */
+import { sendToMeta } from "./meta-pixel";
+
 declare global { interface Window { dataLayer?: unknown[]; __avocoNoTrack?: boolean } }
 
 const SEEN = "avoco-tracked";
@@ -25,6 +28,7 @@ export function track(event: string, params: { event_id: string } & Record<strin
   window.dataLayer = window.dataLayer ?? [];
   if (event === "purchase") window.dataLayer.push({ ecommerce: null }); // Google's advice: clear the previous ecommerce object first
   window.dataLayer.push({ event, ...params });
+  sendToMeta(event, params);
 }
 
 /** Tells the ad platforms a checkout started, then goes to Stripe (a moment later, so the tags can send). */

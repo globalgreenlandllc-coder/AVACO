@@ -305,7 +305,7 @@ describe("translations", () => {
     const english = new Set(flat(en));
     // The brand, the provider and cookie names on the legal pages and bare figures ("8", "14") are the same in both languages;
     // anything else shared is a missed translation.
-    const names = /^(AVOCO|Vercel|Neon|Clerk|Stripe|Google|Cookie|lang|__session, __client_uat|\d+)$/;
+    const names = /^(AVOCO|Vercel|Neon|Clerk|Stripe|Google|Cookie|lang|__session, __client_uat|avoco_consent|avoco_vid|_ga, _ga_\*|ph_\*|_fbp, _fbc|\d+)$/;
     expect(flat(ru).filter((s) => english.has(s) && !names.test(s))).toEqual([]);
   });
 });

@@ -19,6 +19,8 @@ import { ConsentBanner, PrivacyChoicesLink } from "@/components/ConsentBanner";
 import { CONSENT_COOKIE, consentFor, consentModeScript, parseConsent } from "@/lib/consent";
 import { PostHogInit } from "@/components/PostHogInit";
 import { ConversionEvents } from "@/components/ConversionEvents";
+import { MetaPixelEvents } from "@/components/MetaPixelEvents";
+import { META_PIXEL_ID, metaPixelScript } from "@/lib/meta-pixel";
 import { isAdminUser } from "@/lib/admin";
 import { posthogConfig } from "@/lib/posthog";
 import { shortKey } from "@/lib/visits-math";
@@ -54,6 +56,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // PostHog session replays (lib/posthog.ts): the main site only, with analytics consent, never an admin's browser.
   const posthog = gtm ? posthogConfig() : null;
   const adminBrowser = visitor?.startsWith("user_") ? await isAdminUser(visitor) : false;
+  // Meta's pixel (lib/meta-pixel.ts): the main site, never an admin's browser; it runs only with advertising consent.
+  const pixelId = gtm && !adminBrowser ? process.env.NEXT_PUBLIC_META_PIXEL_ID || META_PIXEL_ID : null;
+  const metaPixel = pixelId && privacy.consent.ads ? pixelId : null;
   const vid = jar.get("avoco_vid")?.value ?? null;
   // Finished couple's reports the person hasn't opened yet: a notice on every page, and a count on "My reports".
   const ready = visitor ? await unseenReadyMatches(visitor).catch(() => []) : [];
@@ -62,6 +67,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <head>
           {/* Meta checks for this tag in the server's HTML <head>, not in anything added by script. */}
           <meta name="facebook-domain-verification" content={META_DOMAIN_VERIFICATION} />
+          {/* Meta's pixel, in the server's HTML like Meta's own snippet, so even a visit that ends in a second counts. */}
+          {metaPixel && <script id="meta-pixel" dangerouslySetInnerHTML={{ __html: metaPixelScript(metaPixel) }} />}
           {/* Google Tag Manager, as high in <head> as the page allows (Google's instructions): in the server's HTML, run as the page is read. */}
           {gtm && <script id="gtm" dangerouslySetInnerHTML={{ __html: `${consentModeScript(privacy.consent)}(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');` }} />}
         </head>
@@ -69,6 +76,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {gtm && (
             <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} /></noscript>
           )}
+          {metaPixel && <noscript><img height="1" width="1" style={{ display: "none" }} alt="" src={`https://www.facebook.com/tr?id=${metaPixel}&ev=PageView&noscript=1`} /></noscript>}
+          <MetaPixelEvents pixelId={pixelId} enabled={Boolean(metaPixel)} />
           <VisitBeacon enabled={privacy.consent.analytics} />
           {gtm && <ConversionEvents off={adminBrowser} />}
           {posthog && <PostHogInit apiKey={posthog.key} host={posthog.host} enabled={privacy.consent.analytics && !adminBrowser} visitor={vid ? shortKey(vid) : null} />}

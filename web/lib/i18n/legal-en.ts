@@ -49,7 +49,7 @@ export const legalEn: LegalDict = {
       "Your voice is analysed only after you tick the consent box. Nothing you say is transcribed: the analysis measures how the voice sounds, not the words.",
       "The recording and the report are private to your account. When a company invited you, that company sees them too, and the policy says exactly what it sees.",
       "You can delete a report together with its recording yourself, at any time, for good.",
-      "We never sell or share your voice, your recordings or your reports. To learn which of our ads bring people here, we count visits and use Google Tag Manager with analytics and advertising tags: in the European Economic Area, the United Kingdom and Switzerland only after you agree, and everywhere you can turn them off under \"Your privacy choices\" at the foot of every page.",
+      "We never sell or share your voice, your recordings or your reports. To learn which of our ads bring people here, we count visits and use Meta's pixel and Google Tag Manager with analytics and advertising tags: in the European Economic Area, the United Kingdom and Switzerland only after you agree, and everywhere you can turn them off under \"Your privacy choices\" at the foot of every page.",
       "The recording is sent to the analysis provider under a random job number, without your name or email.",
       "AVOCO is for adults. A person under 18 can be recorded only where a parent or guardian has agreed.",
     ],
@@ -74,9 +74,9 @@ export const legalEn: LegalDict = {
           "Company workspaces. When someone creates a workspace: its name, industry, its members' account numbers, its groups, and for every person the company records, the name and optional email the company typed in, their recordings and results. Companies with API access also get a key, of which we keep only a fingerprint.",
           "Purchases. When you buy report credits: the pack, the amount, the currency, a Stripe reference and the running credit balance. Card numbers never reach us: Stripe takes the payment on its own pages.",
           "Technical data. Like every website, our hosting keeps short-lived server logs with your IP address, browser type and the pages requested, for security and troubleshooting.",
-          "Visit statistics. When you open a page, we note the page, the link or ad that brought you (for example a campaign on Instagram or TikTok), your type of device, your language and your approximate town, state and country as our host derives them from your IP address, under a random number kept in a cookie of our own. We do not store your IP address. Where the law requires your consent, this happens only after you give it.",
+          "Visit statistics. When you open a page, we note the page, the link or ad that brought you (for example a campaign on Instagram or TikTok), your type of device, your language and your approximate town, state and country as our host derives them from your IP address, under a random number kept in a cookie of our own. For each page we also note how long it was on screen, how far it was scrolled and, on the public pages, which buttons or links were tapped, by their labels; never anything you type. We do not store your IP address. Where the law requires your consent, this happens only after you give it.",
           "Session replays. With analytics allowed, PostHog records how the public pages are used (the landing page, sign-up, the recorder, credits): where the pointer moves, what is clicked and scrolled. Anything typed is masked, the pages of your reports are never recorded, and the replay is tied to the same random visitor number as our statistics, not to your name.",
-          "Analytics and advertising tags. Through Google Tag Manager we load Google Analytics and the measurement tags of the platforms we advertise on, such as Google, Meta (Facebook and Instagram), TikTok and X. They set their own cookies and learn which of our pages you visit and whether you signed up or bought something, so that we can tell which ads work. They never receive your recordings or your results.",
+          "Analytics and advertising tags. We load Meta's pixel for our Facebook and Instagram ads and, through Google Tag Manager, Google Analytics and the measurement tags of the other platforms we advertise on, such as Google, TikTok and X. They set their own cookies and learn which of our pages you visit and whether you signed up, recorded your voice or bought something, so that we can tell which ads work. Meta's pixel runs with its automatic reading of pages switched off: it learns only the page views and those steps. They never receive your recordings or your results.",
           "Anonymous statistics. For every finished report, one row saying which type led and which field came first, without any link to a person. These help us see the product being used and cannot be traced back to you.",
         ],
         after: [
@@ -158,7 +158,7 @@ export const legalEn: LegalDict = {
       },
       {
         title: "Cookies",
-        paras: ["This site uses a few cookies of its own and, as you allow, cookies set by the analytics and advertising tags that Google Tag Manager loads. The necessary ones keep you signed in and remember your choices; everything else can be switched off under \"Your privacy choices\" at the foot of every page. Fonts are served from our own site, so no font provider sees your visit."],
+        paras: ["This site uses a few cookies of its own and, as you allow, cookies set by Meta's pixel and by the analytics and advertising tags that Google Tag Manager loads. The necessary ones keep you signed in and remember your choices; everything else can be switched off under \"Your privacy choices\" at the foot of every page. Fonts are served from our own site, so no font provider sees your visit."],
         table: {
           head: ["Cookie", "Set by", "Purpose", "Lifetime"],
           rows: [
@@ -168,7 +168,8 @@ export const legalEn: LegalDict = {
             ["avoco_vid", "AVOCO (analytics)", "Counts visits and tells which link or ad brought you; a random number, linked to your account only when you are signed in", "400 days"],
             ["_ga, _ga_*", "Google Analytics, through Google Tag Manager (analytics)", "Measures visits and how the site is used", "Up to two years"],
             ["ph_*", "PostHog (analytics)", "Session replays and page views of the public pages", "One year"],
-            ["_gcl_*, _fbp, _ttp and similar", "Google Ads, Meta, TikTok, X, through Google Tag Manager (advertising)", "Measure which ads bring visitors, sign-ups and purchases", "Up to 13 months, depending on the platform"],
+            ["_fbp, _fbc", "Meta's pixel (advertising)", "Measure which Facebook and Instagram ads bring visitors, sign-ups and purchases", "90 days"],
+            ["_gcl_*, _ttp and similar", "Google Ads, TikTok, X, through Google Tag Manager (advertising)", "Measure which ads bring visitors, sign-ups and purchases", "Up to 13 months, depending on the platform"],
           ],
         },
         after: ["In the European Economic Area, the United Kingdom and Switzerland, analytics and advertising cookies stay off until you allow them. Elsewhere they are on until you turn them off. A browser that sends the Global Privacy Control signal is treated as a refusal of advertising cookies and of any \"sale\" or \"sharing\"; you can change your choices at any time under \"Your privacy choices\"."],
