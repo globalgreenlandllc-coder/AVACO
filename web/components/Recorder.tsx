@@ -11,6 +11,7 @@ import { VoiceScope } from "./VoiceScope";
 import { Waveform } from "./Waveform";
 import { peaksFromBlob } from "@/lib/waveform";
 import { forgetHeld, keepHeld, readHeld, type Held } from "@/lib/held";
+import { goToCheckout, track } from "@/lib/track";
 
 type Phase = "idle" | "recording" | "recorded" | "sending";
 /**
@@ -227,6 +228,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     if (!res?.ok) { setHoldError(t.held.failed); setHoldBusy(null); return; }
     const { id } = await res.json();
     forgetHeld();
+    if (createUrl === "/api/analyses") track("record_voice", { event_id: `record_${id}` });
     const shape = item.peaks ?? peaks;
     try { if (shape) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(shape)); } catch { /* a stand-in is drawn */ }
     router.push(doneUrl.replace("{id}", id));
@@ -239,7 +241,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
     setHoldBusy(packId);
     const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack: packId, recording: { audioUrl: item.audioUrl, person: item.person } }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { goToCheckout(body.url, "report"); return; }
     setHoldError(t.held.failed);
     setHoldBusy(null);
   }
@@ -288,6 +290,7 @@ export function Recorder({ t, uploadUrl = "/api/upload-token", createUrl = "/api
       if (!res.ok) throw new Error(`analyses ${res.status}`);
       const { id } = await res.json();
       forgetHeld();
+      if (createUrl === "/api/analyses") track("record_voice", { event_id: `record_${id}` });
       // The report page shows this very recording being analysed (components/Analysing.tsx).
       try { if (peaks) sessionStorage.setItem(`avoco-wave:${id}`, JSON.stringify(peaks)); } catch { /* it then draws a stand-in */ }
       router.push(doneUrl.replace("{id}", id));

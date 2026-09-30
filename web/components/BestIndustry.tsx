@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 import type { BestIndustry } from "@/lib/industry-chapter";
+import { goToCheckout } from "@/lib/track";
 
 /** The best-industry finder as the report page offers it (app/reports/[id]/page.tsx). */
 export interface BestProps {
@@ -57,7 +58,7 @@ export function useBest(best: BestProps | undefined, analysisId: string) {
     setState({ kind: "busy" });
     const res = await fetch(best.payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { goToCheckout(body.url, "best_industry"); return; }
     setState({ kind: "error" });
   }
 

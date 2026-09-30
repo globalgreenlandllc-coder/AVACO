@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { goToCheckout } from "@/lib/track";
 
 /**
  * Drafts are kept per account, so a gift someone started never shows up for another person who uses the same browser.
@@ -56,7 +57,7 @@ export function GiftForm({ t, defaultName, reportCents, industryCents, matchCent
     setBusy(true); setError(null);
     const res = await fetch("/api/gift", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(draft) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { try { localStorage.removeItem(key); } catch { /* fine */ } window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { try { localStorage.removeItem(key); } catch { /* fine */ } goToCheckout(body.url, "gift"); return; }
     setError(body?.message ?? "Something went wrong. Please try again.");
     setBusy(false);
   }

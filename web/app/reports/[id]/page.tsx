@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackEvent } from "@/components/TrackEvent";
 import { notFound } from "next/navigation";
 import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
@@ -72,8 +73,8 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   const asClient = admin && query.as === "client";
   let full = asClient ? false : await hasFullAccess(userId, analysis.id);
   // An account's first finished report opens in full for free, once (admin → Pricing → "First report free").
-  let welcome = false;
-  if (!full && !asClient && analysis.status === "completed" && (await openWelcomeReport(userId, analysis.id))) { full = true; welcome = true; }
+  let welcome = false, welcomeNow = false;
+  if (!full && !asClient && analysis.status === "completed" && (await openWelcomeReport(userId, analysis.id))) { full = true; welcome = true; welcomeNow = true; }
   // ...and says so every time it is opened, not only the first time.
   else if (full && !asClient && analysis.status === "completed") welcome = await isWelcomeReport(userId, analysis.id).catch(() => false);
   if (analysis.status === "completed" && analysis.psytype?.length) {
@@ -163,6 +164,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
 
   const welcomeNote = welcome ? (
     <div data-no-export className="no-print rounded-2xl border border-accent bg-accent-soft px-5 py-4">
+      {welcomeNow && <TrackEvent event="free_report" id={`free_${analysis.id}`} />}
       <p className="font-semibold">🎁 {t.report.welcomeTitle}</p>
       <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.report.welcomeText}</p>
     </div>

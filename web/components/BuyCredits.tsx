@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { goToCheckout } from "@/lib/track";
 
 export interface PackView { id: string; credits: number; price: string; perReport: string }
 
@@ -19,7 +20,7 @@ export function BuyCredits({ packs, canPay, t, workspaceId, unlock, industry }: 
     setBusy(pack); setMessage(null);
     const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack, workspaceId, unlock, industry }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { goToCheckout(body.url, "credits"); return; }
     setMessage({ ok: false, text: body?.message ?? t.notReady });
     setBusy(null);
   }

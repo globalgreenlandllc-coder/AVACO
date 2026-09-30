@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Dict } from "@/lib/i18n";
+import { goToCheckout } from "@/lib/track";
 
 /**
  * Shown under the free preview, whose locked sections already show what the full report holds: the one button that
@@ -28,7 +29,7 @@ export function PayWall({ analysisId, credits, fromPrice, pay, demo = false, t }
     setBusy(true); setFailed(false);
     const res = await fetch(pay.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack: pay.pack, unlock: analysisId }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { goToCheckout(body.url, "report"); return; }
     setBusy(false); setFailed(true);
   }
 

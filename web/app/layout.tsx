@@ -18,6 +18,7 @@ import { cookies, headers } from "next/headers";
 import { ConsentBanner, PrivacyChoicesLink } from "@/components/ConsentBanner";
 import { CONSENT_COOKIE, consentFor, consentModeScript, parseConsent } from "@/lib/consent";
 import { PostHogInit } from "@/components/PostHogInit";
+import { ConversionEvents } from "@/components/ConversionEvents";
 import { isAdminUser } from "@/lib/admin";
 import { posthogConfig } from "@/lib/posthog";
 import { shortKey } from "@/lib/visits-math";
@@ -65,6 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} /></noscript>
           )}
           <VisitBeacon enabled={privacy.consent.analytics} />
+          {gtm && <ConversionEvents off={adminBrowser} />}
           {posthog && <PostHogInit apiKey={posthog.key} host={posthog.host} enabled={privacy.consent.analytics && !adminBrowser} visitor={vid ? shortKey(vid) : null} />}
           <Header locale={locale} t={t} alerts={ready.length} />
           <MatchReadyNotice matches={ready} t={t.match} kinds={t.content.match.kinds} />

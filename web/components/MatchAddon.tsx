@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 import { MATCH_KINDS, matchWords, type KindWords, type MatchKind } from "@/lib/match-kind";
 import { CoverCapsules } from "./CoverCapsules";
+import { goToCheckout } from "@/lib/track";
 
 export interface MatchAddonProps {
   analysisId: string;
@@ -49,7 +50,7 @@ export function MatchAddon({ analysisId, price, freeLabel, credits, needed = 2, 
     const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily: kind === "couple" && withFamily, kind, mode }) }).catch(() => null);
     if (res?.status === 201) {
       const { id, url } = await res.json();
-      if (url) { window.location.href = url; return; } // paying by card: Stripe, then back to the match page
+      if (url) { goToCheckout(url, "relationship"); return; } // paying by card: Stripe, then back to the match page
       router.push(`/match/${id}?mode=${mode}`); return;
     }
     if (res?.status === 402) { window.location.href = `${creditsHref}?unlock=${analysisId}`; return; }

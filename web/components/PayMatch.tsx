@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { goToCheckout } from "@/lib/track";
 
 /**
  * Pays for a couple's report that was ordered but never paid (a card checkout left half-way). Ordering the same
@@ -16,7 +17,7 @@ export function PayMatch({ analysisId, ownerName, partnerName, withFamily, label
     setBusy(true); setError(null);
     const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysisId, ownerName, partnerName, withFamily, mode: "invite" }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.status === 201 && body?.url) { window.location.href = body.url; return; }
+    if (res?.status === 201 && body?.url) { goToCheckout(body.url, "relationship"); return; }
     if (res?.status === 201) { router.refresh(); return; } // nothing left to pay
     setError(body?.message ?? "Something went wrong. Please try again.");
     setBusy(false);

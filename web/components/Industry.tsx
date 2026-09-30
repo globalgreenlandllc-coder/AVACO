@@ -10,6 +10,7 @@ import { SECTOR_KEYS } from "@/lib/industries";
 import { BestResult, BestTile, useBest, type BestProps } from "./BestIndustry";
 import { CoverCapsules } from "./CoverCapsules";
 import { RefreshWhile } from "./RefreshWhile";
+import { goToCheckout } from "@/lib/track";
 
 export interface IndustryProps {
   /** The selection bar, in the visitor's language; with sectors, grouped by them. */
@@ -110,7 +111,7 @@ export function Industry({ industries, chapterUrl, unlockUrl, analysisId, unlock
     setBusy(true);
     const res = await fetch(payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack: "industry", unlock: analysisId, industry: picked }) }).catch(() => null);
     const body = await res?.json().catch(() => null);
-    if (res?.ok && body?.url) { window.location.href = body.url; return; }
+    if (res?.ok && body?.url) { goToCheckout(body.url, "career_fit"); return; }
     setBusy(false);
     setState({ kind: "error" });
   }
