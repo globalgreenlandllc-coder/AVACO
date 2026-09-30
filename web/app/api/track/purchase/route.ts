@@ -4,6 +4,7 @@
  */
 import { errorResponse, json, requireUser } from "@/lib/api";
 import { asUser, confirmCheckout } from "@/lib/billing";
+import { reportToMeta } from "@/lib/meta-capi";
 import { purchaseItem } from "@/lib/track";
 
 export async function GET(req: Request) {
@@ -16,7 +17,10 @@ export async function GET(req: Request) {
     if (!outcome) return json({ error: "not_found" }, 404);
     if (!outcome.paid) return json({ pending: true });
     const p = outcome.purchase;
-    return json({ id: p.id, value: p.amountCents / 100, currency: p.currency.toUpperCase(), item: purchaseItem(p), credits: p.credits });
+    const value = p.amountCents / 100, currency = p.currency.toUpperCase(), item = purchaseItem(p);
+    // Meta's server-side copy of the purchase, with the id the browser's event uses (lib/meta-capi.ts).
+    await reportToMeta({ name: "Purchase", id: `purchase_${p.id}`, custom: { value, currency, content_name: item, content_type: "product" } }, user.userId);
+    return json({ id: p.id, value, currency, item, credits: p.credits });
   } catch (err) {
     return errorResponse(err);
   }

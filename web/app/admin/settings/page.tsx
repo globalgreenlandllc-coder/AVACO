@@ -1,6 +1,8 @@
 import { CopyField } from "@/components/CopyField";
 import { EmailConnect, SampleReceipt } from "@/components/EmailConnect";
 import { KeyConnect } from "@/components/KeyConnect";
+import { MetaTest } from "@/components/MetaTest";
+import { capiToken, pixelId } from "@/lib/meta-capi";
 import { LanguageBuilder } from "@/components/LanguageBuilder";
 import { LanguageBuilderAll } from "@/components/LanguageBuilderAll";
 import { StripeConnect } from "@/components/StripeConnect";
@@ -95,6 +97,26 @@ export default async function AdminSettings() {
             </ol>
             {!mail.canStore && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">The server has no SETTINGS_SECRET yet, so the password can&apos;t be stored safely. Ask your developer to set it.</p>}
             <EmailConnect canStore={mail.canStore} suggested={LEGAL.support} />
+          </>
+        )}
+      </section>
+
+      <section className="card space-y-5 p-7 sm:p-9">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-3xl font-medium">Meta ads (Facebook and Instagram)</h2>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${capiToken() ? "bg-accent text-accent-ink" : "border border-line text-muted"}`}>{capiToken() ? "Pixel + server" : "Pixel only"}</span>
+        </div>
+        <p className="text-sm leading-relaxed text-ink-2">
+          Pixel <span className="font-mono text-ink">{pixelId()}</span> runs on the main site for visitors who allow advertising, never in an admin&apos;s browser.
+          It reports page views and each step: CompleteRegistration (sign-up), RecordVoice (recording), StartTrial (free first report), InitiateCheckout and Purchase.
+          {capiToken()
+            ? " The server sends the same steps through the Conversions API with the same event ids, so each counts once, even where a browser blocks the pixel."
+            : " Add META_CAPI_TOKEN in Vercel to send the server-side copies too."}
+        </p>
+        {capiToken() && (
+          <>
+            <p className="text-sm leading-relaxed text-ink-2">To check the server&apos;s token: in Events Manager open the pixel → <span className="font-semibold text-ink">Test events</span>, copy the code under &quot;Test server events&quot; (it starts with TEST) and send one here.</p>
+            <MetaTest />
           </>
         )}
       </section>

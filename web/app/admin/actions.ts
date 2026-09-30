@@ -10,6 +10,7 @@ import { clearStripeKeys, saveStripeKeys } from "@/lib/stripe";
 import { clearEmailSettings, saveEmailSettings } from "@/lib/email";
 import { getLocale } from "@/lib/i18n";
 import { sendSampleReceipt } from "@/lib/receipts";
+import { capiBrowser, sendCapiEvent } from "@/lib/meta-capi";
 import { matchCredits, matchPriceCents, saveMatchPricing } from "@/lib/match-billing";
 import { industryPriceCents, saveIndustryPrice } from "@/lib/industry-billing";
 import { bestCredits, bestPriceCents, saveBestPricing } from "@/lib/best-billing";
@@ -133,6 +134,20 @@ export async function disconnectEmailAction() {
   await requireAdmin();
   await clearEmailSettings();
   revalidatePath("/admin", "layout");
+}
+
+/**
+ * Sends Meta one test event through the Conversions API, marked with the code from Events Manager → Test events, so
+ * it shows there within a minute and never in the real numbers. Proves the server's token works.
+ */
+export async function metaTestAction(_prev: StripeActionState, form: FormData): Promise<StripeActionState> {
+  await requireAdmin();
+  const code = String(form.get("code") ?? "").trim().toUpperCase();
+  if (!/^TEST[A-Z0-9]{2,20}$/.test(code)) return { ok: false, message: "Paste the code from Events Manager → your pixel → Test events; it starts with TEST." };
+  const browser = await capiBrowser(null, { admin: true });
+  if (!browser) return { ok: false, message: "META_CAPI_TOKEN isn't set on this server yet (Vercel → Environment Variables), or this isn't the main site." };
+  const result = await sendCapiEvent({ name: "PageView", id: `test_${Date.now().toString(36)}` }, { ...browser, url: `${await baseUrl()}/admin/settings` }, code);
+  return result.ok ? { ok: true, message: `Meta received it (${result.received ?? 1} event). Look in Events Manager → Test events.` } : { ok: false, message: `Meta refused it: ${result.message}` };
 }
 
 /** Sends the admin a sample receipt for one personality type report, at today's price, in the language they are reading. */

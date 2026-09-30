@@ -18,7 +18,10 @@ export function ConversionEvents({ off }: { off: boolean }) {
   useEffect(() => {
     if (off || !isSignedIn || !user?.createdAt) return;
     if (Date.now() - new Date(user.createdAt).getTime() > 30 * 60_000) return;
-    void hashId(user.id).then((h) => track("sign_up", { event_id: `signup_${h}`, method: user.externalAccounts?.length ? "google" : "email" }));
+    void hashId(user.id).then((h) => {
+      // The server sends Meta its own copy of the same event (app/api/track/signup), which counts even where the pixel is blocked.
+      if (track("sign_up", { event_id: `signup_${h}`, method: user.externalAccounts?.length ? "google" : "email" })) void fetch("/api/track/signup", { method: "POST", keepalive: true }).catch(() => undefined);
+    });
   }, [off, isSignedIn, user]);
 
   // Back from Stripe (?session=cs_…): the purchase, once confirmed; the webhook can be a few seconds behind.

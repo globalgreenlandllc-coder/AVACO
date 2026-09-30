@@ -27,6 +27,7 @@ import { buildMatch, matchesFor, partnerAnalyses } from "@/lib/matches";
 import { swapWords } from "@/lib/match-kind";
 import { emailConfig } from "@/lib/email";
 import { stageOf } from "@/lib/match-stage";
+import { reportToMeta } from "@/lib/meta-capi";
 
 /** `paid`, `session`, `industry` and `best` are what Stripe Checkout sends the buyer back with (see api/billing/checkout and api/billing/best). */
 type Query = { paid?: string; session?: string; industry?: string; best?: string; as?: string };
@@ -81,6 +82,8 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // The free_report event (lib/track.ts) within the hour it opened: the render that opened it can be replaced by the next
   // one before its event fires, and the event's id keeps a browser from sending it twice.
   const welcomeNow = welcomeAt !== null && Date.now() - welcomeAt.getTime() < 60 * 60_000;
+  // Meta's server-side copy of free_report (lib/meta-capi.ts), in the first minutes only: the browser covers the hour.
+  if (welcomeAt !== null && Date.now() - welcomeAt.getTime() < 10 * 60_000) await reportToMeta({ name: "StartTrial", id: `free_${analysis.id}`, custom: { content_name: "free first report" } }, userId);
   if (analysis.status === "completed" && analysis.psytype?.length) {
     await noteResult(analysis.id, "self", analysis.psytype[0].key, fieldFits(analysis.psytype, analysis.emostate)[0]?.key).catch(() => {});
   }

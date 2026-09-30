@@ -18,17 +18,19 @@ declare global { interface Window { dataLayer?: unknown[]; __avocoNoTrack?: bool
 
 const SEEN = "avoco-tracked";
 
-export function track(event: string, params: { event_id: string } & Record<string, unknown>): void {
-  if (typeof window === "undefined" || window.__avocoNoTrack) return;
+/** Sends one event; false when it went nowhere (an admin's browser, or this browser sent the same id before). */
+export function track(event: string, params: { event_id: string } & Record<string, unknown>): boolean {
+  if (typeof window === "undefined" || window.__avocoNoTrack) return false;
   try {
     const seen = JSON.parse(localStorage.getItem(SEEN) ?? "[]") as string[];
-    if (seen.includes(params.event_id)) return;
+    if (seen.includes(params.event_id)) return false;
     localStorage.setItem(SEEN, JSON.stringify([...seen, params.event_id].slice(-300)));
   } catch { /* counted anyway */ }
   window.dataLayer = window.dataLayer ?? [];
   if (event === "purchase") window.dataLayer.push({ ecommerce: null }); // Google's advice: clear the previous ecommerce object first
   window.dataLayer.push({ event, ...params });
   sendToMeta(event, params);
+  return true;
 }
 
 /** Tells the ad platforms a checkout started, then goes to Stripe (a moment later, so the tags can send). */

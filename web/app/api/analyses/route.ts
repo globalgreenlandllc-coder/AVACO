@@ -4,6 +4,7 @@ import { asUser, balance, noteSelfRecording, previewsLeft, welcomeReportWaiting 
 import { gateway } from "@/lib/gateway";
 import { coverWithGift } from "@/lib/gifts";
 import { cleanName, setPerson } from "@/lib/people";
+import { reportToMeta } from "@/lib/meta-capi";
 import { isOpenVisitor, openLimitReached } from "@/lib/visitor";
 
 export async function POST(req: Request) {
@@ -24,6 +25,8 @@ export async function POST(req: Request) {
 
     const created = await gateway.createAnalysis({ audioUrl: body.audioUrl, owner: user.userId });
     await noteSelfRecording(user.userId, created.id);
+    // Meta hears of the recording from the server too (the browser sends record_voice with the same id).
+    await reportToMeta({ name: "RecordVoice", id: `record_${created.id}` }, user.userId);
     // Someone else's voice, named when it was recorded: their reports are read together, never mixed with the account holder's.
     if (cleanName(body.person)) await setPerson(user.userId, created.id, body.person).catch((err) => console.error("Could not name the report", err));
     // Someone holding a gift never meets the paywall: the gift's credit opens this report right away.
