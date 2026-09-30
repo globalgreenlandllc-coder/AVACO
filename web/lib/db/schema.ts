@@ -177,12 +177,12 @@ export const reportPeople = pgTable(
   (t) => [index("report_people_owner_idx").on(t.ownerId)],
 );
 
-/** Reports whose full version is open. */
+/** Reports whose full version is open. `welcome`: an account's one free first report (lib/billing.ts). */
 export const reportAccess = pgTable("report_access", {
   analysisId: uuid("analysis_id").primaryKey(),
   ownerKind: text("owner_kind").$type<OwnerKind>().notNull(),
   ownerId: text("owner_id").notNull(),
-  source: text("source").$type<"credit" | "free" | "admin">().notNull(),
+  source: text("source").$type<"credit" | "free" | "admin" | "welcome">().notNull(),
   unlockedAt: ts("unlocked_at").notNull().defaultNow(),
 });
 

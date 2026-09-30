@@ -36,6 +36,10 @@ export function PricingForm({ save, current, names, stripeConnected }: { save: (
           <input type="checkbox" name="enabled" defaultChecked={state.ok === false ? typed.enabled === "on" : current.enabled} className="mt-1 h-4 w-4 accent-[var(--accent)]" />
           <span><span className="font-medium">Charge for reports</span><span className="block text-sm leading-relaxed text-ink-2">Off: every report is free. On: a person&apos;s new recording is a free preview and one credit opens the full report; every recording made for a company uses one of its credits. Reports made before you switch this on stay open.</span></span>
         </label>
+        <label className="flex cursor-pointer items-start gap-3">
+          <input type="checkbox" name="firstFree" defaultChecked={state.ok === false ? typed.firstFree === "on" : current.firstFree} className="mt-1 h-4 w-4 accent-[var(--accent)]" />
+          <span><span className="font-medium">First report free</span><span className="block text-sm leading-relaxed text-ink-2">Every new account&apos;s first Personality Analysis opens in full for free, once, with no card. Career Fit, Best-Fit Industry and Relationship stay paid. The landing page and the recorder say so while this is on (and charging is on).</span></span>
+        </label>
         {!stripeConnected && <p className="rounded-xl border border-danger/40 px-4 py-3 text-sm text-danger">Stripe is not connected: connect it in the Card payments section above. If you switch charging on now, people can only get credits from promo codes and from grants you make here.</p>}
 
         <div className="overflow-x-auto">

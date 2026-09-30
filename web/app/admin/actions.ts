@@ -47,7 +47,7 @@ export async function saveSettingsAction(prev: PricingState, form: FormData): Pr
   await requireAdmin();
   const [cfg, industryCents, bestCents, bestN, matchCents, matchN] = await Promise.all([getSettings(), industryPriceCents(), bestPriceCents(), bestCredits(), matchPriceCents(), matchCredits()]);
   const current: PricingCurrent = {
-    enabled: cfg.enabled, currency: cfg.currency, packs: cfg.packs, freePreviews: cfg.freePreviewsPer30Days, trialCredits: cfg.workspaceTrialCredits,
+    enabled: cfg.enabled, firstFree: cfg.freeFirstReport, currency: cfg.currency, packs: cfg.packs, freePreviews: cfg.freePreviewsPer30Days, trialCredits: cfg.workspaceTrialCredits,
     industryCents, bestCents, bestCredits: bestN, matchCents, matchCredits: matchN,
   };
   const read = readPricingForm(form, current, PACK_NAMES);
@@ -59,7 +59,7 @@ export async function saveSettingsAction(prev: PricingState, form: FormData): Pr
     return { ok: false, message: `Nothing was saved: ${n === 1 ? "one box needs" : `${n} boxes need`} fixing.`, errors: read.errors, fields, attempt };
   }
   const v = read.values;
-  await saveSettings({ enabled: v.enabled, currency: v.currency, packs: v.packs, freePreviewsPer30Days: v.freePreviews, workspaceTrialCredits: v.trialCredits });
+  await saveSettings({ enabled: v.enabled, freeFirstReport: v.firstFree, currency: v.currency, packs: v.packs, freePreviewsPer30Days: v.freePreviews, workspaceTrialCredits: v.trialCredits });
   await saveIndustryPrice(v.industryCents);
   await saveMatchPricing({ priceCents: v.matchCents, credits: v.matchCredits });
   await saveBestPricing({ priceCents: v.bestCents, credits: v.bestCredits });

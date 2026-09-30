@@ -4,6 +4,7 @@ import { Bars } from "@/components/Bars";
 import { Contact } from "@/components/Contact";
 import { GiftForm } from "@/components/GiftForm";
 import { GiftRibbon } from "@/components/GiftRibbon";
+import { FreeReportBar } from "@/components/FreeReportBar";
 import { Reveal } from "@/components/Motion";
 import { ScrollToHash } from "@/components/ScrollToHash";
 import { Radar } from "@/components/Radar";
@@ -39,7 +40,9 @@ export default async function Home() {
   const h = t.home;
   // On an open host (lib/visitor.ts) there is no account and no price: straight to the recorder.
   const start = userId || open ? "/record" : "/sign-up";
-  const startLabel = userId || open ? h.cta : h.ctaSignedOut;
+  // The hook for visitors: with charging on and the offer on (admin → Pricing), every account's first report is free.
+  const firstFree = billing.enabled && billing.freeFirstReport && !open;
+  const startLabel = userId || open ? h.cta : firstFree ? h.freeCta : h.ctaSignedOut;
 
   const rows = psytypeRows(SAMPLE_PSY.map(([key, value]) => ({ key, label: key, value, zone: zoneOf(value) })), t);
   // The deeper readings, shown on the sample profile: the roles it would lead in one industry, and how it pairs with a warm partner.
@@ -64,6 +67,7 @@ export default async function Home() {
   return (
     <div className="space-y-24 pt-2 sm:pt-6">
       <ScrollToHash />
+      {firstFree && !userId && <FreeReportBar text={h.barText} cta={h.barCta} close={h.barClose} href="/sign-up" />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJsonLd(origin, LEGAL.operator, LEGAL.support) }} />
       {/* Hero: the report's own cover, with the sample profile's voice signature. */}
       <section className="cover px-7 py-12 sm:px-12 sm:py-16">
@@ -73,16 +77,17 @@ export default async function Home() {
 
         <div className="relative grid items-center gap-12 lg:grid-cols-[1.15fr_1fr]">
           <div>
-            <p className="cover-eyebrow">{h.eyebrow}</p>
+            <p className="cover-eyebrow">{firstFree ? <span className="offer-badge">🎁 {h.freeEyebrow}</span> : h.eyebrow}</p>
             <h1 className="gold-text sheen mt-5 pb-2 font-display text-5xl font-semibold leading-[1.02] sm:text-7xl">{h.title}</h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed" style={{ color: "var(--cover-muted)" }}>{h.lead}</p>
+            {firstFree && !userId && <p className="mt-4 max-w-xl rounded-2xl border px-4 py-3 text-base leading-relaxed" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-ink)" }}>{h.freeLine}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={start} className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link>
               <Link href="/sample" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>{h.sampleCta}</Link>
               {!open && <a href="#gift" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>🎁 {t.gift.landing.cta}</a>}
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm" style={{ color: "var(--cover-muted)" }}>
-              {h.facts.map((fact) => <li key={fact} className="flex items-center gap-2"><span aria-hidden style={{ color: "var(--cover-gold)" }}>✓</span>{fact}</li>)}
+              {(firstFree ? [h.freeFact, ...h.facts] : h.facts).map((fact) => <li key={fact} className="flex items-center gap-2"><span aria-hidden style={{ color: "var(--cover-gold)" }}>✓</span>{fact}</li>)}
             </ul>
           </div>
           <div>
@@ -236,8 +241,8 @@ export default async function Home() {
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-80">{h.priceEyebrow}</p>
-            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{billing.enabled ? h.priceTitle.replace("{price}", price ?? "") : h.priceFreeTitle}</h2>
-            <p className="mt-4 max-w-xl leading-relaxed opacity-90">{billing.enabled ? h.priceText : h.priceFreeText.replace("{price}", price ?? "")}</p>
+            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{billing.enabled ? (firstFree ? h.priceFirstTitle : h.priceTitle.replace("{price}", price ?? "")) : h.priceFreeTitle}</h2>
+            <p className="mt-4 max-w-xl leading-relaxed opacity-90">{billing.enabled ? (firstFree ? h.priceFirstText.replace("{price}", price ?? "") : h.priceText) : h.priceFreeText.replace("{price}", price ?? "")}</p>
             <p className="mt-3 max-w-xl text-sm leading-relaxed opacity-80">{h.priceAfter}</p>
             {billing.enabled && packs.length > 1 && (
               <ul className="mt-6 flex flex-wrap gap-3">

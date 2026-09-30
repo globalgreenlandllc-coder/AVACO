@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { Recorder } from "@/components/Recorder";
-import { getSettings } from "@/lib/billing";
+import { getSettings, welcomeReportWaiting } from "@/lib/billing";
 import { activeGift } from "@/lib/gifts";
 import { packViews } from "@/lib/money";
 import { stripeReady } from "@/lib/stripe";
@@ -23,6 +23,8 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
   const whose = visitor ? { known: await knownNames(visitor), initial: cleanName(query.person), t: t.people, myName: me?.firstName ?? null } : undefined;
   // Someone holding a gift: say so, and that the report opens by itself.
   const gift = userId ? await activeGift(userId).catch(() => null) : null;
+  // A new account's free first report, still waiting.
+  const firstFree = userId && !gift ? await welcomeReportWaiting(userId).catch(() => false) : false;
   // The free test site: once today's recordings are used, say so instead of offering a recorder that would be refused.
   const open = Boolean(visitor && isOpenVisitor(visitor));
   const closed = open && (await openLimitReached().catch(() => false));
@@ -31,6 +33,11 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
       <div>
         <h1 className="font-display text-5xl font-medium">{t.record.title}</h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-2">{t.record.lead}</p>
+        {firstFree && (
+          <div className="mt-6 rounded-2xl border border-accent bg-accent-soft px-5 py-4">
+            <p className="font-semibold">🎁 {t.record.firstFree}</p>
+          </div>
+        )}
         {gift && (
           <div className="mt-6 rounded-2xl border border-accent bg-accent-soft px-5 py-4">
             <p className="font-semibold">🎁 {t.gift.record.title.replace("{giver}", gift.giverName)}</p>

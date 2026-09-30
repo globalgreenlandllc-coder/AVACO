@@ -4,7 +4,7 @@ import { PayWall } from "@/components/PayWall";
 import { RefreshWhile } from "@/components/RefreshWhile";
 import { ReportView } from "@/components/ReportView";
 import { previewReport, publicReport } from "@/lib/api";
-import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, noteResult } from "@/lib/billing";
+import { asUser, balance, BEST_KEY, confirmCheckout, getSettings, hasFullAccess, industriesByReport, noteResult, openWelcomeReport, usedWelcomeReport } from "@/lib/billing";
 import { bestCredits, bestPriceCents } from "@/lib/best-billing";
 import { isAdminUser } from "@/lib/admin";
 import { industryNames, industryTeaser } from "@/lib/industry-chapter";
@@ -70,7 +70,10 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   // An admin can look at any of their reports as a client who hasn't paid: the same preview and paywall, buttons inactive.
   const admin = await isAdminUser(userId);
   const asClient = admin && query.as === "client";
-  const full = asClient ? false : await hasFullAccess(userId, analysis.id);
+  let full = asClient ? false : await hasFullAccess(userId, analysis.id);
+  // An account's first finished report opens in full for free, once (admin → Pricing → "First report free").
+  let welcome = false;
+  if (!full && !asClient && analysis.status === "completed" && (await openWelcomeReport(userId, analysis.id))) { full = true; welcome = true; }
   if (analysis.status === "completed" && analysis.psytype?.length) {
     await noteResult(analysis.id, "self", analysis.psytype[0].key, fieldFits(analysis.psytype, analysis.emostate)[0]?.key).catch(() => {});
   }
@@ -87,6 +90,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
         {paid && <p role="status" className="rounded-xl border border-accent px-5 py-4 text-sm">{paid === "confirmed" ? t.billing.thanks : t.billing.pending}</p>}
         {paid === "pending" && <RefreshWhile />}
         <PayWall analysisId={analysis.id} credits={asClient ? 0 : credits} fromPrice={cheapest ? money(cheapest.amountCents, cfg.currency, locale) : ""} pay={pay} demo={asClient} t={t.billing} />
+        {cfg.freeFirstReport && !asClient && (await usedWelcomeReport(userId)) && <p className="text-center text-xs text-muted">{t.report.preview.usedFree}</p>}
       </>
     );
   }
@@ -155,5 +159,11 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
     ? <p data-no-export className="no-print rounded-xl border border-accent px-5 py-4 text-sm">Admin preview: this is exactly what a client sees before paying. The buttons are inactive here. <Link href={`/reports/${analysis.id}`} className="font-semibold text-accent-text hover:underline">Back to the full report</Link></p>
     : <p data-no-export className="no-print text-sm"><Link href={`/reports/${analysis.id}?as=client`} className="font-semibold text-accent-text hover:underline">Admin: see this report as a client who hasn&apos;t paid →</Link></p>;
 
-  return <ReportView key={`${locale}-${full}-${asClient}-${profile.person ?? ""}`} lead={adminBar} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} opened={alreadyOpened} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
+  const welcomeNote = welcome ? (
+    <div data-no-export className="no-print rounded-2xl border border-accent bg-accent-soft px-5 py-4">
+      <p className="font-semibold">🎁 {t.report.welcomeTitle}</p>
+      <p className="mt-1 text-sm leading-relaxed text-ink-2">{t.report.welcomeText}</p>
+    </div>
+  ) : null;
+  return <ReportView key={`${locale}-${full}-${asClient}-${profile.person ?? ""}`} lead={adminBar ?? welcomeNote} initial={full ? publicReport(analysis) : previewReport(analysis)} recordedOn={formatDate(analysis.created_at, locale)} t={t} opened={alreadyOpened} locked={paywall} industry={industry} takes={full ? takes : undefined} previewTakes={previewTakes} match={match} couples={coupleFiles} canEmail={canEmail} person={person} />;
 }

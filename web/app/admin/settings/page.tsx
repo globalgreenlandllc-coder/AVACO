@@ -104,7 +104,7 @@ export default async function AdminSettings() {
         names={NAMES}
         stripeConnected={stripe.connected}
         current={{
-          enabled: cfg.enabled, currency: cfg.currency, packs: cfg.packs, freePreviews: cfg.freePreviewsPer30Days, trialCredits: cfg.workspaceTrialCredits,
+          enabled: cfg.enabled, firstFree: cfg.freeFirstReport, currency: cfg.currency, packs: cfg.packs, freePreviews: cfg.freePreviewsPer30Days, trialCredits: cfg.workspaceTrialCredits,
           industryCents: addonCents, bestCents, bestCredits: bestN, matchCents, matchCredits: matchN,
         }}
       />

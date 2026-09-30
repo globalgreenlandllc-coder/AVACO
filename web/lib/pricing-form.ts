@@ -9,6 +9,8 @@ export interface PricingPack { id: string; credits: number; amountCents: number;
 /** What the form holds now: the page renders these, and a save is compared against them. */
 export interface PricingCurrent {
   enabled: boolean;
+  /** Every account's first report free, once. */
+  firstFree: boolean;
   currency: string;
   packs: PricingPack[];
   freePreviews: number;
@@ -75,6 +77,7 @@ export function readPricingForm(form: { get(name: string): unknown }, current: P
   const typeCents = price("typePrice", "Complete Personality Analysis");
   const values: PricingValues = {
     enabled: form.get("enabled") === "on",
+    firstFree: form.get("firstFree") === "on",
     currency: text("currency").trim().toLowerCase(),
     packs: single && typeCents && typeCents !== single.amountCents ? packs.map((p) => (p.id === single.id ? { ...p, amountCents: typeCents } : p)) : packs,
     freePreviews: count("freePreviews", "Free previews", 0, 100),

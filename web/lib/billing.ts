@@ -31,6 +31,8 @@ export interface BillingSettings {
   packs: Pack[];
   /** Free previews (unpaid recordings) one person may make in 30 days. Each one costs an AVOCO analysis. */
   freePreviewsPer30Days: number;
+  /** Every account's first report opens in full for free, once; the add-ons stay paid. */
+  freeFirstReport: boolean;
   /** Credits a new workspace starts with, so a company can try before buying. */
   workspaceTrialCredits: number;
 }
@@ -47,6 +49,7 @@ export const DEFAULT_SETTINGS: BillingSettings = {
     { id: "team500", credits: 500, amountCents: 179000, audience: "workspace" },
   ],
   freePreviewsPer30Days: 3,
+  freeFirstReport: true,
   workspaceTrialCredits: 5,
 };
 
@@ -58,6 +61,7 @@ export async function getSettings(): Promise<BillingSettings> {
 export async function saveSettings(next: BillingSettings): Promise<void> {
   const clean: BillingSettings = {
     enabled: Boolean(next.enabled),
+    freeFirstReport: Boolean(next.freeFirstReport),
     currency: /^[a-z]{3}$/.test(next.currency) ? next.currency : "usd",
     packs: next.packs.filter((p) => /^[a-z0-9_-]{1,24}$/.test(p.id) && Number.isInteger(p.credits) && p.credits > 0 && Number.isInteger(p.amountCents) && p.amountCents >= 50),
     freePreviewsPer30Days: Math.max(0, Math.min(100, Math.trunc(next.freePreviewsPer30Days))),
@@ -292,6 +296,31 @@ export async function unlock(userId: string, analysisId: string): Promise<void> 
   if (await hasFullAccess(userId, analysisId)) return;
   if (!(await charge(asUser(userId), analysisId))) throw new NoCredits("No credits");
   await db().insert(reportAccess).values({ analysisId, ownerKind: "user", ownerId: userId, source: "credit" }).onConflictDoNothing();
+}
+
+// ---------- the welcome report: an account's first full report, free, once ----------
+
+/** Has this account had its free first report? */
+export async function usedWelcomeReport(userId: string): Promise<boolean> {
+  const [row] = await db().select({ id: reportAccess.analysisId }).from(reportAccess)
+    .where(and(eq(reportAccess.ownerKind, "user"), eq(reportAccess.ownerId, userId), eq(reportAccess.source, "welcome"))).limit(1);
+  return Boolean(row);
+}
+
+/** Is a free first report still waiting for this account? Only with charging on and the offer switched on; open-host visitors and admins need none. */
+export async function welcomeReportWaiting(userId: string): Promise<boolean> {
+  if (isOpenVisitor(userId)) return false;
+  const cfg = await getSettings();
+  if (!cfg.enabled || !cfg.freeFirstReport) return false;
+  if (await isAdminUser(userId)) return false;
+  return !(await usedWelcomeReport(userId));
+}
+
+/** Opens this report as the account's free first one, if that is still waiting. True when it did. */
+export async function openWelcomeReport(userId: string, analysisId: string): Promise<boolean> {
+  if (!(await welcomeReportWaiting(userId))) return false;
+  const [row] = await db().insert(reportAccess).values({ analysisId, ownerKind: "user", ownerId: userId, source: "welcome" }).onConflictDoNothing().returning({ id: reportAccess.analysisId });
+  return Boolean(row);
 }
 
 /** May this person make another free preview? Counts recordings of the last 30 days that were never unlocked; admins are never capped. */

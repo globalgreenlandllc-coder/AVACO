@@ -29,7 +29,7 @@ describe("prices as people type them", () => {
 
 describe("the pricing form", () => {
   const current: PricingCurrent = {
-    enabled: true, currency: "usd", freePreviews: 1, trialCredits: 1, industryCents: 490, bestCents: 1290, bestCredits: 2, matchCents: 1490, matchCredits: 2,
+    enabled: true, firstFree: true, currency: "usd", freePreviews: 1, trialCredits: 1, industryCents: 490, bestCents: 1290, bestCredits: 2, matchCents: 1490, matchCredits: 2,
     packs: [{ id: "one", credits: 1, amountCents: 900, audience: "user" }, { id: "team25", credits: 25, amountCents: 14900, audience: "workspace" }],
   };
   const form = (over: Record<string, string>) => {
