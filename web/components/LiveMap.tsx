@@ -32,7 +32,7 @@ const STATUS = { visitor: { colour: "#e5484d", label: "Visitor" }, "signed-up": 
 const PIN = "M0 0C-1.6-5-8-9.4-8-15A8 8 0 1 1 8-15C8-9.4 1.6-5 0 0Z";
 const shade = (n: number, most: number) => `color-mix(in oklab, var(--accent) ${Math.round(38 + 52 * (n / most))}%, var(--surface))`;
 
-export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void }) {
+export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void; replayPerson?: string | null }) {
   const [map, setMap] = useState<WorldMap | null>(null);
   const [fine, setFine] = useState<Shape[] | null>(null);
   const [states, setStates] = useState<Shape[] | null>(null);
@@ -334,6 +334,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
                     {v.status === "free" && v.freeAt ? ` · free first report ${ago(now - v.freeAt)} ago` : v.status !== "free" && v.hadFree ? " · had the free report" : ""}
                   </p>
                   {v.account && <p className="mt-1 text-xs font-semibold text-accent-text">Signed in: {v.account}</p>}
+                  {replayPerson && <a href={`${replayPerson}${encodeURIComponent(v.key)}#activeTab=sessionRecordings`} target="_blank" rel="noopener" className="mt-2 inline-block text-xs font-semibold text-accent-text hover:underline">▶ Watch this visitor&apos;s replay in PostHog ↗</a>}
                 </div>
 
                 {rest.length > 0 && (

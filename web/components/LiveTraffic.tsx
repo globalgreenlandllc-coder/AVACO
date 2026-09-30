@@ -13,7 +13,8 @@ const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCo
 const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : `${Math.round(ms / 3_600_000)}h`);
 const name = (source: string) => PLATFORM_NAMES[source] ?? source;
 
-export function LiveTraffic() {
+/** `replayPerson`: PostHog's person page address, when replays are set up (lib/posthog.ts); a pin's card then links to that visitor's recordings. */
+export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | null }) {
   const [data, setData] = useState<Live | null>(null);
   const [failed, setFailed] = useState(false);
   const [clock, setClock] = useState(() => Date.now());
@@ -61,7 +62,7 @@ export function LiveTraffic() {
             ))}
             <span className="text-xs text-muted">{onMap.length} {onMap.length === 1 ? "visitor" : "visitors"} on the map</span>
           </div>
-          <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} />
+          <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} />
         </div>
 
       </div>

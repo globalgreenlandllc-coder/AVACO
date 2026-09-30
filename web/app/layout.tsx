@@ -17,6 +17,10 @@ import { isPartnerHost } from "@/lib/partners";
 import { cookies, headers } from "next/headers";
 import { ConsentBanner, PrivacyChoicesLink } from "@/components/ConsentBanner";
 import { CONSENT_COOKIE, consentFor, consentModeScript, parseConsent } from "@/lib/consent";
+import { PostHogInit } from "@/components/PostHogInit";
+import { isAdminUser } from "@/lib/admin";
+import { posthogConfig } from "@/lib/posthog";
+import { shortKey } from "@/lib/visits-math";
 import { availableLanguages } from "@/lib/translate";
 import "./globals.css";
 
@@ -44,6 +48,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Cookie choices: a saved one, else the country's rule (a yes first in the EEA, UK and Switzerland); GPC refuses ads.
   const [jar, hdrs] = await Promise.all([cookies(), headers()]);
   const privacy = consentFor({ saved: parseConsent(jar.get(CONSENT_COOKIE)?.value), country: hdrs.get("x-vercel-ip-country"), gpc: hdrs.get("sec-gpc") === "1" });
+  // PostHog session replays (lib/posthog.ts): the main site only, with analytics consent, never an admin's browser.
+  const posthog = gtm ? posthogConfig() : null;
+  const adminBrowser = visitor?.startsWith("user_") ? await isAdminUser(visitor) : false;
+  const vid = jar.get("avoco_vid")?.value ?? null;
   // Finished couple's reports the person hasn't opened yet: a notice on every page, and a count on "My reports".
   const ready = visitor ? await unseenReadyMatches(visitor).catch(() => []) : [];
   const page = (
@@ -57,6 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} /></noscript>
           )}
           <VisitBeacon enabled={privacy.consent.analytics} />
+          {posthog && <PostHogInit apiKey={posthog.key} host={posthog.host} enabled={privacy.consent.analytics && !adminBrowser} visitor={vid ? shortKey(vid) : null} />}
           <Header locale={locale} t={t} alerts={ready.length} />
           <MatchReadyNotice matches={ready} t={t.match} kinds={t.content.match.kinds} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-24 pt-8 sm:px-8">{children}</main>

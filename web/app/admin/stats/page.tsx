@@ -2,9 +2,11 @@ import { DailyBars, Kpi, RankBars } from "@/components/AdminCharts";
 import { AdPlatforms } from "@/components/AdPlatforms";
 import { LiveMode } from "@/components/LiveMode";
 import { LiveTraffic } from "@/components/LiveTraffic";
+import { Replays } from "@/components/Replays";
 import { SourcesReport } from "@/components/SourcesReport";
 import { TrackingLinks } from "@/components/TrackingLinks";
 import { baseUrl } from "@/lib/page";
+import { posthogConfig } from "@/lib/posthog";
 import { Funnel, HourBars, KpiDelta } from "@/components/StatsCharts";
 import { statistics } from "@/lib/stats";
 import { pageName } from "@/lib/visits-math";
@@ -16,6 +18,8 @@ const DEVICES: Record<string, string> = { phone: "Phone", tablet: "Tablet", desk
 
 export default async function AdminStats() {
   const [s, origin] = await Promise.all([statistics(), baseUrl()]);
+  const ph = posthogConfig();
+  const replayPerson = ph?.projectId ? `${ph.app}/project/${ph.projectId}/person/` : null;
   const v = s.visits;
   const region = new Intl.DisplayNames(["en"], { type: "region" });
   const language = new Intl.DisplayNames(["en"], { type: "language" });
@@ -25,7 +29,8 @@ export default async function AdminStats() {
   return (
     <div className="space-y-10">
       <div className="-mb-4 flex justify-end"><LiveMode every={15} /></div>
-      <LiveTraffic />
+      <LiveTraffic replayPerson={replayPerson} />
+      <Replays />
 
       <section className="card border-accent p-7">
         <p className="eyebrow !text-accent-text">What stands out · last 30 days</p>

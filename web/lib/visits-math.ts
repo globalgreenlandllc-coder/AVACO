@@ -471,7 +471,8 @@ export interface Live {
 }
 
 const MIN = 60_000;
-const shortKey = (visitor: string) => visitor.replace(/[^a-z0-9]/gi, "").slice(0, 10);
+/** The short, safe stand-in for a visitor's cookie id, used on the live map and as PostHog's distinct id. */
+export const shortKey = (visitor: string) => visitor.replace(/[^a-z0-9]/gi, "").slice(0, 10);
 
 /** The live view from the last hour of visits. `history`: each visitor's first visit and number of visits in 30 days. */
 export function liveSummary(rows: LiveRow[], now = new Date(), history: Map<string, { first: Date; sessions: number; userId?: string | null }> = new Map()): Live {
