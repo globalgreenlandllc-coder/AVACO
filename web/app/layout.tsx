@@ -27,6 +27,8 @@ import "./globals.css";
 
 /** Google Tag Manager's container (public: it is in every page's source). Change it with NEXT_PUBLIC_GTM_ID. */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-NJTJ3D4V";
+/** Meta's domain verification code (Business settings → Brand safety → Domains → avocousa.us, meta-tag method). Public by design. */
+const META_DOMAIN_VERIFICATION = process.env.META_DOMAIN_VERIFICATION || "9ykx8z67izwsg3csg44xbh3k7bprc8";
 
 // Both families ship Cyrillic, so English and Russian look the same.
 const body = Manrope({ subsets: ["latin", "cyrillic"], variable: "--font-body" });
@@ -58,6 +60,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const page = (
       <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
         <head>
+          {/* Meta checks for this tag in the server's HTML <head>, not in anything added by script. */}
+          <meta name="facebook-domain-verification" content={META_DOMAIN_VERIFICATION} />
           {/* Google Tag Manager, as high in <head> as the page allows (Google's instructions): in the server's HTML, run as the page is read. */}
           {gtm && <script id="gtm" dangerouslySetInnerHTML={{ __html: `${consentModeScript(privacy.consent)}(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');` }} />}
         </head>
