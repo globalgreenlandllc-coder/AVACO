@@ -45,6 +45,7 @@ describe("statistics", () => {
     await db.insert(schema.selfRecordings).values({ analysisId: A1, userId: "user_anna", createdAt: new Date(now - DAY) });
     await db.insert(schema.creditLedger).values({ id: crypto.randomUUID(), ownerKind: "user", ownerId: "user_anna", delta: 1, reason: "purchase", ref: "p1", amountCents: 900, currency: "usd", createdAt: new Date(now - DAY) });
     await db.insert(schema.industryAccess).values({ analysisId: A1, industry: "it", ownerKind: "user", ownerId: "user_anna", source: "credit", unlockedAt: new Date(now - DAY) });
+    await db.insert(schema.reportAccess).values({ analysisId: A1, ownerKind: "user", ownerId: "user_anna", source: "welcome", unlockedAt: new Date(now - DAY) }); // her free first report
     await db.insert(schema.admins).values({ email: "boss@avocousa.us" }); // the admin's own account is not a sign-up
 
     const s = await statistics();
@@ -54,8 +55,8 @@ describe("statistics", () => {
     expect(s.users).toMatchObject({ total: 42, month: 2, prevMonth: 1, week: 2, capped: false, active: 1 });
     expect(s.users.series.reduce((n, d) => n + d.value, 0)).toBe(2);
     expect(s.users.top).toEqual([{ label: "Person user_anna", views: 2, sessions: 1, days: 1, last: new Date(now - 2 * DAY + 2 * H) }]);
-    expect(s.funnel).toEqual({ visitors: 2, signups: 2, recorded: 1, paid: 1, addons: 1 });
-    expect(s.visits.sources).toEqual([{ source: "instagram", channel: "social", sessions: 1, visitors: 1, signups: 1, recorded: 1, paid: 1 }, { source: "google", channel: "search", sessions: 1, visitors: 1, signups: 0, recorded: 0, paid: 0 }]);
+    expect(s.funnel).toEqual({ visitors: 2, signups: 2, recorded: 1, free: 1, paid: 1, addons: 1 });
+    expect(s.visits.sources).toEqual([{ source: "instagram", channel: "social", sessions: 1, visitors: 1, signups: 1, recorded: 1, free: 1, paid: 1 }, { source: "google", channel: "search", sessions: 1, visitors: 1, signups: 0, recorded: 0, free: 0, paid: 0 }]);
     expect(s.visits.countries).toEqual([{ country: "US", visitors: 1 }, { country: "DE", visitors: 1 }]);
     expect(s.visits.recording).toEqual({ reached: 1, finished: 1 });
     expect(s.insights.length).toBeGreaterThan(0);

@@ -24,8 +24,8 @@ export function AdPlatforms({ platforms }: { platforms: Stats["platforms"] }) {
               <div style={{ width: `${p.visitors ? (p.paid / p.visitors) * 100 : 0}%`, background: platformColor(p.platform) }} />
               <div style={{ width: `${p.visitors ? (p.organic / p.visitors) * 100 : 0}%`, background: "color-mix(in oklab, " + platformColor(p.platform) + " 35%, transparent)" }} />
             </div>
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-              {[["Signed up", p.signups], ["Recorded", p.recorded], ["Bought", p.customers]].map(([label, n]) => (
+            <dl className="mt-4 grid grid-cols-4 gap-1.5 text-center">
+              {[["Signed up", p.signups], ["Free report", p.free], ["Recorded", p.recorded], ["Bought", p.customers]].map(([label, n]) => (
                 <div key={label as string} className="rounded-xl bg-accent-soft px-1 py-2">
                   <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted">{label}</dt>
                   <dd className="text-lg font-semibold tabular-nums">{n}</dd>

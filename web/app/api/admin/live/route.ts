@@ -2,7 +2,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { isAdminUser } from "@/lib/admin";
-import { creditLedger, db, visits } from "@/lib/db";
+import { creditLedger, db, reportAccess, visits } from "@/lib/db";
 import { userLabels } from "@/lib/page";
 import { liveSummary, type LiveRow } from "@/lib/visits-math";
 
@@ -31,10 +31,18 @@ export async function GET() {
       .where(and(eq(creditLedger.ownerKind, "user"), eq(creditLedger.reason, "purchase"), inArray(creditLedger.ownerId, accounts))).groupBy(creditLedger.ownerId)
     : [];
   const lastPurchase = new Map(purchases.map((p) => [p.id, new Date(p.last).getTime()]));
+  // Violet pins: the free first report opened within this hour.
+  const frees = accounts.length
+    ? await d.select({ id: reportAccess.ownerId, at: sql<string>`max(${reportAccess.unlockedAt})` }).from(reportAccess)
+      .where(and(eq(reportAccess.ownerKind, "user"), eq(reportAccess.source, "welcome"), inArray(reportAccess.ownerId, accounts))).groupBy(reportAccess.ownerId)
+    : [];
+  const freeAt = new Map(frees.map((f) => [f.id, new Date(f.at).getTime()]));
   const hourAgo = Date.now() - 60 * 60_000;
   live.visitors = live.visitors.map((v) => {
     const last = v.userId ? lastPurchase.get(v.userId) : undefined;
-    return { ...v, status: last && last >= hourAgo ? "paid" : v.status, paidAt: last && last >= hourAgo ? last : null, customer: Boolean(last) };
+    const free = v.userId ? freeAt.get(v.userId) : undefined;
+    const status = last && last >= hourAgo ? "paid" : free && free >= hourAgo ? "free" : v.status;
+    return { ...v, status, paidAt: last && last >= hourAgo ? last : null, customer: Boolean(last), freeAt: free && free >= hourAgo ? free : null, hadFree: Boolean(free) };
   });
   // Signed-in visitors by name, for the admin's eyes only.
   const labels = await userLabels([...new Set(live.visitors.map((v) => v.userId).filter((u): u is string => Boolean(u)))]);

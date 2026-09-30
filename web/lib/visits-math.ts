@@ -197,13 +197,13 @@ export interface Stats {
    * Where people come from. Sessions are counted where each one came from; visitors, sign-ups, recordings and
    * payments are counted by the visitor's FIRST session in the period, so each person is credited to one source.
    */
-  sources: Array<{ source: string; channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; paid: number }>;
-  channels: Array<{ channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; paid: number }>;
+  sources: Array<{ source: string; channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; free: number; paid: number }>;
+  channels: Array<{ channel: Channel; sessions: number; visitors: number; signups: number; recorded: number; free: number; paid: number }>;
   /**
    * The ad platforms, each visitor credited to the platform of their first visit: from ads (paid) or not (organic),
    * and what they did after. The four advertised platforms are always listed.
    */
-  platforms: Array<{ platform: string; sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; customers: number; campaigns: string[] }>;
+  platforms: Array<{ platform: string; sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; free: number; customers: number; campaigns: string[] }>;
   /** Tagged links: utm_campaign with its source and medium. */
   campaigns: Array<{ campaign: string; source: string; medium: string | null; sessions: number; visitors: number; signups: number }>;
   /** The pages on other sites that sent people here. */
@@ -226,7 +226,7 @@ const isReportPage = (r: VisitRow) => r.path === "/reports/[id]" || r.path === "
 const uniq = <T>(list: T[], key: (x: T) => string) => new Set(list.map(key)).size;
 const dayOf = (d: Date) => d.toISOString().slice(0, 10);
 
-export interface People { signedUp?: Set<string>; paid?: Set<string> }
+export interface People { signedUp?: Set<string>; paid?: Set<string>; /** Accounts that opened their free first report in the period. */ free?: Set<string> }
 
 /**
  * Everything the statistics page shows from the visits alone. `recordedUsers`: accounts that recorded in the period;
@@ -255,9 +255,9 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
   // Each visitor's first session in the period: the door they came in through, credited with whatever they did later.
   const firstSession = new Map<string, (typeof sessionInfo)[number]>();
   for (const s of [...sessionInfo].sort((a, b) => a.first.at.getTime() - b.first.at.getTime())) if (!firstSession.has(s.visitor)) firstSession.set(s.visitor, s);
-  type Outcome = { visitors: Set<string>; signups: number; recorded: number; paid: number };
-  const outcome = (): Outcome => ({ visitors: new Set(), signups: 0, recorded: 0, paid: 0 });
-  const credit = (o: Outcome, visitor: string) => { o.visitors.add(visitor); if (isOneOf(visitor, people.signedUp ?? new Set())) o.signups++; if (recordedVisitor(visitor)) o.recorded++; if (isOneOf(visitor, people.paid ?? new Set())) o.paid++; };
+  type Outcome = { visitors: Set<string>; signups: number; recorded: number; free: number; paid: number };
+  const outcome = (): Outcome => ({ visitors: new Set(), signups: 0, recorded: 0, free: 0, paid: 0 });
+  const credit = (o: Outcome, visitor: string) => { o.visitors.add(visitor); if (isOneOf(visitor, people.signedUp ?? new Set())) o.signups++; if (recordedVisitor(visitor)) o.recorded++; if (isOneOf(visitor, people.free ?? new Set())) o.free++; if (isOneOf(visitor, people.paid ?? new Set())) o.paid++; };
 
   const top = <K extends string>(items: Array<{ key: K; visitor: string }>, n: number) => {
     const by = new Map<K, Set<string>>();
@@ -287,8 +287,8 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     if (s.first.campaign) { const c = campBy.get(`${s.first.campaign}|${s.source}|${s.first.medium ?? ""}`); if (c && isOneOf(visitor, people.signedUp ?? new Set())) c.signups++; }
   }
   // The ad platforms: sessions where each came from; visitors, sign-ups, recordings and customers by first visit.
-  const platBy = new Map<string, { sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; customers: number; campaigns: Map<string, number> }>();
-  const plat = (key: string) => { const x = platBy.get(key) ?? { sessions: 0, visitors: 0, paid: 0, organic: 0, signups: 0, recorded: 0, customers: 0, campaigns: new Map<string, number>() }; platBy.set(key, x); return x; };
+  const platBy = new Map<string, { sessions: number; visitors: number; paid: number; organic: number; signups: number; recorded: number; free: number; customers: number; campaigns: Map<string, number> }>();
+  const plat = (key: string) => { const x = platBy.get(key) ?? { sessions: 0, visitors: 0, paid: 0, organic: 0, signups: 0, recorded: 0, free: 0, customers: 0, campaigns: new Map<string, number>() }; platBy.set(key, x); return x; };
   for (const key of AD_PLATFORMS) plat(key);
   const followed = new Set<string>([...AD_PLATFORMS, "google", "youtube", "linkedin", "snapchat"]);
   for (const s of sessionInfo) if (followed.has(s.source)) plat(s.source).sessions++;
@@ -299,6 +299,7 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     if (isPaidVisit(s.first)) x.paid++; else x.organic++;
     if (isOneOf(visitor, people.signedUp ?? new Set())) x.signups++;
     if (recordedVisitor(visitor)) x.recorded++;
+    if (isOneOf(visitor, people.free ?? new Set())) x.free++;
     if (isOneOf(visitor, people.paid ?? new Set())) x.customers++;
     if (s.first.campaign) x.campaigns.set(s.first.campaign, (x.campaigns.get(s.first.campaign) ?? 0) + 1);
   }
@@ -336,12 +337,12 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
     series: days.map((day) => { const list = month.filter((r) => dayOf(r.at) === day); return { day, views: list.length, visitors: uniq(list, (r) => r.visitor) }; }),
     pages: [...pagesBy].map(([path, p]) => ({ path, views: p.views, visitors: p.visitors.size })).sort((a, b) => b.views - a.views).slice(0, 10),
     landings: [...landBy].map(([path, l]) => ({ path, sessions: l.sessions, bounce: l.sessions ? l.bounced / l.sessions : 0 })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
-    sources: [...srcBy].map(([source, x]) => ({ source, channel: [...x.channels].sort((a, b) => b[1] - a[1])[0][0], sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, paid: x.paid })).sort((a, b) => b.sessions - a.sessions).slice(0, 12),
+    sources: [...srcBy].map(([source, x]) => ({ source, channel: [...x.channels].sort((a, b) => b[1] - a[1])[0][0], sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, free: x.free, paid: x.paid })).sort((a, b) => b.sessions - a.sessions).slice(0, 12),
     platforms: [...platBy]
       .filter(([key, x]) => (AD_PLATFORMS as readonly string[]).includes(key) || x.sessions > 0)
-      .map(([platform, x]) => ({ platform, sessions: x.sessions, visitors: x.visitors, paid: x.paid, organic: x.organic, signups: x.signups, recorded: x.recorded, customers: x.customers, campaigns: [...x.campaigns].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c) }))
+      .map(([platform, x]) => ({ platform, sessions: x.sessions, visitors: x.visitors, paid: x.paid, organic: x.organic, signups: x.signups, recorded: x.recorded, free: x.free, customers: x.customers, campaigns: [...x.campaigns].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c) }))
       .sort((a, b) => b.visitors - a.visitors || AD_PLATFORMS.indexOf(a.platform as never) - AD_PLATFORMS.indexOf(b.platform as never)),
-    channels: [...chanBy].map(([channel, x]) => ({ channel, sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, paid: x.paid })).sort((a, b) => b.visitors - a.visitors || b.sessions - a.sessions),
+    channels: [...chanBy].map(([channel, x]) => ({ channel, sessions: x.sessions, visitors: x.visitors.size, signups: x.signups, recorded: x.recorded, free: x.free, paid: x.paid })).sort((a, b) => b.visitors - a.visitors || b.sessions - a.sessions),
     campaigns: [...campBy.values()].map((c) => ({ campaign: c.campaign, source: c.source, medium: c.medium, sessions: c.sessions, visitors: c.visitors.size, signups: c.signups })).sort((a, b) => b.sessions - a.sessions).slice(0, 10),
     referrers: [...refBy].map(([referrer, x]) => ({ referrer, sessions: x.sessions, visitors: x.visitors.size })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
     countries: top(month.filter((r) => r.country).map((r) => ({ key: r.country!, visitor: r.visitor })), 8).map((c) => ({ country: c.key, visitors: c.visitors })),
@@ -356,7 +357,7 @@ export function summarize(rows: VisitRow[], now = new Date(), recordedUsers: Set
   };
 }
 
-export interface Extra { signups: number; prevSignups: number; recorded: number; languageName?: (code: string) => string }
+export interface Extra { signups: number; prevSignups: number; recorded: number; /** New accounts that took the free first report, and how many of those paid. */ free?: number; freeThenPaid?: number; languageName?: (code: string) => string }
 
 const pct = (a: number, b: number) => Math.round((a / b) * 100);
 const hourLabel = (h: number) => (h === 0 ? "midnight" : h === 12 ? "noon" : h < 12 ? `${h} am` : `${h - 12} pm`);
@@ -376,6 +377,7 @@ export function insightsFor(s: Stats, x: Extra): string[] {
     const parts = [`Of ${m.visitors} visitors, ${x.signups} signed up (${pct(x.signups, m.visitors)}%)`];
     if (x.recorded > 0) parts.push(`${x.recorded} recorded (${pct(x.recorded, m.visitors)}%)`);
     out.push(parts.join(" and ") + ".");
+    if (x.free !== undefined && x.signups >= 5 && x.free > 0) out.push(`${x.free} of the ${x.signups} new accounts took the free first report${x.freeThenPaid ? `, and ${x.freeThenPaid} of them went on to pay` : ""}.`);
     if (x.prevSignups >= 10) {
       const change = Math.round(((x.signups - x.prevSignups) / x.prevSignups) * 100);
       if (Math.abs(change) >= 15) out.push(`Sign-ups are ${change > 0 ? "up" : "down"} ${Math.abs(change)}% on the previous 30 days.`);
@@ -444,9 +446,9 @@ export interface LiveVisitor {
   pages: Array<{ path: string; at: number }>;
   userId: string | null;
   /** Just a visitor, signed up (the browser has an account), or paid (that account bought credits within this hour). */
-  status: "visitor" | "signed-up" | "paid";
-  /** Filled in by the API: when the purchase of this hour landed, and whether the account has ever bought before. */
-  paidAt?: number | null; customer?: boolean;
+  status: "visitor" | "signed-up" | "free" | "paid";
+  /** Filled in by the API: when the purchase or the free first report of this hour landed, and the account's history. */
+  paidAt?: number | null; customer?: boolean; freeAt?: number | null; hadFree?: boolean;
   /** Filled in by the API: the account's name, and whether the browser was here on an earlier day. */
   account?: string | null; returning?: boolean; sessions30?: number;
 }

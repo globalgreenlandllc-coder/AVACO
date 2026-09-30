@@ -103,10 +103,10 @@ describe("visit maths", () => {
       row({ at: new Date(NOW.getTime() - 1 * D), visitor: "fay", session: "f1", landing: true, path: "/g/[id]", source: "direct" }),
     ];
     const s = summarize(rows, NOW, new Set(["user_eve"]), { signedUp: new Set(["user_dee", "user_eve"]), paid: new Set(["user_dee"]) });
-    expect(s.sources.find((x) => x.source === "instagram")).toEqual({ source: "instagram", channel: "campaign", sessions: 1, visitors: 1, signups: 1, recorded: 0, paid: 1 });
-    expect(s.sources.find((x) => x.source === "google")).toEqual({ source: "google", channel: "search", sessions: 1, visitors: 0, signups: 0, recorded: 0, paid: 0 });
-    expect(s.channels.find((c) => c.channel === "gift")).toEqual({ channel: "gift", sessions: 1, visitors: 1, signups: 0, recorded: 0, paid: 0 });
-    expect(s.channels.find((c) => c.channel === "referral")).toEqual({ channel: "referral", sessions: 1, visitors: 1, signups: 1, recorded: 1, paid: 0 });
+    expect(s.sources.find((x) => x.source === "instagram")).toEqual({ source: "instagram", channel: "campaign", sessions: 1, visitors: 1, signups: 1, recorded: 0, free: 0, paid: 1 });
+    expect(s.sources.find((x) => x.source === "google")).toEqual({ source: "google", channel: "search", sessions: 1, visitors: 0, signups: 0, recorded: 0, free: 0, paid: 0 });
+    expect(s.channels.find((c) => c.channel === "gift")).toEqual({ channel: "gift", sessions: 1, visitors: 1, signups: 0, recorded: 0, free: 0, paid: 0 });
+    expect(s.channels.find((c) => c.channel === "referral")).toEqual({ channel: "referral", sessions: 1, visitors: 1, signups: 1, recorded: 1, free: 0, paid: 0 });
     expect(s.campaigns).toEqual([{ campaign: "launch", source: "instagram", medium: "bio", sessions: 1, visitors: 1, signups: 1 }]);
     expect(s.referrers).toEqual([{ referrer: "blog.example.org/post", sessions: 1, visitors: 1 }]);
   });

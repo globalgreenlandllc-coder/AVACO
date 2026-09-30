@@ -62,6 +62,7 @@ export default async function AdminStats() {
             { label: "Visitors", value: s.funnel.visitors },
             { label: "Signed up", value: s.funnel.signups, note: s.users.capped ? "at least" : "new accounts" },
             { label: "Recorded", value: s.funnel.recorded, note: "accounts that recorded" },
+            { label: "Free first report", value: s.funnel.free, note: "opened on us" },
             { label: "Paid", value: s.funnel.paid, note: "bought credits" },
             { label: "Bought an add-on", value: s.funnel.addons, note: "Career Fit, Best-Fit Industry or Relationship & Compatibility" },
           ]} />

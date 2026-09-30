@@ -6,7 +6,7 @@ import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
 import { and, countDistinct, desc, eq, gte, isNotNull, notInArray, sql } from "drizzle-orm";
 import { isAdminEmail } from "./admin";
-import { creditLedger, db, industryAccess, matches, selfRecordings, visitExclusions, visits } from "./db";
+import { creditLedger, db, industryAccess, matches, reportAccess, selfRecordings, visitExclusions, visits } from "./db";
 import { userLabels } from "./page";
 import { insightsFor, summarize, type Stats, type VisitRow } from "./visits-math";
 
@@ -26,7 +26,7 @@ export interface Statistics {
     top: Array<{ label: string; views: number; sessions: number; days: number; last: Date }>;
   };
   /** The last 30 days, each step counted in people: visitors → sign-ups → recorded → paid → an add-on bought. */
-  funnel: { visitors: number; signups: number; recorded: number; paid: number; addons: number };
+  funnel: { visitors: number; signups: number; recorded: number; free: number; paid: number; addons: number };
   insights: string[];
 }
 
@@ -65,7 +65,7 @@ export async function statistics(now = new Date()): Promise<Statistics> {
   const since = (days: number) => new Date(now.getTime() - days * DAY);
   // Browsers noted as an admin's are left out here too, in case a view of theirs slipped in before they were recognised.
   const excluded = d.select({ visitor: visitExclusions.visitor }).from(visitExclusions);
-  const [rows, first, clerk, recordedRows, paid, chapters, couples, buyers] = await Promise.all([
+  const [rows, first, clerk, recordedRows, paid, chapters, couples, buyers, freeRows] = await Promise.all([
     d.select({ at: visits.at, site: visits.site, path: visits.path, visitor: visits.visitor, session: visits.session, userId: visits.userId, landing: visits.landing, source: visits.source, campaign: visits.campaign, medium: visits.medium, content: visits.content, referrer: visits.referrer, click: visits.click, country: visits.country, device: visits.device, locale: visits.locale })
       .from(visits).where(and(gte(visits.at, since(60)), notInArray(visits.visitor, excluded))).orderBy(desc(visits.at)).limit(60000),
     d.select({ at: sql<Date | null>`min(${visits.at})` }).from(visits),
@@ -75,9 +75,12 @@ export async function statistics(now = new Date()): Promise<Statistics> {
     d.select({ n: countDistinct(industryAccess.ownerId) }).from(industryAccess).where(and(eq(industryAccess.source, "credit"), gte(industryAccess.unlockedAt, since(30)))),
     d.select({ n: countDistinct(matches.ownerId) }).from(matches).where(and(eq(matches.source, "credit"), isNotNull(matches.paidAt), gte(matches.createdAt, since(30)))),
     d.select({ ownerId: creditLedger.ownerId }).from(creditLedger).where(and(eq(creditLedger.ownerKind, "user"), eq(creditLedger.reason, "purchase"), gte(creditLedger.createdAt, since(30)))).groupBy(creditLedger.ownerId),
+    // Accounts that opened their free first report in the period (lib/billing.ts openWelcomeReport).
+    d.select({ ownerId: reportAccess.ownerId }).from(reportAccess).where(and(eq(reportAccess.ownerKind, "user"), eq(reportAccess.source, "welcome"), gte(reportAccess.unlockedAt, since(30)))).groupBy(reportAccess.ownerId),
   ]);
   const recordedUsers = new Set(recordedRows.map((r) => r.userId));
-  const v = summarize(rows as VisitRow[], now, recordedUsers, { signedUp: clerk.ids, paid: new Set(buyers.map((b) => b.ownerId)) });
+  const buyerIds = new Set(buyers.map((b) => b.ownerId)), freeUsers = new Set(freeRows.map((r) => r.ownerId));
+  const v = summarize(rows as VisitRow[], now, recordedUsers, { signedUp: clerk.ids, paid: buyerIds, free: freeUsers });
 
   const t = now.getTime();
   const inRange = (from: number, to: number) => clerk.created.filter((c) => c >= from && c < to).length;
@@ -95,11 +98,11 @@ export async function statistics(now = new Date()): Promise<Statistics> {
   users.top = v.accounts.map((a) => ({ label: labels.get(a.userId) ?? a.userId, views: a.views, sessions: a.sessions, days: a.days, last: a.last }));
 
   const names = new Intl.DisplayNames(["en"], { type: "language" });
-  const funnel = { visitors: v.month.visitors, signups: users.month, recorded: recordedUsers.size, paid: paid[0]?.n ?? 0, addons: Math.max(chapters[0]?.n ?? 0, couples[0]?.n ?? 0) };
+  const funnel = { visitors: v.month.visitors, signups: users.month, recorded: recordedUsers.size, free: freeUsers.size, paid: paid[0]?.n ?? 0, addons: Math.max(chapters[0]?.n ?? 0, couples[0]?.n ?? 0) };
   return {
     visits: v,
     since: first[0]?.at ? new Date(first[0].at) : null,
     users, funnel,
-    insights: insightsFor(v, { signups: users.month, prevSignups: users.prevMonth, recorded: recordedUsers.size, languageName: (code) => names.of(code) ?? code }),
+    insights: insightsFor(v, { signups: users.month, prevSignups: users.prevMonth, recorded: recordedUsers.size, free: [...freeUsers].filter((u) => clerk.ids.has(u)).length, freeThenPaid: [...freeUsers].filter((u) => buyerIds.has(u)).length, languageName: (code) => names.of(code) ?? code }),
   };
 }
