@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { Bars } from "./AdminCharts";
 import { LiveMap } from "./LiveMap";
-import { PLATFORM_NAMES, platformColor, type Live } from "@/lib/visits-math";
+import { pageName, PLATFORM_NAMES, platformColor, type Live } from "@/lib/visits-math";
 
 const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "🌐");
 const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : `${Math.round(ms / 3_600_000)}h`);
@@ -93,7 +93,7 @@ export function LiveTraffic() {
           {data && data.pages.length > 0 && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">On these pages now</p>
-              <ul className="mt-2 space-y-1 text-sm">{data.pages.map((p) => <li key={p.path} className="flex justify-between gap-3"><span className="truncate">{p.path}</span><span className="font-semibold tabular-nums">{p.visitors}</span></li>)}</ul>
+              <ul className="mt-2 space-y-1 text-sm">{data.pages.map((p) => <li key={p.path} className="flex justify-between gap-3"><span className="truncate">{pageName(p.path)}</span><span className="font-semibold tabular-nums">{p.visitors}</span></li>)}</ul>
             </div>
           )}
       </div>
@@ -117,7 +117,7 @@ export function LiveTraffic() {
                 <span className="w-10 shrink-0 text-xs tabular-nums text-muted">{ago(clock - f.at)}</span>
                 <span aria-hidden>{flag(f.country)}</span>
                 <span className="min-w-24 text-ink-2">{f.city ?? f.country ?? "Somewhere"}</span>
-                <span className="font-medium">{f.path}</span>
+                <span className="font-medium">{pageName(f.path)}</span>
                 <span className="ml-auto flex items-center gap-2 text-xs">
                   {f.landing && <span className="text-muted">arrived</span>}
                   {f.signedIn && <span className="text-muted">signed in</span>}

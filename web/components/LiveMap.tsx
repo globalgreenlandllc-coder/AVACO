@@ -8,7 +8,7 @@
  * The map files are drawn once from Natural Earth and us-atlas (public/maps) and load only on this admin page.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PLATFORM_NAMES, type LiveVisitor } from "@/lib/visits-math";
+import { pageName, PLATFORM_NAMES, type LiveVisitor } from "@/lib/visits-math";
 
 interface Shape { c?: string | null; r?: string | null; n: string; d: string }
 interface WorldMap { scale: number; translate: [number, number]; view: [number, number, number, number]; sphere: string; graticule: string; countries: Shape[] }
@@ -305,7 +305,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
                   {/* Right now: the page under their fingers, and for how long. */}
                   <div className="mt-3 rounded-lg bg-accent-soft px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent-text">{v.active ? "Now on" : "Last seen on"}</p>
-                    <p className="mt-0.5 break-all font-semibold">{v.current}</p>
+                    <p className="mt-0.5 font-semibold">{pageName(v.current)}</p>
                     <p className="text-xs text-ink-2">{v.active ? `${ago(Math.max(1000, onPage))} on this page` : `stayed there until ${ago(now - v.lastAt)} ago`} · {plural(v.pages.length, "page", "pages")} in {ago(Math.max(1000, v.lastAt - v.firstAt))}</p>
                   </div>
 
@@ -318,7 +318,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
                       return (
                         <li key={`${p.at}-${p.path}`} className={`flex items-baseline gap-2 text-xs ${last ? "font-semibold" : "text-ink-2"}`}>
                           <span className="w-14 shrink-0 tabular-nums text-muted">{ago(now - p.at)} ago</span>
-                          <span className="min-w-0 flex-1 truncate">{p.path}</span>
+                          <span className="min-w-0 flex-1 truncate">{pageName(p.path)}</span>
                           <span className="shrink-0 tabular-nums text-muted">{last && v.active ? `${ago(Math.max(1000, held))} · now` : ago(Math.max(1000, held))}</span>
                         </li>
                       );
@@ -328,7 +328,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
                   {(v.campaign || v.content) && <p className="mt-2 text-xs text-ink-2">Campaign <b>{v.campaign ?? "–"}</b>{v.content ? <> · ad <b>{v.content}</b></> : null}</p>}
                   {v.referrer && <p className="mt-1 break-all text-xs text-ink-2">Link on {v.referrer}</p>}
                   <p className="mt-2 text-xs text-muted">
-                    {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · came in on {v.landing}
+                    {v.device === "phone" ? "📱 Phone" : v.device === "tablet" ? "📲 Tablet" : "💻 Computer"}{languageName(v.locale) ? ` · ${languageName(v.locale)}` : ""} · came in on the {pageName(v.landing).toLowerCase()}
                     {v.returning !== undefined && (v.returning ? ` · returning, ${v.sessions30} visits this month` : " · first visit")}
                     {v.status === "paid" && v.paidAt ? ` · paid ${ago(now - v.paidAt)} ago` : v.customer ? " · paying customer" : ""}
                   </p>
@@ -342,7 +342,7 @@ export function LiveMap({ visitors, now, selected, onSelect }: { visitors: LiveV
                         <button type="button" onClick={() => onSelect(o.key)} className="flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-left text-xs hover:border-accent">
                           <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: STATUS[o.status].colour }} aria-hidden />
                           <span className="font-semibold">{name(o.source)}</span>
-                          <span className="min-w-0 flex-1 truncate text-ink-2">· now on {o.current}</span>
+                          <span className="min-w-0 flex-1 truncate text-ink-2">· now on the {pageName(o.current).toLowerCase()}</span>
                           <span className="shrink-0 text-muted">{o.active ? "active" : `${ago(now - o.lastAt)} ago`}</span>
                         </button>
                       </li>

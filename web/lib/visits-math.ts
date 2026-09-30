@@ -18,6 +18,44 @@ const DAY = 86_400_000;
 export const ZONE = "America/New_York";
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+/**
+ * A page's name for the admin's eyes, in place of its path: "Landing page" rather than "/", "A report" rather than
+ * "/reports/[id]". The list follows the app's routes; a path not on it is shown without slashes.
+ */
+const PAGE_NAMES: Array<[RegExp, string]> = [
+  [/^\/$/, "Landing page"],
+  [/^\/sample/, "Sample report"],
+  [/^\/technology/, "The technology page"],
+  [/^\/privacy/, "Privacy policy"],
+  [/^\/terms/, "Terms of service"],
+  [/^\/docs\/api/, "Company API docs"],
+  [/^\/sign-up/, "Sign-up"],
+  [/^\/sign-in/, "Sign-in"],
+  [/^\/record/, "Recording page"],
+  [/^\/reports\/\[id\]/, "A report"],
+  [/^\/reports/, "My reports"],
+  [/^\/credits/, "Credits and prices"],
+  [/^\/gift\/\[id\]/, "A gift, after buying"],
+  [/^\/gift/, "Gift builder"],
+  [/^\/g\//, "Gift link, as the recipient"],
+  [/^\/match\//, "Couple's report"],
+  [/^\/m\//, "Partner's private link"],
+  [/^\/w\/\[id\]\/g\/\[id\]\/p\//, "Company workspace · a person"],
+  [/^\/w\/\[id\]\/g\//, "Company workspace · a group"],
+  [/^\/w\/\[id\]/, "Company workspace"],
+  [/^\/w$/, "Companies"],
+  [/^\/join/, "Company invitation"],
+  [/^\/r\//, "Personal recording invite"],
+  [/^\/s\//, "Open recording link"],
+  [/^\/partners\/r\//, "Partner test report"],
+  [/^\/partners/, "Partner page"],
+  [/^\/preview/, "Design preview"],
+];
+export function pageName(path: string): string {
+  for (const [re, name] of PAGE_NAMES) if (re.test(path)) return name;
+  return path.replace(/\[id\]/g, "…").split("/").filter(Boolean).join(" › ") || "Landing page";
+}
+
 /** A page with its ids taken out, so /reports/abc and /reports/def count as one page. */
 export function normalizePath(raw: string): string {
   const path = (raw.split(/[?#]/)[0] ?? "").replace(/\/+$/, "") || "/";

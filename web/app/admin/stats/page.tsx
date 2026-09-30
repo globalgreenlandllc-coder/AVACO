@@ -7,6 +7,7 @@ import { TrackingLinks } from "@/components/TrackingLinks";
 import { baseUrl } from "@/lib/page";
 import { Funnel, HourBars, KpiDelta } from "@/components/StatsCharts";
 import { statistics } from "@/lib/stats";
+import { pageName } from "@/lib/visits-math";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,7 @@ export default async function AdminStats() {
             { label: "Bought an add-on", value: s.funnel.addons, note: "Career Fit, Best-Fit Industry or Relationship & Compatibility" },
           ]} />
         </div>
-        <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Most viewed pages</h2><RankBars rows={v.pages.map((r) => ({ label: r.path, value: r.views, note: `${r.visitors} visitors` }))} empty="No views yet." /></div>
+        <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Most viewed pages</h2><RankBars rows={v.pages.map((r) => ({ label: pageName(r.path), value: r.views, note: `${r.visitors} visitors` }))} empty="No views yet." /></div>
       </section>
 
       <AdPlatforms platforms={v.platforms} />
@@ -76,7 +77,7 @@ export default async function AdminStats() {
         <div className="card p-7">
           <h2 className="mb-1 text-lg font-semibold">Landing pages</h2>
           <p className="mb-5 text-xs text-muted">Where sessions start; "leave at once" is the share that saw only that page.</p>
-          <RankBars rows={v.landings.map((r) => ({ label: r.path, value: r.sessions, note: `${Math.round(r.bounce * 100)}% leave at once` }))} empty="No sessions yet." />
+          <RankBars rows={v.landings.map((r) => ({ label: pageName(r.path), value: r.sessions, note: `${Math.round(r.bounce * 100)}% leave at once` }))} empty="No sessions yet." />
         </div>
         <div className="card p-7">
           <h2 className="mb-1 text-lg font-semibold">Devices</h2>
