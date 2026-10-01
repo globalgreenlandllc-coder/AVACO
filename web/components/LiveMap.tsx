@@ -6,6 +6,7 @@
  * active, named once zoomed. Scroll, pinch or the buttons zoom; drag moves; hovering names what is under the pointer;
  * a click on a marker, on a country in the list or on a row of the feed opens who is there and what they did.
  * The map files are drawn once from Natural Earth and us-atlas (public/maps) and load only on this admin page.
+ * With `fill` (full screen) the map takes its box's own shape instead of the world's, so it fills a screen of any size.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pageName, PLATFORM_NAMES, type LiveVisitor } from "@/lib/visits-math";
@@ -32,7 +33,7 @@ const STATUS = { visitor: { colour: "#e5484d", label: "Visitor" }, "signed-up": 
 const PIN = "M0 0C-1.6-5-8-9.4-8-15A8 8 0 1 1 8-15C8-9.4 1.6-5 0 0Z";
 const shade = (n: number, most: number) => `color-mix(in oklab, var(--accent) ${Math.round(38 + 52 * (n / most))}%, var(--surface))`;
 
-export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void; replayPerson?: string | null }) {
+export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null, fill = false }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void; replayPerson?: string | null; fill?: boolean }) {
   const [map, setMap] = useState<WorldMap | null>(null);
   const [fine, setFine] = useState<Shape[] | null>(null);
   const [states, setStates] = useState<Shape[] | null>(null);
@@ -46,6 +47,18 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
 
   const full = useMemo<View | null>(() => (map ? { x: map.view[0], y: map.view[1], w: map.view[2], h: map.view[3] } : null), [map]);
   useEffect(() => { if (full && !viewRef.current) { viewRef.current = full; setView(full); } }, [full]);
+  // The shown area's height to width: the world's own, or with `fill` the box's, measured as it changes.
+  const [boxRatio, setBoxRatio] = useState<number | null>(null);
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!fill || !box || typeof ResizeObserver === "undefined") return;
+    const measure = () => { const r = box.getBoundingClientRect(); if (r.width > 0 && r.height > 0) setBoxRatio(r.height / r.width); };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [fill, Boolean(view)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ratio = fill && boxRatio ? boxRatio : full ? full.h / full.w : 1;
 
   // Natural Earth 1, the same projection the map files were drawn with.
   const project = useCallback((lon: number, lat: number): [number, number] => {
@@ -56,12 +69,22 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
     return [map.translate[0] + x * map.scale, map.translate[1] - y * map.scale];
   }, [map]);
 
+  // Zoomed out, the whole world fits; a box of another shape than the world's shows it centred, with room around it.
   const clamp = useCallback((v: View): View => {
     if (!full) return v;
-    const w = Math.min(full.w, Math.max(full.w / 40, v.w)), h = (w * full.h) / full.w;
-    return { w, h, x: Math.min(full.x + full.w - w, Math.max(full.x, v.x)), y: Math.min(full.y + full.h - h, Math.max(full.y, v.y)) };
-  }, [full]);
+    const w = Math.min(Math.max(full.w, full.h / ratio), Math.max(full.w / 40, v.w)), h = w * ratio;
+    const x = w >= full.w ? full.x - (w - full.w) / 2 : Math.min(full.x + full.w - w, Math.max(full.x, v.x));
+    const y = h >= full.h ? full.y - (h - full.h) / 2 : Math.min(full.y + full.h - h, Math.max(full.y, v.y));
+    return { w, h, x, y };
+  }, [full, ratio]);
   const apply = useCallback((v: View) => { const c = clamp(v); viewRef.current = c; setView(c); }, [clamp]);
+  // A new shape (full screen on or off, a resized window): the same centre and width, the height to match.
+  useEffect(() => {
+    const v = viewRef.current;
+    if (!v) return;
+    const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+    apply({ x: cx - v.w / 2, y: cy - (v.w * ratio) / 2, w: v.w, h: v.w * ratio });
+  }, [ratio]); // eslint-disable-line react-hooks/exhaustive-deps
   const flyTo = useCallback((target: View) => {
     const from = viewRef.current, to = clamp(target);
     if (!from) return;
@@ -174,13 +197,13 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
     if (!open || !full || !viewRef.current) return;
     const v = viewRef.current, w = Math.min(v.w, full.w / 6);
     const inside = open.x > v.x + v.w * 0.08 && open.x < v.x + v.w * 0.55 && open.y > v.y + v.h * 0.1 && open.y < v.y + v.h * 0.9;
-    if (!inside || v.w > full.w / 6) flyTo({ x: open.x - w * 0.3, y: open.y - (w * full.h) / full.w / 2, w, h: (w * full.h) / full.w });
+    if (!inside || v.w > full.w / 6) flyTo({ x: open.x - w * 0.3, y: open.y - (w * ratio) / 2, w, h: w * ratio });
   }, [open?.key, full, flyTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flyToBox = (x0: number, y0: number, x1: number, y1: number) => {
     if (!full) return;
     const pad = 0.12, w0 = (x1 - x0) * (1 + pad * 2), h0 = (y1 - y0) * (1 + pad * 2);
-    const w = Math.max(full.w / 30, w0, (h0 * full.w) / full.h), h = (w * full.h) / full.w;
+    const w = Math.max(full.w / 30, w0, h0 / ratio), h = w * ratio;
     flyTo({ x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h });
   };
   const fitAll = () => {
@@ -189,13 +212,22 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
     const xs = places.map((p) => p.x), ys = places.map((p) => p.y);
     flyToBox(Math.min(...xs) - 20, Math.min(...ys) - 20, Math.max(...xs) + 20, Math.max(...ys) + 20);
   };
+  // Full screen on a tall screen (a phone): the world would sit in a band across the middle, so the map opens on the
+  // visitors instead, once. The whole world is one tap away (⟲).
+  const fitted = useRef(false);
+  useEffect(() => {
+    if (!fill || fitted.current || !boxRatio || boxRatio < 0.8 || places.length === 0) return;
+    fitted.current = true;
+    fitAll();
+  }, [fill, boxRatio, places.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const flyToCountry = (cc: string) => {
     if (cc === "US" && usBox) { flyToBox(usBox.x0, usBox.y0, usBox.x1, usBox.y1); return; }
     const el = svgRef.current?.querySelector<SVGGraphicsElement>(`[data-country="${cc}"]`);
     if (el) { const b = el.getBBox(); flyToBox(b.x, b.y, b.x + b.width, b.y + b.height); }
   };
 
-  if (!map || !full || !view) return <div className="grid aspect-[2.26] place-items-center rounded-2xl text-sm text-muted" style={{ background: OCEAN }}>Loading the map…</div>;
+  if (!map || !full || !view) return <div className={`grid place-items-center rounded-2xl text-sm text-muted ${fill ? "h-full" : "aspect-[2.26]"}`} style={{ background: OCEAN }}>Loading the map…</div>;
   const k = view.w / full.w; // markers, borders and labels keep their size on screen at any zoom
   const shapes = zoom >= 1.8 && fine ? fine : map.countries;
   const showStates = zoom >= 1.8 && overUS && states;
@@ -203,13 +235,13 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
   const topCountries = [...perCountry].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   return (
-    <div>
-      <div ref={boxRef} className="relative overflow-hidden rounded-2xl border border-line" style={{ background: "var(--surface)" }} onPointerLeave={() => setTip(null)}>
+    <div className={fill ? "flex h-full min-h-0 flex-col" : undefined}>
+      <div ref={boxRef} className={`relative overflow-hidden rounded-2xl border border-line ${fill ? "min-h-0 flex-1" : ""}`} style={{ background: "var(--surface)" }} onPointerLeave={() => setTip(null)}>
         <svg
           ref={svgRef}
           viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
-          className="block w-full touch-none select-none"
-          style={{ aspectRatio: `${full.w} / ${full.h}`, cursor: "grab" }}
+          className={`block touch-none select-none ${fill ? "absolute inset-0 h-full w-full" : "w-full"}`}
+          style={fill ? { cursor: "grab" } : { aspectRatio: `${full.w} / ${full.h}`, cursor: "grab" }}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
           onDoubleClick={(e) => { const p = toMap(e.clientX, e.clientY); const v = viewRef.current!; flyTo({ w: v.w / 2, h: v.h / 2, x: p.x - v.w / 4, y: p.y - v.h / 4 }); }}
           role="img" aria-label={`World map: ${plural(visitors.length, "visitor", "visitors")} in ${plural(places.length, "place", "places")}.`}
@@ -381,7 +413,7 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
           ))}
         </div>
       )}
-      <p className="mt-2 text-xs text-muted">Scroll or pinch to zoom, drag to move, double-click to zoom in; zoomed in, the map turns detailed and shows the US states. Hover for names, click a pin for who it is.</p>
+      {!fill && <p className="mt-2 text-xs text-muted">Scroll or pinch to zoom, drag to move, double-click to zoom in; zoomed in, the map turns detailed and shows the US states. Hover for names, click a pin for who it is.</p>}
     </div>
   );
 }

@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
+import { EngagementReport } from "@/components/EngagementReport";
+import { LiveTraffic } from "@/components/LiveTraffic";
 import { SourcesReport } from "@/components/SourcesReport";
 import { summarize, type VisitRow } from "@/lib/visits-math";
 
-// A made-up month of visits, to look at the "Where people come from" report without an admin account. Development only.
+// A made-up month of visits, to look at the statistics without an admin account. Development only. The live panel asks
+// /api/admin/live like the real page; a test browser answers it with made-up visitors.
 export default function PreviewStats() {
   if (process.env.NODE_ENV === "production") notFound();
   const now = new Date();
@@ -24,5 +27,6 @@ export default function PreviewStats() {
   }
   const users = rows.filter((r) => r.userId).map((r) => r.userId!);
   const signedUp = new Set(users.filter((_, i) => i % 2 === 0)), recorded = new Set(users.filter((_, i) => i % 3 === 0)), paid = new Set(users.filter((_, i) => i % 7 === 0));
-  return <div className="space-y-6"><SourcesReport v={summarize(rows, now, recorded, { signedUp, paid })} /></div>;
+  const v = summarize(rows, now, recorded, { signedUp, paid });
+  return <div className="space-y-6"><LiveTraffic /><SourcesReport v={v} /><EngagementReport v={v} /></div>;
 }
