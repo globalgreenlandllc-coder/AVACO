@@ -42,8 +42,8 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
 
   const onMap = (data?.visitors ?? []).filter((v) => clock - v.lastAt <= span * 60_000);
 
-  // Full screen: the map as large as the screen allows, with its numbers and the feed beside it (below it on a phone).
-  // The browser's own full screen where it has one; elsewhere (an iPhone) the panel simply covers the page.
+  // Full screen: the map across the whole width and most of the screen's height, its numbers and the feed under it as on
+  // the page. The browser's own full screen where it has one; elsewhere (an iPhone) the panel simply covers the page.
   const [fullScreen, setFullScreen] = useState(false);
   const shell = useRef<HTMLElement>(null);
   const enter = () => { setFullScreen(true); void shell.current?.requestFullscreen?.().catch(() => undefined); };
@@ -137,7 +137,7 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
   );
 
   return (
-    <section ref={shell} className={fullScreen ? "fixed inset-0 z-[70] flex flex-col overflow-y-auto bg-bg p-4 sm:p-5 lg:overflow-hidden" : "card overflow-hidden p-6 sm:p-7"} aria-label="Live traffic">
+    <section ref={shell} className={fullScreen ? "fixed inset-0 z-[70] overflow-y-auto bg-bg p-4 sm:p-6" : "card overflow-hidden p-6 sm:p-7"} aria-label="Live traffic">
       <style>{`@keyframes live-ping{0%{transform:scale(1);opacity:.75}100%{transform:scale(3.4);opacity:0}}.live-ping{transform-box:fill-box;transform-origin:center;animation:live-ping 1.8s ease-out infinite}@keyframes live-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}.live-in{animation:live-in .5s ease-out both}@media (prefers-reduced-motion: reduce){.live-ping,.live-in{animation:none}}`}</style>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex items-center gap-2.5">
@@ -153,37 +153,19 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
         </div>
       </div>
 
-      {fullScreen ? (
-        <div className="mt-4 flex flex-col gap-5 lg:min-h-0 lg:flex-1 lg:flex-row">
-          <div className="flex h-[62vh] min-w-0 flex-col lg:h-auto lg:min-h-0 lg:flex-1">
-            {spans}
-            <div className="min-h-0 flex-1">
-              <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} fill />
-            </div>
-          </div>
-          <aside className="shrink-0 space-y-6 lg:min-h-0 lg:w-[24rem] lg:overflow-y-auto lg:pr-1">
-            {activeNow}
-            {comingFrom}
-            {onPages}
-            {perMinute}
-            {feed}
-          </aside>
-        </div>
-      ) : (
-        <>
-          <div className="mt-5">
-            {spans}
-            <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} />
-          </div>
-          <div className="mt-6 grid items-start gap-6 sm:grid-cols-3">
-            {activeNow}
-            {comingFrom}
-            {onPages}
-          </div>
-          <div className="mt-6">{perMinute}</div>
-          <div className="mt-6">{feed}</div>
-        </>
-      )}
+      <div className="mt-5">
+        {spans}
+        {fullScreen
+          ? <div className="h-[72vh] min-h-[22rem]"><LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} fill /></div>
+          : <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} />}
+      </div>
+      <div className="mt-6 grid items-start gap-6 sm:grid-cols-3">
+        {activeNow}
+        {comingFrom}
+        {onPages}
+      </div>
+      <div className="mt-6">{perMinute}</div>
+      <div className="mt-6">{feed}</div>
     </section>
   );
 }
