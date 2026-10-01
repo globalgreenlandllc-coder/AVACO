@@ -77,12 +77,15 @@ export const en = {
     priceAfter: "Your report is also where the three add-ons begin: Career Fit, Find My Best-Fit Industry and Relationship & Compatibility, whenever you choose and each priced on its own.",
     priceEyebrow: "Price",
     priceTitle: "One report, {price}",
-    priceText: "Record for free and see that your report is ready before you pay. Pay only when you open the full report. No subscription.",
+    priceText: "Record and see that your report is ready before you pay anything. You pay only to open the full report. No subscription, and you can delete it any time.",
     priceFreeTitle: "Free during the launch",
     priceFreeText: "Full reports are free while we launch. The regular price will be {price} per report, with no subscription.",
     /** The offer while "first report free" is on (lib/billing.ts): the hero, the price section, the sticky bar for visitors. */
     freeEyebrow: "Limited offer · Your first report is free",
     freeFact: "Limited offer: first report free · no card",
+    /** Under the hero's button and beside it, when no free offer runs. */
+    ctaNote: "30 seconds of your voice · any language · your report in about a minute",
+    valueLine: "Sign up with your email, record 30 seconds, and see that your report is ready before you pay anything. The full report is {price}, once; no subscription.",
     sampleResult: "Sample result",
     sampleResultMore: "…and 7 more types, your emotional state today and where you would do your best work",
     freeCta: "Try it free",

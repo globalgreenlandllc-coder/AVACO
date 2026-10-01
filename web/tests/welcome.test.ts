@@ -55,9 +55,10 @@ describe("the free first report", () => {
     expect(await B.welcomeReportWaiting("open:1234")).toBe(false);
   });
 
-  it("is on by default for settings saved before the switch existed", async () => {
+  it("is off unless switched on, also for settings saved before the switch existed", async () => {
     await db.delete(schema.settings);
     await db.insert(schema.settings).values({ key: "billing", value: { enabled: true, currency: "usd", packs: [], freePreviewsPer30Days: 3, workspaceTrialCredits: 5 } });
-    expect((await B.getSettings()).freeFirstReport).toBe(true);
+    expect((await B.getSettings()).freeFirstReport).toBe(false);
+    expect(B.DEFAULT_SETTINGS.freeFirstReport).toBe(false);
   });
 });

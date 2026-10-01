@@ -83,7 +83,7 @@ export default async function Home() {
             {/* Wrapped: .btn sets its own display, which would win over a hiding class on the button itself. */}
             <div className="sm:hidden">
               <Link href={start} data-track="hero: start (phone)" data-hero-cta className="btn mt-6 w-full" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}{firstFree && !userId ? " →" : ""}</Link>
-              {firstFree && !userId && <p className="mt-2 text-center text-xs" style={{ color: "var(--cover-muted)" }}>{h.freeFact}</p>}
+              {!userId && <p className="mt-2 text-center text-xs" style={{ color: "var(--cover-muted)" }}>{firstFree ? h.freeFact : h.ctaNote}</p>}
               {/* What the report gives, at a glance: the sample profile's leading type as a report shows it. */}
               <div className="mt-5 rounded-2xl border px-4 py-3.5" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 35%, transparent)", background: "color-mix(in oklab, var(--cover-gold) 7%, transparent)" }}>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--cover-muted)" }}>{h.sampleResult}</p>
@@ -97,7 +97,7 @@ export default async function Home() {
               </div>
             </div>
             <p className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>{h.lead}</p>
-            {firstFree && !userId && <p className="mt-4 hidden max-w-xl rounded-2xl border px-4 py-3 text-base leading-relaxed sm:block" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-ink)" }}>{h.freeLine}</p>}
+            {!userId && (firstFree || (billing.enabled && price)) && <p className="mt-4 hidden max-w-xl rounded-2xl border px-4 py-3 text-base leading-relaxed sm:block" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 55%, transparent)", color: "var(--cover-ink)" }}>{firstFree ? h.freeLine : h.valueLine.replace("{price}", price ?? "")}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
               <div className="max-sm:hidden"><Link href={start} data-track="hero: start" data-hero-cta className="btn" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel}</Link></div>
               <Link href="/sample" data-track="hero: sample report" className="btn btn-quiet" style={{ borderColor: "var(--cover-gold)", color: "var(--cover-gold)" }}>{h.sampleCta}</Link>

@@ -31,7 +31,7 @@ export interface BillingSettings {
   packs: Pack[];
   /** Free previews (unpaid recordings) one person may make in 30 days. Each one costs an AVOCO analysis. */
   freePreviewsPer30Days: number;
-  /** Every account's first report opens in full for free, once; the add-ons stay paid. */
+  /** Every account's first report opens in full for free, once; the add-ons stay paid. Off unless switched on in Admin → Settings. */
   freeFirstReport: boolean;
   /** Credits a new workspace starts with, so a company can try before buying. */
   workspaceTrialCredits: number;
@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: BillingSettings = {
     { id: "team500", credits: 500, amountCents: 179000, audience: "workspace" },
   ],
   freePreviewsPer30Days: 3,
-  freeFirstReport: true,
+  freeFirstReport: false,
   workspaceTrialCredits: 5,
 };
 
