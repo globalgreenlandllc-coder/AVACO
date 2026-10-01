@@ -295,3 +295,52 @@ main :is(input, textarea, select):not([class*="cl-"]) { transition: border-color
 .dial-label[data-lit="0"] text { opacity: .72; }
 .dial-label[data-lit="1"] text { opacity: 1; }
 .dial-label:focus-visible text { text-decoration: underline; }
+
+/* The couples page (/couples), where the couples ads land: romantic, wine and blush in place of gold. The site's tokens
+   are re-tinted for that page only (html:has), so the header, cards, buttons and panels follow, and no other page moves.
+   Text colours keep 4.5:1 on their backgrounds. */
+html:has(.romance-page) {
+  --bg: #fff4f6; --surface: #fffafb; --ink: #2b141d; --ink-2: #5c3b48; --muted: #7d5f6b; --line: #f1d7df; --track: #f7e3ea;
+  --accent: #c23f6a; --accent-ink: #fff6f8; --accent-text: #a8325a; --accent-soft: #fde6ed;
+  --cover-bg: #1c0814; --cover-bg-2: #5a1c3d; --cover-ink: #fff0f4; --cover-muted: #e7c3cf; --cover-gold: #f6a9bf;
+  --bar-leading: #a8325a; --bar-active: #d9577f; --bar-background: #f2a7bd;
+}
+html:has(.romance-page) body {
+  background:
+    radial-gradient(50% 30rem at 6% -6rem, color-mix(in oklab, #f6adc3 55%, var(--bg)), transparent 70%) no-repeat,
+    radial-gradient(42% 26rem at 96% 8rem, color-mix(in oklab, #fbcab3 50%, var(--bg)), transparent 70%) no-repeat,
+    var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  html:has(.romance-page) {
+    --bg: #170a10; --surface: #221019; --ink: #fbeef2; --ink-2: #e6cbd5; --muted: #b8939f; --line: #3e2230; --track: #331b27;
+    --accent: #f08aa8; --accent-ink: #2a0c18; --accent-text: #f5a7be; --accent-soft: #34172a;
+    --bar-leading: #f5a7be; --bar-active: #d9668b; --bar-background: #7a2e4a;
+  }
+  html:has(.romance-page) body {
+    background:
+      radial-gradient(50% 30rem at 6% -6rem, color-mix(in oklab, #7a2346 45%, var(--bg)), transparent 70%) no-repeat,
+      radial-gradient(42% 26rem at 96% 8rem, color-mix(in oklab, #6b2f2a 35%, var(--bg)), transparent 70%) no-repeat,
+      var(--bg);
+  }
+}
+.romance-page .cover {
+  background:
+    radial-gradient(90% 80% at 88% 0%, #7a2650 0%, transparent 62%),
+    radial-gradient(70% 70% at 0% 100%, #4a1530 0%, transparent 66%),
+    linear-gradient(160deg, #2e0c1f, #19070f);
+  box-shadow: 0 40px 90px -45px rgba(150, 30, 80, 0.6);
+}
+.romance-page .gold-text, .romance-page .sheen { background-image: linear-gradient(100deg, #ffe3eb, #f7a6bd 30%, #fff1f5 50%, #f9c3a7 66%, #ef86a6); }
+.romance-page .gold-text:not(.sheen) { background-image: linear-gradient(100deg, #ffe3eb, #f7a6bd 40%, #f9c3a7 70%, #ef86a6); }
+/* Two soft auras in the cover, one rose and one peach: two voices. */
+.cover > .romance-glow { position: absolute; border-radius: 999px; filter: blur(46px); pointer-events: none; opacity: 0.5; animation: romance-float 14s ease-in-out infinite; }
+@keyframes romance-float { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(16px, -12px) scale(1.06); } }
+/* The two voices along the very bottom of a cover, in a band of their own: the cover keeps 6rem of room for them (pb-24). */
+.cover > .romance-waves { position: absolute; left: 0; right: 0; bottom: 8px; width: 100%; height: 72px; pointer-events: none; opacity: 0.6; }
+/* "Not astrology": each struck through in rose. */
+.romance-not s { text-decoration-color: var(--accent); text-decoration-thickness: 0.08em; color: var(--muted); }
+.romance-cta { background: linear-gradient(135deg, #ffc4d3, #f58fae 55%, #e6698f) !important; color: #2a0c18 !important; box-shadow: 0 16px 36px -16px rgba(230, 105, 143, 0.85); }
+.romance-cta:hover { filter: brightness(1.04) saturate(1.05); }
+@media (prefers-reduced-motion: reduce) { .cover > .romance-glow { animation: none; } }
+@media print { .cover > .romance-glow, .cover > .romance-waves { display: none; } }

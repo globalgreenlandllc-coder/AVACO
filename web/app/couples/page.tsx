@@ -2,7 +2,8 @@
  * The page for couples, where the couples ads send people ("How well do you really know your partner?"). It keeps the
  * ad's promise honestly: your own voice report first (free only while the offer is switched on), then a private link for your
  * partner, then the couple's report, with its price said plainly. The sample couple is drawn by the same code as a
- * real couple's report (lib/match.ts, lib/match-report.ts). English only, like the ads.
+ * real couple's report (lib/match.ts, lib/match-report.ts). English only, like the ads. Romantic in its own colours, wine
+ * and blush (globals.css: .romance-page re-tints the site's tokens on this page only).
  */
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -37,24 +38,45 @@ export default async function CouplesPage() {
   const preview = report ? [...report.categories].sort((x, y) => y.score - x.score).slice(0, 4) : [];
   const areas = CATEGORIES.map((key) => t.content.match.categories[key]).filter(Boolean);
   const ring = 2 * Math.PI * 42;
+  // Two voices, intertwined: a rose wave and a peach one, the swell of speech growing and fading along them.
+  const wave = (phase: number) => {
+    let d = "M0 60";
+    for (let x = 10; x <= 1200; x += 10) {
+      const swell = Math.sin((x / 1200) * Math.PI) * (0.55 + 0.45 * Math.sin(x / 95));
+      d += ` L${x} ${(60 + Math.sin(x / 38 + phase) * 34 * swell).toFixed(1)}`;
+    }
+    return d;
+  };
+  const glows = (
+    <>
+      <span className="romance-glow" style={{ top: -110, right: -70, width: 360, height: 360, background: "#e2557f" }} aria-hidden />
+      <span className="romance-glow" style={{ top: 30, right: 150, width: 240, height: 240, background: "#f6a77f", animationDelay: "-7s" }} aria-hidden />
+      <span className="romance-glow" style={{ bottom: -140, left: -80, width: 340, height: 340, background: "#8f2a5c", animationDelay: "-3s" }} aria-hidden />
+      <svg className="romance-waves" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden>
+        <path d={wave(0)} fill="none" stroke="#f6a9bf" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        <path d={wave(Math.PI)} fill="none" stroke="#f9c3a7" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      </svg>
+    </>
+  );
+  const heart = <svg viewBox="0 0 24 22" className="mr-2 inline-block h-3 w-3 -translate-y-px align-middle" aria-hidden><path d="M12 21s-8.5-5.4-10.6-10.3C-0.2 6.3 3 1.5 7.4 2.1 9.5 2.4 11 3.9 12 5.6c1-1.7 2.5-3.2 4.6-3.5 4.4-.6 7.6 4.2 6 8.6C20.5 15.6 12 21 12 21z" fill="currentColor" /></svg>;
 
   return (
-    <div className="space-y-20 pt-2 sm:pt-6">
+    <div className="romance-page space-y-20 pt-2 sm:pt-6">
       {firstFree && !userId && <FreeReportBar text={c.barText} cta={c.ctaFree} close={t.home.barClose} href={start} />}
 
       {/* The ad's question, the honest answer, and the way in on the first screen of a phone. */}
-      <section className="cover px-7 py-12 sm:px-12 sm:py-16">
-        <span className="cover-capsule drift" style={{ top: -90, right: "5%", width: 120, height: 320, borderRadius: "0 0 999px 999px", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)" }} aria-hidden />
-        <span className="cover-capsule drift" style={{ bottom: -90, left: "47%", width: 120, height: 290, borderRadius: "999px 999px 0 0", background: "color-mix(in oklab, var(--cover-gold) 10%, transparent)", animationDelay: "-5s" }} aria-hidden />
+      <section className="cover px-7 pb-24 pt-12 sm:px-12 sm:pb-24 sm:pt-16">
+        {glows}
         <div className="relative grid items-center gap-12 lg:grid-cols-[1.15fr_1fr]">
           <div>
-            <p className="cover-eyebrow">{firstFree && !userId ? <span className="offer-badge">💞 {c.offer}</span> : c.eyebrow}</p>
-            <h1 className="gold-text sheen mt-5 pb-2 font-display text-5xl font-semibold leading-[1.02] sm:text-7xl">{c.title}</h1>
+            <p className="cover-eyebrow">{firstFree && !userId ? <span className="offer-badge">💞 {c.offer}</span> : <>{heart}{c.eyebrow}</>}</p>
+            <h1 className="gold-text sheen mt-5 pb-2 font-display text-[2.6rem] font-semibold leading-[1.04] sm:text-6xl">{c.title}</h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed sm:text-xl" style={{ color: "var(--cover-ink)" }}>{c.lead}</p>
             <div className="mt-6">
-              <Link href={start} data-track="couples: start" data-hero-cta className="btn w-full sm:w-auto" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel} →</Link>
+              <Link href={start} data-track="couples: start" data-hero-cta className="btn romance-cta w-full sm:w-auto">{startLabel} →</Link>
               <p className="mt-2 text-xs sm:text-sm" style={{ color: "var(--cover-muted)" }}>{firstFree ? c.ctaNote : c.ctaNoteNoOffer}</p>
             </div>
-            <p className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>{c.lead}</p>
+            <p className="mt-6 max-w-xl text-sm leading-relaxed sm:text-base" style={{ color: "var(--cover-muted)" }}>{c.leadMore}</p>
             <Link href="/couples/sample" data-track="couples: sample couple report" className="mt-5 inline-block text-sm font-semibold hover:underline" style={{ color: "var(--cover-gold)" }}>{c.sample} →</Link>
           </div>
 
@@ -89,6 +111,14 @@ export default async function CouplesPage() {
           )}
         </div>
       </section>
+
+      {/* Not astrology, not a quiz: what the voice reading is. */}
+      <Reveal as="section" className="mx-auto max-w-3xl text-center">
+        <p className="romance-not font-display text-3xl font-medium leading-snug sm:text-5xl">
+          {c.notItems.map(([not, struck]) => <span key={struck} className="inline-block px-1.5">{not} <s>{struck}</s></span>)}
+        </p>
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-ink-2 sm:text-lg">{c.notText}</p>
+      </Reveal>
 
       {/* How it works: who records, who pays what. */}
       <Reveal as="section">
@@ -143,10 +173,11 @@ export default async function CouplesPage() {
         </div>
       </Reveal>
 
-      <Reveal as="section" className="cover px-7 py-12 text-center sm:px-12">
+      <Reveal as="section" className="cover px-7 pb-24 pt-14 text-center sm:px-12">
+        {glows}
         <h2 className="gold-text font-display text-4xl font-semibold sm:text-5xl">{c.closingTitle}</h2>
         <p className="mx-auto mt-4 max-w-xl leading-relaxed" style={{ color: "var(--cover-muted)" }}>{c.closing}</p>
-        <Link href={start} data-track="couples: start (closing)" className="btn mt-8" style={{ background: "var(--cover-gold)", color: "var(--cover-bg)" }}>{startLabel} →</Link>
+        <Link href={start} data-track="couples: start (closing)" className="btn romance-cta mt-8">{startLabel} →</Link>
         <p className="mt-2 text-xs" style={{ color: "var(--cover-muted)" }}>{firstFree ? c.ctaNote : c.ctaNoteNoOffer}</p>
       </Reveal>
     </div>

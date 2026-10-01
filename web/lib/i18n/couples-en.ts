@@ -3,19 +3,24 @@
  * you. English for every visitor, whatever language they picked: the ads run in English.
  */
 export const couplesEn = {
-  metaTitle: "How well do you really know your partner? · AVOCO",
-  metaDescription: "Start with your own 30-second voice report. Then your partner records 30 seconds on their phone, and you both see how your personalities fit.",
-  eyebrow: "Voice personality for couples",
+  metaTitle: "What your voice reveals about you & your partner · AVOCO",
+  metaDescription: "Discover your personality, emotions and strengths, and how you connect with your partner, from just 30 seconds of your voice. Not astrology, not a quiz.",
+  eyebrow: "For couples · Voice personality",
   offer: "Limited offer · start free",
-  title: "How well do you really know your partner?",
-  lead: "Your voices say more than you think. Start with your own 30-second voice report. Then send your partner a private link: they record 30 seconds on their own phone, get their own report, and you both see how you fit.",
-  cta: "Start with my voice",
+  title: "Find out what your voice reveals about you & your partner",
+  lead: "Discover personality, emotions, strengths, and how you connect with others, from just 30 seconds of your voice.",
+  /** Under the lead: how the two of you get there. */
+  leadMore: "Record yours, then send your partner a private link: they record on their own phone, and you both see how you fit.",
+  cta: "Analyze my voice",
   /** While the free first report is on (Admin → Settings). */
-  ctaFree: "Start free with my voice",
+  ctaFree: "Analyze my voice free",
   ctaSignedIn: "Record my voice",
-  ctaNote: "Your report is free · no card",
-  ctaNoteNoOffer: "About a minute · any language",
+  ctaNote: "Speak for 30 seconds · No questionnaire · Your report is free",
+  ctaNoteNoOffer: "Speak for 30 seconds · No questionnaire · Results in about a minute",
   sample: "See a sample couple's report",
+  /** Right under the cover: what AVOCO is not, and what it is. Each pair is said "{not} {struck}". */
+  notItems: [["Not", "astrology."], ["Not", "numerology."], ["Not another", "personality quiz."]],
+  notText: "AVOCO analyzes measurable patterns in your voice, its tempo, tone, pauses and energy, to create your personal profile. The same recording always gives the same result.",
   previewEyebrow: "A couple's report",
   previewNames: { a: "Alex", b: "Sam" },
   previewNote: "A sample couple. Yours is read from your two voices.",
@@ -44,8 +49,8 @@ export const couplesEn = {
   credit: "1 credit",
   credits: "{n} credits",
   alsoFor: "Works for business partners, colleagues, family and friends too.",
-  closingTitle: "Start with your own voice",
-  closing: "It takes about a minute, and it's the first step to your couple's report.",
+  closingTitle: "Hear what your two voices say",
+  closing: "Thirty seconds of your voice is the first step to your couple's report.",
   barText: "Start free: your own voice report first · no card",
   /** The sample couple's report (app/couples/sample/page.tsx). */
   sampleMetaTitle: "A sample couple's report · AVOCO",

@@ -23,7 +23,7 @@ export default async function SampleCouplePage() {
   const start = userId || open ? "/record" : "/sign-up";
   const startLabel = userId || open ? c.ctaSignedIn : c.cta;
   return (
-    <div className="space-y-8">
+    <div className="romance-page space-y-8">
       <section className="gold-panel flex flex-wrap items-center justify-between gap-5 px-7 py-6 sm:px-10">
         <div className="max-w-2xl">
           <Link href="/couples" className="text-sm opacity-80 hover:underline">← {c.sampleBack}</Link>
