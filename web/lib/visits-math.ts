@@ -520,8 +520,11 @@ export interface Live {
   sources: Array<{ source: string; visitors: number; paid: number }>;
   /** Where the visitors of the last 5 minutes are now: each one's latest page. */
   pages: Array<{ path: string; visitors: number }>;
-  /** Everyone of the last hour, most recent first. */
+  /** Everyone on the map's span (the last hour unless asked for more), most recent first, at most `maxVisitors`. */
   visitors: LiveVisitor[];
+  /** The map's span in minutes, and how many visitors it held before the cap. */
+  spanMin: number;
+  mapTotal: number;
   /** The latest page views, newest first; `key` is the visitor's, so a row can point at them on the map. */
   feed: Array<{ key: string; at: number; path: string; source: string; paid: boolean; city: string | null; country: string | null; device: Device; landing: boolean; signedIn: boolean }>;
 }
@@ -531,8 +534,13 @@ const MIN = 60_000;
 export const shortKey = (visitor: string) => visitor.replace(/[^a-z0-9]/gi, "").slice(0, 10);
 
 /** The live view from the last hour of visits. `history`: each visitor's first visit and number of visits in 30 days. */
-export function liveSummary(rows: LiveRow[], now = new Date(), history: Map<string, { first: Date; sessions: number; userId?: string | null }> = new Map()): Live {
+/**
+ * The live view. The numbers (active now, the last 30 minutes, visitors per minute, the feed) are always the last hour;
+ * the visitors for the map cover `spanMin` minutes (rows must reach that far back), the most recent `maxVisitors` of them.
+ */
+export function liveSummary(rows: LiveRow[], now = new Date(), history: Map<string, { first: Date; sessions: number; userId?: string | null }> = new Map(), { spanMin = 60, maxVisitors = 3000 }: { spanMin?: number; maxVisitors?: number } = {}): Live {
   const t = now.getTime();
+  const onMapRows = rows.filter((r) => r.at.getTime() > t - spanMin * MIN && r.at.getTime() <= t + MIN).sort((a, b) => b.at.getTime() - a.at.getTime());
   const recent = rows.filter((r) => r.at.getTime() > t - 60 * MIN && r.at.getTime() <= t + MIN).sort((a, b) => b.at.getTime() - a.at.getTime());
   const last30 = recent.filter((r) => r.at.getTime() > t - 30 * MIN);
   const last5 = recent.filter((r) => r.at.getTime() > t - 5 * MIN);
@@ -552,8 +560,8 @@ export function liveSummary(rows: LiveRow[], now = new Date(), history: Map<stri
   const activeVisitors = new Set(last5.map((r) => r.visitor));
 
   const byVisitor = new Map<string, LiveRow[]>();
-  for (const r of recent) byVisitor.set(r.visitor, [...(byVisitor.get(r.visitor) ?? []), r]);
-  const visitors: LiveVisitor[] = [...byVisitor].map(([visitor, list]) => {
+  for (const r of onMapRows) { const list = byVisitor.get(r.visitor); if (list) list.push(r); else byVisitor.set(r.visitor, [r]); }
+  const visitors: LiveVisitor[] = [...byVisitor].slice(0, maxVisitors).map(([visitor, list]) => {
     const asc = [...list].reverse();
     const latest = list[0];
     const session = asc.filter((r) => r.session === latest.session);
@@ -581,6 +589,8 @@ export function liveSummary(rows: LiveRow[], now = new Date(), history: Map<stri
     views30: last30.length,
     visitors30: new Set(last30.map((r) => r.visitor)).size,
     perMinute,
+    spanMin,
+    mapTotal: byVisitor.size,
     sources: [...bySource].map(([source, x]) => ({ source, ...x })).sort((a, b) => b.visitors - a.visitors).slice(0, 8),
     pages: [...byPage].map(([path, visitors]) => ({ path, visitors })).sort((a, b) => b.visitors - a.visitors).slice(0, 6),
     visitors,

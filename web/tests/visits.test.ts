@@ -260,3 +260,25 @@ describe("the landing page as people used it", () => {
     ]);
   });
 });
+
+describe("the live map over a longer span", () => {
+  const at = (minutesAgo: number) => new Date(NOW.getTime() - minutesAgo * 60_000);
+  const view = (visitor: string, minutesAgo: number) => ({ at: at(minutesAgo), path: "/", visitor, session: `${visitor}-s`, landing: true, source: "facebook", device: "phone" as const, country: "US" });
+
+  it("keeps the live numbers on the last hour, and puts the span's visitors on the map", () => {
+    const rows = [view("a", 2), view("b", 90), view("c", 60 * 24 * 2), view("d", 60 * 24 * 40)];
+    const hour = liveSummary(rows, NOW);
+    expect(hour.visitors.map((v) => v.key)).toEqual(["a"]);
+    const week = liveSummary(rows, NOW, new Map(), { spanMin: 10080 });
+    expect(week.visitors.map((v) => v.key)).toEqual(["a", "b", "c"]); // newest first; 40 days ago is outside the week
+    expect(week).toMatchObject({ spanMin: 10080, mapTotal: 3, active: 1, visitors30: 1 });
+    expect(week.feed).toHaveLength(1); // the feed stays on the last hour
+  });
+
+  it("draws the newest visitors only, and says how many there were", () => {
+    const rows = Array.from({ length: 30 }, (_, i) => view(`v${String(i).padStart(2, "0")}`, 10 + i * 30));
+    const capped = liveSummary(rows, NOW, new Map(), { spanMin: 1440, maxVisitors: 5 });
+    expect(capped.visitors.map((v) => v.key)).toEqual(["v00", "v01", "v02", "v03", "v04"]);
+    expect(capped.mapTotal).toBe(30);
+  });
+});

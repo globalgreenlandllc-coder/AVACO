@@ -2,7 +2,8 @@
 /**
  * Live traffic for Admin → Statistics: who is on the site right now, on a world map coloured by where each visitor came
  * from, visitors per minute over the last hour, and the page views as they happen. Asks /api/admin/live every two
- * seconds while the tab is visible, and at once when the tab comes back into view.
+ * seconds while the tab is visible, and at once when the tab comes back into view. A map span longer than an hour (up
+ * to a month) is asked for on its own and less often, so the live numbers keep their pace.
  */
 import { useEffect, useRef, useState } from "react";
 import { Bars } from "./AdminCharts";
@@ -10,7 +11,11 @@ import { LiveMap } from "./LiveMap";
 import { pageName, PLATFORM_NAMES, platformColor, type Live } from "@/lib/visits-math";
 
 const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "🌐");
-const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : `${Math.round(ms / 3_600_000)}h`);
+const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : ms < 48 * 3_600_000 ? `${Math.round(ms / 3_600_000)}h` : `${Math.round(ms / 86_400_000)}d`);
+/** The map's spans in minutes, with their labels: five minutes up to a month. */
+const SPANS: Array<[number, string]> = [[5, "Now · 5 min"], [30, "30 min"], [60, "1 hour"], [120, "2 hours"], [240, "4 hours"], [360, "6 hours"], [1440, "1 day"], [4320, "3 days"], [10080, "7 days"], [43200, "1 month"]];
+/** How often a longer span is asked for again: the farther back, the less often. */
+const refreshFor = (span: number) => (span <= 360 ? 10_000 : span <= 1440 ? 20_000 : 60_000);
 const name = (source: string) => PLATFORM_NAMES[source] ?? source;
 
 /** `replayPerson`: PostHog's person page address, when replays are set up (lib/posthog.ts); a pin's card then links to that visitor's recordings. */
@@ -18,8 +23,10 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
   const [data, setData] = useState<Live | null>(null);
   const [failed, setFailed] = useState(false);
   const [clock, setClock] = useState(() => Date.now());
-  /** Who the map shows: the last 5 minutes, half hour or hour. */
+  /** Who the map shows: the last 5 minutes up to a month. */
   const [span, setSpan] = useState(30);
+  /** The map's visitors for a span longer than an hour, asked for on their own; null while loading. */
+  const [wide, setWide] = useState<Live | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,7 +47,27 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
     return () => { stopped = true; clearTimeout(timer); clearInterval(second); document.removeEventListener("visibilitychange", onShow); };
   }, []);
 
-  const onMap = (data?.visitors ?? []).filter((v) => clock - v.lastAt <= span * 60_000);
+  // A span longer than an hour: its own request, at once and then every 10 to 60 seconds.
+  useEffect(() => {
+    setWide(null);
+    if (span <= 60) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = async () => {
+      if (document.visibilityState === "visible") {
+        const res = await fetch(`/api/admin/live?span=${span}`, { cache: "no-store" }).catch(() => null);
+        if (res?.ok && !stopped) setWide(await res.json());
+      }
+      if (!stopped) timer = setTimeout(tick, refreshFor(span));
+    };
+    void tick();
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [span]);
+
+  const mapData = span > 60 ? wide : data;
+  const onMap = (mapData?.visitors ?? []).filter((v) => clock - v.lastAt <= span * 60_000);
+  const capped = mapData && mapData.mapTotal > (mapData.visitors?.length ?? 0) ? mapData.mapTotal : null;
+  const spanLabel = SPANS.find(([m]) => m === span)?.[1].replace("Now · ", "") ?? "1 hour";
 
   // Full screen: the map across the whole width and most of the screen's height, its numbers and the feed under it as on
   // the page. The browser's own full screen where it has one; elsewhere (an iPhone) the panel simply covers the page.
@@ -62,10 +89,14 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
 
   const spans = (
     <div className="mb-3 flex flex-wrap items-center gap-2">
-      {[[5, "Now · 5 min"], [30, "30 min"], [60, "1 hour"]].map(([m, label]) => (
-        <button key={m} type="button" onClick={() => setSpan(m as number)} className={`pill !px-3 !py-1 text-xs ${span === m ? "pill-on" : "pill-off"}`}>{label}</button>
+      {SPANS.map(([m, label]) => (
+        <button key={m} type="button" onClick={() => setSpan(m)} aria-pressed={span === m} className={`pill !px-3 !py-1 text-xs ${span === m ? "pill-on" : "pill-off"}`}>{label}</button>
       ))}
-      <span className="text-xs text-muted">{onMap.length} {onMap.length === 1 ? "visitor" : "visitors"} on the map</span>
+      <span className="text-xs text-muted">
+        {span > 60 && !wide ? "Loading…" : `${onMap.length} ${onMap.length === 1 ? "visitor" : "visitors"} on the map`}
+        {capped ? ` · the latest ${onMap.length} of ${capped}` : ""}
+        {span > 60 && wide ? ` · updated every ${refreshFor(span) / 1000} s` : ""}
+      </span>
     </div>
   );
   const activeNow = (
@@ -156,8 +187,8 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
       <div className="mt-5">
         {spans}
         {fullScreen
-          ? <div className="h-[72vh] min-h-[22rem]"><LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} fill /></div>
-          : <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} />}
+          ? <div className="h-[72vh] min-h-[22rem]"><LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} spanLabel={spanLabel} fill /></div>
+          : <LiveMap visitors={onMap} now={clock} selected={selected} onSelect={setSelected} replayPerson={replayPerson} spanLabel={spanLabel} />}
       </div>
       <div className="mt-6 grid items-start gap-6 sm:grid-cols-3">
         {activeNow}

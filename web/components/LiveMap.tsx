@@ -22,7 +22,9 @@ const language = typeof Intl !== "undefined" ? new Intl.DisplayNames(["en"], { t
 const countryName = (cc: string | null) => { try { return cc ? region?.of(cc) ?? cc : "Unknown country"; } catch { return cc ?? "Unknown country"; } };
 const languageName = (code: string | null) => { try { return code ? language?.of(code) ?? code : null; } catch { return code; } };
 const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "🌐");
-const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)} min` : `${Math.round(ms / 3_600_000)} h`);
+const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)} min` : ms < 48 * 3_600_000 ? `${Math.round(ms / 3_600_000)} h` : `${Math.round(ms / 86_400_000)} days`);
+/** At one place, at most this many pins are drawn (the newest); a badge says how many there are in all. */
+const PINS_PER_PLACE = 12;
 const name = (source: string) => PLATFORM_NAMES[source] ?? source;
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const OCEAN = "color-mix(in oklab, #bcd6e2 38%, var(--surface))";
@@ -33,7 +35,7 @@ const STATUS = { visitor: { colour: "#e5484d", label: "Visitor" }, "signed-up": 
 const PIN = "M0 0C-1.6-5-8-9.4-8-15A8 8 0 1 1 8-15C8-9.4 1.6-5 0 0Z";
 const shade = (n: number, most: number) => `color-mix(in oklab, var(--accent) ${Math.round(38 + 52 * (n / most))}%, var(--surface))`;
 
-export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null, fill = false }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void; replayPerson?: string | null; fill?: boolean }) {
+export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null, fill = false, spanLabel = "1 hour" }: { visitors: LiveVisitor[]; now: number; selected: string | null; onSelect: (key: string | null) => void; replayPerson?: string | null; fill?: boolean; spanLabel?: string }) {
   const [map, setMap] = useState<WorldMap | null>(null);
   const [fine, setFine] = useState<Shape[] | null>(null);
   const [states, setStates] = useState<Shape[] | null>(null);
@@ -137,8 +139,8 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
     return [...by.values()].map((p) => ({ ...p, visitors: p.visitors.sort((a, b) => b.lastAt - a.lastAt), active: p.visitors.some((v) => v.active) }));
   }, [visitors, project]);
   // Every visitor has a pin: at their town, fanned out in a small ring when several share it, drawn south to north.
-  const pins = useMemo(() => places.flatMap((p) => p.visitors.map((v, i) => {
-    const n = p.visitors.length, ring = i < 8 ? 0 : 1, slot = ring ? i - 8 : i, count = ring ? n - 8 : Math.min(n, 8);
+  const pins = useMemo(() => places.flatMap((p) => p.visitors.slice(0, PINS_PER_PLACE).map((v, i) => {
+    const n = Math.min(p.visitors.length, PINS_PER_PLACE), ring = i < 8 ? 0 : 1, slot = ring ? i - 8 : i, count = ring ? n - 8 : Math.min(n, 8);
     const angle = -Math.PI / 2 + (slot / Math.max(1, count)) * Math.PI * 2, radius = n === 1 ? 0 : ring ? 20 : 11;
     return { v, place: p.key, x: p.x, y: p.y, dx: Math.cos(angle) * radius, dy: Math.sin(angle) * radius * 0.7 };
   })).sort((a, b) => a.y + a.dy - (b.y + b.dy)), [places]);
@@ -279,6 +281,13 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
               </g>
             );
           })}
+          {/* A crowded place: how many visitors it holds in all; a click opens it, like a pin. */}
+          {places.filter((p) => p.visitors.length > PINS_PER_PLACE).map((p) => (
+            <g key={`count-${p.key}`} data-visitor={p.visitors[0].key} data-tip={`${p.visitors[0].city ?? countryName(p.visitors[0].country)} · ${plural(p.visitors.length, "visitor", "visitors")}`} className="cursor-pointer">
+              <rect x={p.x + 9 * k} y={p.y - 44 * k} width={(String(p.visitors.length).length * 7 + 12) * k} height={16 * k} rx={8 * k} fill="var(--ink)" />
+              <text x={p.x + (15 + String(p.visitors.length).length * 3.5) * k} y={p.y - 32.5 * k} fontSize={11 * k} fontWeight={700} fill="var(--surface)" textAnchor="middle" pointerEvents="none">{p.visitors.length}</text>
+            </g>
+          ))}
           {labelled && places.map((p) => (
             <text key={`label-${p.key}`} x={p.x + 12 * k} y={p.y - 10 * k} fontSize={11 * k} fontWeight={600} fill="var(--ink)" stroke="var(--surface)" strokeWidth={3 * k} paintOrder="stroke" pointerEvents="none">
               {p.visitors[0].city ?? countryName(p.visitors[0].country)}{p.visitors.length > 1 ? ` · ${p.visitors.length}` : ""}
@@ -317,7 +326,7 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold leading-snug">{flag(v.country)} {v.city ?? "Town unknown"}{v.country === "US" && v.region ? `, ${stateName(v.region)}` : ""}, {countryName(v.country)}</p>
-                  <p className="text-xs text-muted">{plural(open.visitors.length, "visitor", "visitors")} here in the last hour</p>
+                  <p className="text-xs text-muted">{plural(open.visitors.length, "visitor", "visitors")} here · last {spanLabel}</p>
                 </div>
                 <button type="button" aria-label="Close" onClick={() => onSelect(null)} className="grid h-7 w-7 place-items-center rounded-full text-lg text-muted hover:bg-accent-soft">×</button>
               </div>
@@ -383,6 +392,7 @@ export function LiveMap({ visitors, now, selected, onSelect, replayPerson = null
                     ))}
                   </ul>
                 )}
+                {list.length > 8 && <p className="mt-2 text-xs text-muted">…and {list.length - 8} more here</p>}
               </div>
             </div>
           );
