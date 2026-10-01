@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 import { syntheticPeaks } from "@/lib/waveform";
 import { Waveform } from "./Waveform";
+import { markReveal, TypeDial } from "./TypeDial";
 
 /**
  * The live "analysing" screen. AVOCO reports nothing until it is done, so the stages advance on a clock that follows
@@ -32,6 +33,7 @@ export function Analysing({ t, startedAt, thoughts, queued = false, peaks: given
     const thoughtId = setInterval(() => setTick((n) => n + 1), 1600);
     try {
       const key = location.pathname.split("/").filter(Boolean).pop() ?? "";
+      if (location.pathname.startsWith("/reports/")) markReveal(key); // the report that replaces this screen reveals its type
       const list = JSON.parse(sessionStorage.getItem(`avoco-wave:${key}`) ?? "null") as unknown;
       if (Array.isArray(list) && list.length > 0 && list.length <= 400 && list.every((v) => typeof v === "number")) setPeaks(list as number[]);
     } catch { /* the stand-in stays */ }
@@ -101,7 +103,7 @@ export function Analysing({ t, startedAt, thoughts, queued = false, peaks: given
             </dl>
 
             <div className="mt-6 grid items-center gap-5 sm:grid-cols-[auto_1fr]">
-              <TypeMap active={mapping} />
+              <div className={`w-32 shrink-0 transition-opacity duration-700 sm:w-36 ${mapping ? "" : "opacity-40"}`}><TypeDial rows={null} tone="card" compact /></div>
               <div className="text-sm">
                 <p className={`font-semibold transition-opacity duration-700 ${mapping ? "" : "opacity-35"}`}>{t.console.types}</p>
                 <p className={`mt-2 font-semibold transition-opacity duration-700 ${scaling ? "" : "opacity-35"}`}>{t.console.scales}</p>
@@ -120,22 +122,5 @@ export function Analysing({ t, startedAt, thoughts, queued = false, peaks: given
         </div>
       </div>
     </div>
-  );
-}
-
-const px = (v: number) => Math.round(v * 100) / 100;
-const point = (i: number, r: number) => { const a = (i / 8) * Math.PI * 2 - Math.PI / 2; return { x: px(Math.cos(a) * r), y: px(Math.sin(a) * r) }; };
-
-/** The eight-type map: eight spokes and three rings; while the comparison runs, a sweep turns and the nodes light up. */
-function TypeMap({ active }: { active: boolean }) {
-  const spokes = Array.from({ length: 8 }, (_, i) => point(i, 40));
-  return (
-    <svg viewBox="-50 -50 100 100" width="120" height="120" className={`transition-opacity duration-700 ${active ? "" : "opacity-35"}`} aria-hidden>
-      {[14, 27, 40].map((r) => <polygon key={r} points={Array.from({ length: 8 }, (_, i) => { const p = point(i, r); return `${p.x},${p.y}`; }).join(" ")} fill="none" stroke="var(--line)" strokeWidth="0.8" />)}
-      {spokes.map((s, i) => <line key={i} x1="0" y1="0" x2={s.x} y2={s.y} stroke="var(--line)" strokeWidth="0.8" />)}
-      {active && <g className="orbit" style={{ animationDuration: "6s" }}><path d="M0,0 L0,-46 A46,46 0 0,1 32.53,-32.53 Z" fill="color-mix(in oklab, var(--accent) 35%, transparent)" /></g>}
-      {spokes.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r="3" fill="var(--accent)" className={active ? "node" : ""} style={{ animationDelay: `${(i * 0.75) % 6}s`, opacity: active ? undefined : 0.5 }} />)}
-      <circle r="4" fill="var(--accent)" className={active ? "core-dot" : ""} />
-    </svg>
   );
 }

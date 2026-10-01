@@ -7,7 +7,7 @@ import { GiftRibbon } from "@/components/GiftRibbon";
 import { FreeReportBar } from "@/components/FreeReportBar";
 import { Reveal } from "@/components/Motion";
 import { ScrollToHash } from "@/components/ScrollToHash";
-import { Radar } from "@/components/Radar";
+import { TypeDial } from "@/components/TypeDial";
 import { isAdminUser } from "@/lib/admin";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
 import { giftPrice, MAX_BEST, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
@@ -109,8 +109,7 @@ export default async function Home() {
           </div>
           <div>
             <p className="cover-eyebrow text-center">{t.report.signature}</p>
-            <Radar rows={rows} help={t.report.signatureHelp} />
-            <p className="mt-2 text-center text-xs" style={{ color: "var(--cover-muted)" }}>{h.signatureNote.replace("{type}", leader.name)}</p>
+            <TypeDial rows={rows} t={t.dial} caption={h.signatureNote.replace("{type}", leader.name)} />
           </div>
         </div>
       </section>

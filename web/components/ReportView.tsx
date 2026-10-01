@@ -18,6 +18,7 @@ import { PersonName } from "./PersonName";
 import { CountUp, Reveal } from "./Motion";
 import { Profile } from "./Profile";
 import { Radar } from "./Radar";
+import { TypeDial } from "./TypeDial";
 import { Trust } from "./Trust";
 
 export interface Report {
@@ -317,7 +318,9 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
             </div>
             <div>
               <p className="cover-eyebrow text-center">{r.signature}</p>
-              <Radar rows={psy} help={r.signatureHelp} />
+              {/* On screen the dial, which reveals the type when this report was just analysed; the downloaded file and paper keep the still radar. */}
+              <div data-no-export className="print:hidden"><TypeDial rows={psy} t={t.dial} revealId={report.id} /></div>
+              <div data-export-show className="hidden print:block"><Radar rows={psy} help={r.signatureHelp} /></div>
             </div>
           </div>
           {/* The add-ons wait below the report; from the cover, one link takes the reader there. */}

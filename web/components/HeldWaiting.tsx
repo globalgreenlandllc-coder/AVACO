@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import type { Dict } from "@/lib/i18n";
 import { forgetHeld, readHeld } from "@/lib/held";
 import { Analysing } from "./Analysing";
+import { markReveal } from "./TypeDial";
 
 export function HeldWaiting({ report, audioUrl, startedAt, status, t, thoughts }: { report: string | null; audioUrl: string | null; startedAt: number; status: string; t: Dict["report"]["live"]; thoughts: string[] }) {
   const router = useRouter();
@@ -20,6 +21,7 @@ export function HeldWaiting({ report, audioUrl, startedAt, status, t, thoughts }
     if (!report) return;
     try { if (own) sessionStorage.setItem(`avoco-wave:${report}`, JSON.stringify(own)); } catch { /* a stand-in is drawn */ }
     if (audioUrl) forgetHeld(audioUrl);
+    markReveal(report);
     router.replace(`/reports/${report}`);
   }, [report, audioUrl, router]);
 

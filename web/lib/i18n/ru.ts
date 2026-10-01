@@ -1,4 +1,5 @@
 import { industriesRu } from "./industries-ru";
+import { dialRu } from "./dial-ru";
 import { matchRu } from "./match-ru";
 import { matchDeepRu } from "./match-deep-ru";
 import { billingRu } from "./billing-ru";
@@ -353,6 +354,8 @@ export const ru: Dict = {
     signUpTitle: "Создайте аккаунт AVOCO",
     signUpSubtitle: "Тридцать секунд голоса, отчёт примерно через минуту.",
   },
+  /** The type dial (components/TypeDial.tsx). */
+  dial: dialRu,
   legal: legalRu,
   gift: giftRu,
   receipt: receiptRu,

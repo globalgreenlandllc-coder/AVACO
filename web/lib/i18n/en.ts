@@ -1,4 +1,5 @@
 import { industriesEn } from "./industries-en";
+import { dialEn } from "./dial-en";
 import { matchEn } from "./match-en";
 import { matchDeepEn } from "./match-deep-en";
 import { billingEn } from "./billing-en";
@@ -356,6 +357,8 @@ export const en = {
     signUpTitle: "Create your AVOCO account",
     signUpSubtitle: "Thirty seconds of your voice, a report in about a minute.",
   },
+  /** The type dial (components/TypeDial.tsx). */
+  dial: dialEn,
   legal: legalEn,
   gift: giftEn,
   receipt: receiptEn,
