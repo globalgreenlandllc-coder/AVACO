@@ -12,11 +12,10 @@ import { Reveal } from "@/components/Motion";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
 import { en } from "@/lib/i18n/en";
 import { couplesEn as c } from "@/lib/i18n/couples-en";
-import { CATEGORIES, matchFit } from "@/lib/match";
+import { CATEGORIES } from "@/lib/match";
 import { matchCredits, matchPriceCents } from "@/lib/match-billing";
-import { matchReport } from "@/lib/match-report";
 import { money } from "@/lib/money";
-import { SAMPLE_PSY } from "@/lib/sample";
+import { sampleCouple } from "@/lib/sample-couple";
 import { isOpenHost } from "@/lib/visitor";
 
 export const metadata: Metadata = { title: c.metaTitle, description: c.metaDescription, openGraph: { title: c.metaTitle, description: c.metaDescription } };
@@ -33,11 +32,8 @@ export default async function CouplesPage() {
   const start = userId || open ? "/record" : "/sign-up";
   const startLabel = userId || open ? c.ctaSignedIn : c.cta;
 
-  // The sample couple: the landing page's sample profile with a warm partner, read by the real couple's-report code.
-  const a = SAMPLE_PSY.map(([key, value]) => ({ key, value }));
-  const b = a.map(({ key }) => ({ key, value: key === "harmonizer" ? 64 : key === "mediator" ? 45 : 11 }));
-  const fit = matchFit(a, b);
-  const report = fit ? matchReport(fit, c.previewNames, t, locale) : null;
+  // The sample couple (lib/sample-couple.ts): the same Alex and Sam as the full sample couple's report it links to.
+  const report = sampleCouple(t, locale)?.report ?? null;
   const preview = report ? [...report.categories].sort((x, y) => y.score - x.score).slice(0, 4) : [];
   const areas = CATEGORIES.map((key) => t.content.match.categories[key]).filter(Boolean);
   const ring = 2 * Math.PI * 42;
@@ -59,7 +55,7 @@ export default async function CouplesPage() {
               <p className="mt-2 text-xs sm:text-sm" style={{ color: "var(--cover-muted)" }}>{firstFree ? c.ctaNote : c.ctaNoteNoOffer}</p>
             </div>
             <p className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: "var(--cover-muted)" }}>{c.lead}</p>
-            <Link href="/sample" data-track="couples: sample report" className="mt-5 inline-block text-sm font-semibold hover:underline" style={{ color: "var(--cover-gold)" }}>{c.sample} →</Link>
+            <Link href="/couples/sample" data-track="couples: sample couple report" className="mt-5 inline-block text-sm font-semibold hover:underline" style={{ color: "var(--cover-gold)" }}>{c.sample} →</Link>
           </div>
 
           {report && (

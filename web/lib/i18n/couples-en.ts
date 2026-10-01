@@ -13,7 +13,7 @@ export const couplesEn = {
   ctaSignedIn: "Record my voice",
   ctaNote: "Your report is free · no card",
   ctaNoteNoOffer: "About a minute · any language",
-  sample: "See a sample report",
+  sample: "See a sample couple's report",
   previewEyebrow: "A couple's report",
   previewNames: { a: "Alex", b: "Sam" },
   previewNote: "A sample couple. Yours is read from your two voices.",
@@ -45,4 +45,12 @@ export const couplesEn = {
   closingTitle: "Start with your own voice",
   closing: "It takes about a minute, and it's the first step to your couple's report.",
   barText: "Start free: your own voice report first · no card",
+  /** The sample couple's report (app/couples/sample/page.tsx). */
+  sampleMetaTitle: "A sample couple's report · AVOCO",
+  sampleEyebrow: "Sample couple's report",
+  sampleTitle: "Alex & Sam: a couple's report from two voices",
+  sampleLead: "This is the full report a couple gets, here for two sample voices: the match score, nine areas of a life together, who plays which role, where it rubs and what helps. Yours is read from your own two voices.",
+  sampleBack: "How it works for couples",
+  sampleOutroTitle: "Start with your own voice",
+  sampleOutro: "Record 30 seconds for your own report, free. Then send your partner a private link, and your couple's report appears when they've recorded.",
 };
