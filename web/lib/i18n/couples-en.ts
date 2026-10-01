@@ -4,12 +4,14 @@
  */
 export const couplesEn = {
   metaTitle: "How well do you really know your partner? · AVOCO",
-  metaDescription: "Start with your own 30-second voice report, free. Then your partner records 30 seconds on their phone, and you both see how your personalities fit.",
+  metaDescription: "Start with your own 30-second voice report. Then your partner records 30 seconds on their phone, and you both see how your personalities fit.",
   eyebrow: "Voice personality for couples",
   offer: "Limited offer · start free",
   title: "How well do you really know your partner?",
   lead: "Your voices say more than you think. Start with your own 30-second voice report. Then send your partner a private link: they record 30 seconds on their own phone, get their own report, and you both see how you fit.",
-  cta: "Start free with my voice",
+  cta: "Start with my voice",
+  /** While the free first report is on (Admin → Settings). */
+  ctaFree: "Start free with my voice",
   ctaSignedIn: "Record my voice",
   ctaNote: "Your report is free · no card",
   ctaNoteNoOffer: "About a minute · any language",
@@ -22,7 +24,7 @@ export const couplesEn = {
   stepsTitle: "Two voices, three steps",
   steps: [
     { title: "You record 30 seconds", text: "Talk about your day in your everyday voice. Your full personality report is ready in about a minute.", tag: "Free" },
-    { title: "Your partner records on their phone", text: "You send them a private link. They record 30 seconds whenever they like, agree to the analysis themselves, and get their own report.", tag: "Free for them" },
+    { title: "Your partner records on their phone", text: "You send them a private link. They record 30 seconds whenever they like, agree to the analysis themselves, and get their own report.", tag: "Included" },
     { title: "You see how you fit", text: "The couple's report: a match score out of 100, the areas of a shared life, who plays which role, where it rubs and what helps.", tag: "{price} once" },
   ],
   areasEyebrow: "Inside the couple's report",
@@ -37,7 +39,7 @@ export const couplesEn = {
   priceTitle: "What it costs",
   priceYouFree: "Your own report: free, one per person, while the offer lasts",
   priceYou: "Your own report: {price}",
-  pricePartner: "Your partner's own report: free for them",
+  pricePartner: "Your partner's own report: included with the couple's report",
   priceCouple: "The couple's report: {price}, or {credits}, paid once by you",
   credit: "1 credit",
   credits: "{n} credits",
@@ -52,5 +54,5 @@ export const couplesEn = {
   sampleLead: "This is the full report a couple gets, here for two sample voices: the match score, nine areas of a life together, who plays which role, where it rubs and what helps. Yours is read from your own two voices.",
   sampleBack: "How it works for couples",
   sampleOutroTitle: "Start with your own voice",
-  sampleOutro: "Record 30 seconds for your own report, free. Then send your partner a private link, and your couple's report appears when they've recorded.",
+  sampleOutro: "Record 30 seconds for your own report. Then send your partner a private link, and your couple's report appears when they've recorded.",
 };

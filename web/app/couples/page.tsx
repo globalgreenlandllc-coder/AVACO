@@ -1,6 +1,6 @@
 /**
  * The page for couples, where the couples ads send people ("How well do you really know your partner?"). It keeps the
- * ad's promise honestly: your own voice report first (free while the offer is on), then a private link for your
+ * ad's promise honestly: your own voice report first (free only while the offer is switched on), then a private link for your
  * partner, then the couple's report, with its price said plainly. The sample couple is drawn by the same code as a
  * real couple's report (lib/match.ts, lib/match-report.ts). English only, like the ads.
  */
@@ -30,7 +30,7 @@ export default async function CouplesPage() {
   const reportPrice = single ? money(single.amountCents, billing.currency, locale) : "";
   const couplePrice = money(coupleCents, billing.currency, locale);
   const start = userId || open ? "/record" : "/sign-up";
-  const startLabel = userId || open ? c.ctaSignedIn : c.cta;
+  const startLabel = userId || open ? c.ctaSignedIn : firstFree ? c.ctaFree : c.cta;
 
   // The sample couple (lib/sample-couple.ts): the same Alex and Sam as the full sample couple's report it links to.
   const report = sampleCouple(t, locale)?.report ?? null;
@@ -40,7 +40,7 @@ export default async function CouplesPage() {
 
   return (
     <div className="space-y-20 pt-2 sm:pt-6">
-      {!userId && <FreeReportBar text={c.barText} cta={c.cta} close={t.home.barClose} href={start} />}
+      {firstFree && !userId && <FreeReportBar text={c.barText} cta={c.ctaFree} close={t.home.barClose} href={start} />}
 
       {/* The ad's question, the honest answer, and the way in on the first screen of a phone. */}
       <section className="cover px-7 py-12 sm:px-12 sm:py-16">
