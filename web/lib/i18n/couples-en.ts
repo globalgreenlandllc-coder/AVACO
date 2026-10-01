@@ -1,0 +1,48 @@
+/**
+ * The page for couples (app/couples/page.tsx), where the couples ads send people: your own report first, then the two of
+ * you. English for every visitor, whatever language they picked: the ads run in English.
+ */
+export const couplesEn = {
+  metaTitle: "How well do you really know your partner? · AVOCO",
+  metaDescription: "Start with your own 30-second voice report, free. Then your partner records 30 seconds on their phone, and you both see how your personalities fit.",
+  eyebrow: "Voice personality for couples",
+  offer: "Limited offer · start free",
+  title: "How well do you really know your partner?",
+  lead: "Your voices say more than you think. Start with your own 30-second voice report. Then send your partner a private link: they record 30 seconds on their own phone, get their own report, and you both see how you fit.",
+  cta: "Start free with my voice",
+  ctaSignedIn: "Record my voice",
+  ctaNote: "Your report is free · no card",
+  ctaNoteNoOffer: "About a minute · any language",
+  sample: "See a sample report",
+  previewEyebrow: "A couple's report",
+  previewNames: { a: "Alex", b: "Sam" },
+  previewNote: "A sample couple. Yours is read from your two voices.",
+  outOf: "/ 100",
+  stepsEyebrow: "How it works",
+  stepsTitle: "Two voices, three steps",
+  steps: [
+    { title: "You record 30 seconds", text: "Talk about your day in your everyday voice. Your full personality report is ready in about a minute.", tag: "Free" },
+    { title: "Your partner records on their phone", text: "You send them a private link. They record 30 seconds whenever they like, agree to the analysis themselves, and get their own report.", tag: "Free for them" },
+    { title: "You see how you fit", text: "The couple's report: a match score out of 100, the areas of a shared life, who plays which role, where it rubs and what helps.", tag: "{price} once" },
+  ],
+  areasEyebrow: "Inside the couple's report",
+  areasTitle: "Nine areas of a life together",
+  areasLead: "Each area is scored from both voices, with what each of you brings to it and one thing to try. Family and parenting are added when you have children together.",
+  honestTitle: "Honest and private",
+  honest: [
+    "Your partner records themselves, on their own phone, and agrees first. Nobody is analysed without knowing.",
+    "Each report is private to its owner; the couple's report is shared by the two of you.",
+    "A voice reading is a mirror for a good conversation, not a verdict on your relationship.",
+  ],
+  priceTitle: "What it costs",
+  priceYouFree: "Your own report: free, one per person, while the offer lasts",
+  priceYou: "Your own report: {price}",
+  pricePartner: "Your partner's own report: free for them",
+  priceCouple: "The couple's report: {price}, or {credits}, paid once by you",
+  credit: "1 credit",
+  credits: "{n} credits",
+  alsoFor: "Works for business partners, colleagues, family and friends too.",
+  closingTitle: "Start with your own voice",
+  closing: "It takes about a minute, and it's the first step to your couple's report.",
+  barText: "Start free: your own voice report first · no card",
+};

@@ -27,6 +27,7 @@ export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const PAGE_NAMES: Array<[RegExp, string]> = [
   [/^\/$/, "Landing page"],
   [/^\/sample/, "Sample report"],
+  [/^\/couples/, "Couples page"],
   [/^\/technology/, "The technology page"],
   [/^\/privacy/, "Privacy policy"],
   [/^\/terms/, "Terms of service"],
