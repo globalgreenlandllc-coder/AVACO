@@ -3,12 +3,14 @@ import { EngagementReport } from "@/components/EngagementReport";
 import { AdPlatforms } from "@/components/AdPlatforms";
 import { LiveMode } from "@/components/LiveMode";
 import { LiveTraffic } from "@/components/LiveTraffic";
+import { RecordingsReport } from "@/components/RecordingsReport";
 import { Replays } from "@/components/Replays";
 import { SourcesReport } from "@/components/SourcesReport";
 import { TrackingLinks } from "@/components/TrackingLinks";
 import { baseUrl } from "@/lib/page";
 import { posthogConfig } from "@/lib/posthog";
 import { Funnel, HourBars, KpiDelta } from "@/components/StatsCharts";
+import { recordingStatistics } from "@/lib/recording-stats";
 import { statistics } from "@/lib/stats";
 import { pageName } from "@/lib/visits-math";
 
@@ -18,7 +20,7 @@ const SITES: Record<string, string> = { main: "Main site (avocousa.us)", partner
 const DEVICES: Record<string, string> = { phone: "Phone", tablet: "Tablet", desktop: "Desktop" };
 
 export default async function AdminStats() {
-  const [s, origin] = await Promise.all([statistics(), baseUrl()]);
+  const [s, origin, rec] = await Promise.all([statistics(), baseUrl(), recordingStatistics()]);
   const ph = posthogConfig();
   const replayPerson = ph?.projectId ? `${ph.app}/project/${ph.projectId}/person/` : null;
   const v = s.visits;
@@ -59,6 +61,8 @@ export default async function AdminStats() {
         <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Visitors per day</h2><DailyBars data={v.series.map((d) => ({ day: d.day, value: d.visitors }))} format={String} label="Visitors per day" /></div>
         <div className="card p-7"><h2 className="mb-5 text-lg font-semibold">Sign-ups per day</h2><DailyBars data={s.users.series} format={String} label="Sign-ups per day" /></div>
       </section>
+
+      <RecordingsReport r={rec} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="card p-7">
