@@ -167,6 +167,9 @@ export async function buildReportFile(report: HTMLElement, title: string, option
   }
   copy.querySelectorAll("[data-no-export]").forEach((node) => node.remove());
   copy.querySelectorAll("[data-export-show]").forEach((node) => node.classList.remove("hidden")); // kept for the file (and print) only
+  // A part of the report itself shown in the file instead of its screen version (the still radar for the type dial);
+  // unlike [data-export-show] (the add-on pieces), no partial download leaves it out.
+  copy.querySelectorAll("[data-file-only]").forEach((node) => node.classList.remove("hidden"));
   copy.querySelectorAll(".reveal").forEach((node) => node.classList.remove("in")); // the file's own script reveals them again
   copy.querySelectorAll<HTMLElement>("[data-countup]").forEach((node) => { node.textContent = node.dataset.countup ?? node.textContent; });
 

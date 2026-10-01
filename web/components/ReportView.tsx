@@ -320,7 +320,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
               <p className="cover-eyebrow text-center">{r.signature}</p>
               {/* On screen the dial, which reveals the type when this report was just analysed; the downloaded file and paper keep the still radar. */}
               <div data-no-export className="print:hidden"><TypeDial rows={psy} t={t.dial} revealId={report.id} /></div>
-              <div data-export-show className="hidden print:block"><Radar rows={psy} help={r.signatureHelp} /></div>
+              <div data-file-only className="hidden print:block"><Radar rows={psy} help={r.signatureHelp} /></div>
             </div>
           </div>
           {/* The add-ons wait below the report; from the cover, one link takes the reader there. */}
