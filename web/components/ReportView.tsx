@@ -67,11 +67,17 @@ export interface ReportViewProps {
   canEmail?: boolean;
   /** What this report already holds, listed with the add-ons at its foot: opened industry chapters and pair reports. */
   opened?: { industries: Array<{ key: string; name: string; href: string }>; couples: Array<{ id: string; href: string; glyph: string; label: string }> };
+  /** The add-ons right under the cover instead of after the report: the partner page, where they are what is being shown. */
+  addonsFirst?: boolean;
+  /** One more add-on card after the others (the partner page's couple's report). */
+  addonsExtra?: React.ReactNode;
+  /** The add-ons' heading, in place of the paid one (the partner page, where they are free). */
+  addonsHead?: { title: string; lead: string };
   /** Whose voice this is (lib/people.ts), with the names already used on the account; passed where the report can be renamed. */
   person?: { name: string | null; known: string[] };
 }
 
-export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes, person, couples = [], canEmail = false, opened }: ReportViewProps) {
+export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDeleteHref = "/reports", deleteLabel, deleteConfirm, back, lead, hideEmotions = false, locked, industry, takes, match, previewTakes, person, couples = [], canEmail = false, opened, addonsFirst = false, addonsExtra, addonsHead }: ReportViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(initial);
   const [deleting, setDeleting] = useState(false);
@@ -279,6 +285,30 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
   const fits = fitRows(psy, t, emo);
   const podium = fits.slice(0, 3);
 
+  const addons = (industry || match || addonsExtra) && psy.length === 8 ? (
+
+        <section id="addons" data-no-export className="no-print scroll-mt-24 space-y-8">
+          <div>
+            <p className="eyebrow">{r.addonsEyebrow}</p>
+            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{addonsHead?.title ?? r.addonsTitle}</h2>
+            <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{addonsHead?.lead ?? r.addonsLead}</p>
+          </div>
+          {openedCount > 0 && (
+            <div className="card p-6 sm:p-8">
+              <p className="eyebrow">{r.openedTitle}</p>
+              <div className="mt-4 grid gap-5 md:grid-cols-2">
+                {[{ title: r.openedIndustries, items: (opened?.industries ?? []).map((i) => ({ id: i.key, href: i.href, label: i.name, glyph: "" })) }, { title: r.openedCouples, items: opened?.couples ?? [] }].filter((g) => g.items.length > 0).map((g) => (
+                  <OpenedGroup key={g.title} title={g.title.replace("{n}", String(g.items.length))} items={g.items} showAll={r.showAll.replace("{n}", String(g.items.length))} />
+                ))}
+              </div>
+            </div>
+          )}
+          {industry && <div id="industry" className="scroll-mt-24"><Industry key={industry.initialIndustry ?? ""} {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} /></div>}
+          {match && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
+          {addonsExtra}
+        </section>
+  ) : null;
+
   return (
     <article ref={article} className="space-y-10">
       {backLink && <Link href={backLink.href} data-no-export className="no-print text-sm text-muted hover:text-ink">← {backLink.label}</Link>}
@@ -324,7 +354,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
             </div>
           </div>
           {/* The add-ons wait below the report; from the cover, one link takes the reader there. */}
-          {(industry || match) && psy.length === 8 && (
+          {(industry || match || addonsExtra) && psy.length === 8 && (
             <p className="no-print relative mt-8" data-no-export>
               <a href="#addons" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors hover:bg-[color-mix(in_oklab,var(--cover-gold)_12%,transparent)]" style={{ borderColor: "color-mix(in oklab, var(--cover-gold) 50%, transparent)", color: "var(--cover-gold)" }}>{openedCount > 0 ? r.addonsJumpOpened.replace("{n}", String(openedCount)) : r.addonsJump} ↓</a>
             </p>
@@ -333,6 +363,7 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
       )}
 
       {lead}
+      {addonsFirst && addons}
 
       {takes && (
         <Reveal as="section" className="card break-inside-avoid p-7 sm:p-10" id="consistency">
@@ -458,28 +489,9 @@ export function ReportView({ initial, recordedOn, t, pollUrl, deleteUrl, afterDe
         </div>
       </Reveal>
 
-      {/* The add-ons come after the report, never above it: the report is what was paid for. Sold in their own covers. */}
-      {(industry || match) && psy.length === 8 && (
-        <section id="addons" data-no-export className="no-print scroll-mt-24 space-y-8">
-          <div>
-            <p className="eyebrow">{r.addonsEyebrow}</p>
-            <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{r.addonsTitle}</h2>
-            <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{r.addonsLead}</p>
-          </div>
-          {openedCount > 0 && (
-            <div className="card p-6 sm:p-8">
-              <p className="eyebrow">{r.openedTitle}</p>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
-                {[{ title: r.openedIndustries, items: (opened?.industries ?? []).map((i) => ({ id: i.key, href: i.href, label: i.name, glyph: "" })) }, { title: r.openedCouples, items: opened?.couples ?? [] }].filter((g) => g.items.length > 0).map((g) => (
-                  <OpenedGroup key={g.title} title={g.title.replace("{n}", String(g.items.length))} items={g.items} showAll={r.showAll.replace("{n}", String(g.items.length))} />
-                ))}
-              </div>
-            </div>
-          )}
-          {industry && <div id="industry" className="scroll-mt-24"><Industry key={industry.initialIndustry ?? ""} {...industry} analysisId={report.id} t={t.industry} finder={t.finder} printSlot={slot} /></div>}
-          {match && <MatchAddon {...match} analysisId={report.id} t={t.match} />}
-        </section>
-      )}
+      {/* The add-ons come after the report, never above it: the report is what was paid for. Sold in their own covers.
+          (On the partner page, addonsFirst puts them right under the cover: there they are what is being shown.) */}
+      {!addonsFirst && addons}
 
       {/* The add-ons' content, for print and the downloaded file only: opened industry chapters (the add-on's card copies them here), then the couple's reports. */}
       {industry && psy.length === 8 && <div ref={setSlot} data-export-show className="hidden print:block" />}

@@ -7,6 +7,8 @@ const KEY = "avoco-partner-reports";
 interface Entry { id: string; at: string }
 
 const read = (): Entry[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
+/** The reports remembered on this device, newest first (the partner couple's report offers them as the second voice). */
+export const partnerReportsOnDevice = read;
 
 /** Remembers a report on this device only; the partner page has no accounts. */
 export function rememberPartnerReport(id: string) {
