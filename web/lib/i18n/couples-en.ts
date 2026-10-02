@@ -18,6 +18,8 @@ export const couplesEn = {
   ctaNote: "Speak for 30 seconds · No questionnaire · Your report is free",
   ctaNoteNoOffer: "Speak for 30 seconds · No questionnaire · Results in about a minute",
   sample: "See a sample couple's report",
+  sampleNote: "Two minutes to read · nothing to sign up for · exactly what you get",
+  startQuiet: "Ready? Record your 30 seconds",
   /** Right under the cover: what AVOCO is not, and what it is. Each pair is said "{not} {struck}". */
   notItems: [["Not", "astrology."], ["Not", "numerology."], ["Not another", "personality quiz."]],
   notText: "AVOCO analyzes measurable patterns in your voice, its tempo, tone, pauses and energy, to create your personal profile. The same recording always gives the same result.",

@@ -342,5 +342,12 @@ html:has(.romance-page) body {
 .romance-not s { text-decoration-color: var(--accent); text-decoration-thickness: 0.08em; color: var(--muted); }
 .romance-cta { background: linear-gradient(135deg, #ffc4d3, #f58fae 55%, #e6698f) !important; color: #2a0c18 !important; box-shadow: 0 16px 36px -16px rgba(230, 105, 143, 0.85); }
 .romance-cta:hover { filter: brightness(1.04) saturate(1.05); }
+/* The one button that asks to be noticed: a soft beat and a ring spreading from it, calm enough to live beside text. */
+.btn-beacon { position: relative; animation: beacon-beat 2.2s ease-in-out infinite; }
+.btn-beacon::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; border: 2px solid var(--accent); opacity: 0; animation: beacon-ring 2.2s ease-out infinite; pointer-events: none; }
+.romance-cta.btn-beacon::after { border-color: #f7a6bd; }
+@keyframes beacon-beat { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.04); filter: brightness(1.08); } }
+@keyframes beacon-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.3); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .btn-beacon, .btn-beacon::after { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .cover > .romance-glow { animation: none; } }
 @media print { .cover > .romance-glow, .cover > .romance-waves { display: none; } }

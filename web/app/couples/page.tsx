@@ -72,12 +72,13 @@ export default async function CouplesPage() {
             <p className="cover-eyebrow">{firstFree && !userId ? <span className="offer-badge">💞 {c.offer}</span> : <>{heart}{c.eyebrow}</>}</p>
             <h1 className="gold-text sheen mt-5 pb-2 font-display text-[2.6rem] font-semibold leading-[1.04] sm:text-6xl">{c.title}</h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed sm:text-xl" style={{ color: "var(--cover-ink)" }}>{c.lead}</p>
-            <div className="mt-6">
-              <Link href={start} data-track="couples: start" data-hero-cta className="btn romance-cta w-full sm:w-auto">{startLabel} →</Link>
-              <p className="mt-2 text-xs sm:text-sm" style={{ color: "var(--cover-muted)" }}>{firstFree ? c.ctaNote : c.ctaNoteNoOffer}</p>
+            {/* The sample first: the lowest step to take, and the one that sells. Recording comes as a quiet line here and as the big button at the end. */}
+            <div className="mt-7">
+              <Link href="/couples/sample" data-track="couples: sample couple report" className="btn romance-cta btn-beacon w-full !px-9 !py-4 !text-lg sm:w-auto">{c.sample} →</Link>
+              <p className="mt-3 text-xs sm:text-sm" style={{ color: "var(--cover-muted)" }}>{c.sampleNote}</p>
             </div>
             <p className="mt-6 max-w-xl text-sm leading-relaxed sm:text-base" style={{ color: "var(--cover-muted)" }}>{c.leadMore}</p>
-            <Link href="/couples/sample" data-track="couples: sample couple report" className="mt-5 inline-block text-sm font-semibold hover:underline" style={{ color: "var(--cover-gold)" }}>{c.sample} →</Link>
+            <Link href={start} data-track="couples: start" data-hero-cta className="mt-5 inline-block text-sm font-semibold hover:underline" style={{ color: "var(--cover-gold)" }}>{c.startQuiet} →</Link>
           </div>
 
           {report && (
@@ -177,7 +178,7 @@ export default async function CouplesPage() {
         {glows}
         <h2 className="gold-text font-display text-4xl font-semibold sm:text-5xl">{c.closingTitle}</h2>
         <p className="mx-auto mt-4 max-w-xl leading-relaxed" style={{ color: "var(--cover-muted)" }}>{c.closing}</p>
-        <Link href={start} data-track="couples: start (closing)" className="btn romance-cta mt-8">{startLabel} →</Link>
+        <Link href={start} data-track="couples: start (closing)" className="btn romance-cta mt-8 !px-9 !py-4 !text-lg">{startLabel} →</Link>
         <p className="mt-2 text-xs" style={{ color: "var(--cover-muted)" }}>{firstFree ? c.ctaNote : c.ctaNoteNoOffer}</p>
       </Reveal>
     </div>
