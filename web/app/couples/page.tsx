@@ -178,7 +178,7 @@ export default async function CouplesPage() {
         {glows}
         <h2 className="gold-text font-display text-4xl font-semibold sm:text-5xl">{c.closingTitle}</h2>
         <p className="mx-auto mt-4 max-w-xl leading-relaxed" style={{ color: "var(--cover-muted)" }}>{c.closing}</p>
-        <Link href={start} data-track="couples: start (closing)" className="btn romance-cta mt-8 !px-9 !py-4 !text-lg">{startLabel} →</Link>
+        <Link href={start} data-track="couples: start (closing)" className="btn romance-cta mt-8 w-full !px-12 !py-5 !text-xl sm:w-auto sm:!text-2xl">{startLabel} →</Link>
         <p className="mt-2 text-xs" style={{ color: "var(--cover-muted)" }}>{firstFree ? c.ctaNote : c.ctaNoteNoOffer}</p>
       </Reveal>
     </div>
