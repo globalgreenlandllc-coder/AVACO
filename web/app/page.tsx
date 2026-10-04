@@ -5,9 +5,10 @@ import { Contact } from "@/components/Contact";
 import { GiftForm } from "@/components/GiftForm";
 import { GiftRibbon } from "@/components/GiftRibbon";
 import { FreeReportBar } from "@/components/FreeReportBar";
-import { Reveal } from "@/components/Motion";
+import { CursorGlow, Reveal, ScrollProgress, Tilt } from "@/components/Motion";
 import { ScrollToHash } from "@/components/ScrollToHash";
 import { TypeDial } from "@/components/TypeDial";
+import { VoiceField } from "@/components/VoiceField";
 import { isAdminUser } from "@/lib/admin";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/billing";
 import { giftPrice, MAX_BEST, MAX_INDUSTRIES, MAX_MATCHES, MAX_REPORTS } from "@/lib/gifts";
@@ -30,7 +31,8 @@ import { SAMPLE_PSY } from "@/lib/sample";
  * The landing page: what a visitor sees before signing up. It sells one thing, "record 30 seconds, get your
  * report", and shows the real thing wherever it can: the sample profile's radar and bars are the same
  * components the report uses, and the price comes from the billing settings (so the page says "free for
- * now" while charging is off and the real price once it is on).
+ * now" while charging is off and the real price once it is on). The voices move behind the whole page (VoiceField),
+ * as on the couples page, here in the site's own cyan and violet.
  */
 export default async function Home() {
   const [{ locale, t }, { userId }, billing, origin, open] = await Promise.all([getDict(), auth(), getSettings().catch(() => DEFAULT_SETTINGS), baseUrl(), isOpenHost()]);
@@ -67,6 +69,10 @@ export default async function Home() {
   return (
     <div className="space-y-24 pt-2 sm:pt-6">
       <ScrollToHash />
+      {/* The page's fixed layers: the voices behind everything, the light under the pointer, the reading line. */}
+      <VoiceField />
+      <CursorGlow />
+      <ScrollProgress />
       {firstFree && !userId && <FreeReportBar text={h.barText} cta={h.barCta} close={h.barClose} href="/sign-up" />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJsonLd(origin, LEGAL.operator, LEGAL.support) }} />
       {/* Hero: the report's own cover, with the sample profile's voice signature. */}
@@ -114,7 +120,21 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* A gift, right under the hero: the builder itself, in a card with the report cover's own dark-gold header. */}
+      {/* The eight types and the four figures, running by under the hero. Each is said in full further down, so it is decoration here. */}
+      <div className="lab-strip bleed no-print" aria-hidden>
+        <div className="marquee">
+          <div className="marquee-track text-2xl sm:text-4xl">
+            {Array.from({ length: 4 }, (_, copy) => Object.entries(t.psytypes).map(([key, type], i) => <span key={`${copy}-${key}`} className="marquee-word" data-outline={i % 2 ? "" : undefined}>{type.name}</span>))}
+          </div>
+        </div>
+        <div className="marquee">
+          <div className="marquee-track hud text-muted" data-reverse>
+            {Array.from({ length: 8 }, (_, copy) => h.techPoints.map((point) => <span key={`${copy}-${point.title}`} className="pe-10 whitespace-nowrap">{point.figure} {point.title}</span>))}
+          </div>
+        </div>
+      </div>
+
+      {/* A gift, right under the hero: the builder itself, in a card with the report cover's own dark header. */}
       {!open && (
       <Reveal as="section" id="gift" className="card scroll-mt-24 overflow-hidden p-0">
         <div className="cover relative overflow-hidden rounded-none px-7 py-9 sm:px-12 sm:py-11">
@@ -143,11 +163,11 @@ export default async function Home() {
         <h2 className="mt-3 font-display text-4xl font-medium sm:text-5xl">{h.howTitle}</h2>
         <div className="mt-10 grid gap-5 sm:grid-cols-3">
           {h.steps.map((step, i) => (
-            <div key={step.title} className="card p-7">
+            <Tilt key={step.title} className="card p-7">
               <p className="font-display text-4xl text-accent-text">{String(i + 1).padStart(2, "0")}</p>
               <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-2">{step.text}</p>
-            </div>
+            </Tilt>
           ))}
         </div>
       </Reveal>
@@ -243,10 +263,10 @@ export default async function Home() {
         <p className="mt-3 max-w-2xl leading-relaxed text-ink-2">{h.typesLead}</p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Object.entries(t.psytypes).map(([key, type]) => (
-            <div key={key} className="card p-6">
+            <Tilt key={key} className="card p-6">
               <h3 className="font-display text-2xl font-medium text-accent-text">{type.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-2">{type.text}</p>
-            </div>
+            </Tilt>
           ))}
         </div>
         <Link href={start} data-track="types: find out mine" className="btn mt-8">{h.typesCta}</Link>

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Exo_2, JetBrains_Mono, Manrope } from "next/font/google";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { MatchReadyNotice } from "@/components/MatchReadyNotice";
@@ -32,9 +32,11 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-NJTJ3D4V";
 /** Meta's domain verification code (Business settings → Brand safety → Domains → avocousa.us, meta-tag method). Public by design. */
 const META_DOMAIN_VERIFICATION = process.env.META_DOMAIN_VERIFICATION || "9ykx8z67izwsg3csg44xbh3k7bprc8";
 
-// Both families ship Cyrillic, so English and Russian look the same.
+// All three families ship Cyrillic, so English and Russian look the same: the text, the headings, and the instrument's
+// own type for labels and readings (globals.css: .eyebrow, .hud).
 const body = Manrope({ subsets: ["latin", "cyrillic"], variable: "--font-body" });
-const display = Cormorant_Garamond({ subsets: ["latin", "cyrillic"], weight: ["500", "600"], variable: "--font-display" });
+const display = Exo_2({ subsets: ["latin", "cyrillic"], variable: "--font-display" });
+const hud = JetBrains_Mono({ subsets: ["latin", "cyrillic"], variable: "--font-hud" });
 
 export async function generateMetadata(): Promise<Metadata> {
   const [{ t }, origin] = await Promise.all([getDict(), baseUrl()]);
@@ -42,8 +44,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { metadataBase: new URL(origin), title: `${t.brand} · ${t.home.eyebrow}`, description: t.home.lead };
 }
 
-/** The browser's own chrome takes the page's colour: cream by day, the dark cream at night. */
-export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#faf5ea" }, { media: "(prefers-color-scheme: dark)", color: "#14100a" }] };
+/** The browser's own chrome takes the page's colour: the one dark screen, day and night. */
+export const viewport: Viewport = { themeColor: "#04050d", colorScheme: "dark" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [{ locale, t }, languages, open, visitor, partner] = await Promise.all([getDict(), availableLanguages(), isOpenHost(), visitorId(), isPartnerHost()]);
@@ -63,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Finished couple's reports the person hasn't opened yet: a notice on every page, and a count on "My reports".
   const ready = visitor ? await unseenReadyMatches(visitor).catch(() => []) : [];
   const page = (
-      <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable}`}>
+      <html lang={locale} dir={directionOf(locale)} className={`${body.variable} ${display.variable} ${hud.variable}`}>
         <head>
           {/* Meta checks for this tag in the server's HTML <head>, not in anything added by script. */}
           <meta name="facebook-domain-verification" content={META_DOMAIN_VERIFICATION} />
@@ -87,7 +89,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <footer className="no-print border-t border-line px-5 py-10 text-xs text-muted sm:px-8">
             <div className="mx-auto grid w-full max-w-5xl gap-8 sm:grid-cols-[1fr_auto_auto] sm:items-start">
               <div className="max-w-sm">
-                <p className="font-display text-xl font-semibold tracking-[0.14em] text-ink">{t.brand}</p>
+                <p className="brand font-display text-xl font-semibold tracking-[0.14em]">{t.brand}</p>
                 <p className="mt-2 leading-relaxed">{t.home.lead}</p>
                 <p className="mt-4">© {new Date().getFullYear()} {LEGAL.operator}. {t.footer}</p>
               </div>
