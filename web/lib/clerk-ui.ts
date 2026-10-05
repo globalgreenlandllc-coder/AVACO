@@ -24,17 +24,12 @@ export function clerkLocalization(locale: string, t: Dict): typeof enUS {
 }
 
 /**
- * How Clerk's cards look: the site's own dark surface, ink and cyan (app/globals.css), with light neutrals as Clerk asks
- * of a dark theme; the application logo above the card, links to the legal pages.
+ * How Clerk's cards look: AVOCO gold, the application logo above the card, links to the legal pages.
  * The Google button shows; it works once the production instance carries its own Google OAuth client
  * (Clerk dashboard → SSO connections → Google → custom credentials). Clerk's shared keys are development-only.
  */
 export const clerkAppearance = {
-  variables: {
-    colorPrimary: "#38e8ff", colorPrimaryForeground: "#021a22", colorBackground: "#0b0e1f", colorForeground: "#f2f4ff", colorMutedForeground: "#bcc3e2",
-    colorMuted: "#161c3a", colorNeutral: "#ffffff", colorInput: "#111631", colorInputForeground: "#f2f4ff", colorDanger: "#ff7a8c", colorSuccess: "#2fe38a",
-    colorShimmer: "rgba(255, 255, 255, 0.14)", colorModalBackdrop: "#000000", borderRadius: "12px",
-  },
+  variables: { colorPrimary: "#b4730f", borderRadius: "12px" },
   // Fields and buttons sized for a thumb, with 16px text in fields so iPhones don't zoom in on them.
   elements: {
     formFieldInput: { fontSize: "16px", minHeight: "44px" },

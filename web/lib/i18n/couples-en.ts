@@ -7,9 +7,7 @@ export const couplesEn = {
   metaDescription: "Discover your personality, emotions and strengths, and how you connect with your partner, from just 30 seconds of your voice. Not astrology, not a quiz.",
   eyebrow: "For couples · Voice personality",
   offer: "Limited offer · start free",
-  /** The title in two breaths, read as one sentence: the second is the one lit up. */
-  titleLead: "Find out what your voice reveals about",
-  titleGlow: "you & your partner",
+  title: "Find out what your voice reveals about you & your partner",
   lead: "Discover personality, emotions, strengths, and how you connect with others, from just 30 seconds of your voice.",
   /** Under the lead: how the two of you get there. */
   leadMore: "Record yours, then send your partner a private link: they record on their own phone, and you both see how you fit.",
@@ -22,19 +20,6 @@ export const couplesEn = {
   sample: "See a sample couple's report",
   sampleNote: "Two minutes to read · nothing to sign up for · exactly what you get",
   startQuiet: "Ready? Record your 30 seconds",
-  /** Three short readings under the hero's button. */
-  heroFacts: ["30 seconds of speech", "No questionnaire", "Results in about a minute"],
-  scroll: "Scroll",
-  /** The strip that runs under the hero: what is measured in a voice. The areas of the couple's report run under it. */
-  signals: ["Tempo", "Tone", "Pauses", "Energy", "Dynamics"],
-  /** Four figures under "Not astrology": 30 seconds, 0 words, the number of areas, 100 points. */
-  stats: {
-    seconds: "seconds of your everyday voice is all it takes",
-    words: "words analysed: only how you sound, never what you say",
-    areas: "areas of a life together, each one scored",
-    points: "points on the match score for the two of you",
-  },
-  secondsUnit: "s",
   /** Right under the cover: what AVOCO is not, and what it is. Each pair is said "{not} {struck}". */
   notItems: [["Not", "astrology."], ["Not", "numerology."], ["Not another", "personality quiz."]],
   notText: "AVOCO analyzes measurable patterns in your voice, its tempo, tone, pauses and energy, to create your personal profile. The same recording always gives the same result.",
@@ -43,7 +28,6 @@ export const couplesEn = {
   previewNote: "A sample couple. Yours is read from your two voices.",
   outOf: "/ 100",
   stepsEyebrow: "How it works",
-  step: "Step",
   stepsTitle: "Two voices, three steps",
   steps: [
     { title: "You record 30 seconds", text: "Talk about your day in your everyday voice. Your full personality report is ready in about a minute.", tag: "Free" },
@@ -53,9 +37,6 @@ export const couplesEn = {
   areasEyebrow: "Inside the couple's report",
   areasTitle: "Nine areas of a life together",
   areasLead: "Each area is scored from both voices, with what each of you brings to it and one thing to try. Family and parenting are added when you have children together.",
-  /** Under the scan of the sample couple's areas, and beside each area's sample score. */
-  scanNote: "The sample couple, Alex & Sam, across the nine areas. Yours is drawn from your two voices.",
-  sampleScore: "Sample",
   honestTitle: "Honest and private",
   honest: [
     "Your partner records themselves, on their own phone, and agrees first. Nobody is analysed without knowing.",

@@ -24,7 +24,7 @@ export async function Header({ locale, t, alerts = 0 }: { locale: Locale; t: Dic
   return (
     <HeaderShell>
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-5 py-4 sm:px-8 sm:py-5">
-        <Link href="/" className="brand font-display text-2xl font-semibold tracking-[0.14em] transition-opacity hover:opacity-80"><span className="brand-signal" aria-hidden><i /><i /><i /><i /></span>{t.brand}</Link>
+        <Link href="/" className="font-display text-2xl font-semibold tracking-[0.14em] transition-opacity hover:opacity-80">{t.brand}</Link>
         <nav className="flex items-center gap-1 text-sm sm:gap-2">
           {/* The partner host has no accounts: just the language menu. The open host has the original links, no sign-in. */}
           {partner ? lang : open ? <>
