@@ -3,7 +3,8 @@
  * Live traffic for Admin → Statistics: who is on the site right now, on a world map coloured by where each visitor came
  * from, visitors per minute over the last hour, and the page views as they happen. Asks /api/admin/live every two
  * seconds while the tab is visible, and at once when the tab comes back into view. A map span longer than an hour (up
- * to a month) is asked for on its own and less often, so the live numbers keep their pace.
+ * to a year) is asked for on its own and less often, so the live numbers keep their pace; it also says how many of its
+ * visitors were new.
  */
 import { useEffect, useRef, useState } from "react";
 import { Bars } from "./AdminCharts";
@@ -12,10 +13,11 @@ import { pageName, PLATFORM_NAMES, platformColor, type Live } from "@/lib/visits
 
 const flag = (cc: string | null) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "🌐");
 const ago = (ms: number) => (ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : ms < 48 * 3_600_000 ? `${Math.round(ms / 3_600_000)}h` : `${Math.round(ms / 86_400_000)}d`);
-/** The map's spans in minutes, with their labels: five minutes up to a month. */
-const SPANS: Array<[number, string]> = [[5, "Now · 5 min"], [30, "30 min"], [60, "1 hour"], [120, "2 hours"], [240, "4 hours"], [360, "6 hours"], [1440, "1 day"], [4320, "3 days"], [10080, "7 days"], [43200, "1 month"]];
+/** The map's spans in minutes, with their labels: five minutes up to a year. */
+const SPANS: Array<[number, string]> = [[5, "Now · 5 min"], [30, "30 min"], [60, "1 hour"], [120, "2 hours"], [240, "4 hours"], [360, "6 hours"], [1440, "1 day"], [4320, "3 days"], [10080, "7 days"], [43200, "1 month"], [129600, "3 months"], [525600, "1 year"]];
 /** How often a longer span is asked for again: the farther back, the less often. */
-const refreshFor = (span: number) => (span <= 360 ? 10_000 : span <= 1440 ? 20_000 : 60_000);
+const refreshFor = (span: number) => (span <= 360 ? 10_000 : span <= 1440 ? 20_000 : span <= 43200 ? 60_000 : 300_000);
+const every = (ms: number) => (ms >= 60_000 ? `${ms / 60_000} min` : `${ms / 1000} s`);
 const name = (source: string) => PLATFORM_NAMES[source] ?? source;
 
 /** `replayPerson`: PostHog's person page address, when replays are set up (lib/posthog.ts); a pin's card then links to that visitor's recordings. */
@@ -23,7 +25,7 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
   const [data, setData] = useState<Live | null>(null);
   const [failed, setFailed] = useState(false);
   const [clock, setClock] = useState(() => Date.now());
-  /** Who the map shows: the last 5 minutes up to a month. */
+  /** Who the map shows: the last 5 minutes up to a year. */
   const [span, setSpan] = useState(30);
   /** The map's visitors for a span longer than an hour, asked for on their own; null while loading. */
   const [wide, setWide] = useState<Live | null>(null);
@@ -95,7 +97,9 @@ export function LiveTraffic({ replayPerson = null }: { replayPerson?: string | n
       <span className="text-xs text-muted">
         {span > 60 && !wide ? "Loading…" : `${onMap.length} ${onMap.length === 1 ? "visitor" : "visitors"} on the map`}
         {capped ? ` · the latest ${onMap.length} of ${capped}` : ""}
-        {span > 60 && wide ? ` · updated every ${refreshFor(span) / 1000} s` : ""}
+        {span > 60 && wide?.newVisitors !== undefined && <> · <b className="tabular-nums text-ink">{wide.newVisitors} new</b>, on the site for the first time</>}
+        {span > 60 && wide?.since && wide.since > clock - span * 60_000 ? ` · tracking since ${new Date(wide.since).toISOString().slice(0, 10)}` : ""}
+        {span > 60 && wide ? ` · updated every ${every(refreshFor(span))}` : ""}
       </span>
     </div>
   );

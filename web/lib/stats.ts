@@ -4,7 +4,8 @@
  */
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
-import { and, countDistinct, desc, eq, gte, isNotNull, notInArray, sql } from "drizzle-orm";
+import { and, countDistinct, desc, eq, gt, gte, isNotNull, lte, notExists, notInArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { isAdminEmail } from "./admin";
 import { creditLedger, db, industryAccess, matches, reportAccess, selfRecordings, visitExclusions, visits } from "./db";
 import { userLabels } from "./page";
@@ -105,4 +106,20 @@ export async function statistics(now = new Date()): Promise<Statistics> {
     users, funnel,
     insights: insightsFor(v, { signups: users.month, prevSignups: users.prevMonth, recorded: recordedUsers.size, free: [...freeUsers].filter((u) => clerk.ids.has(u)).length, freeThenPaid: [...freeUsers].filter((u) => buyerIds.has(u)).length, languageName: (code) => names.of(code) ?? code }),
   };
+}
+
+/**
+ * The live map's longer spans (up to a year), counted in the database, since a long span holds more page views than
+ * the map's rows reach: the visitors seen after `start`, and the new ones among them, whose browser had never been on
+ * the site before it. With when tracking began, as a span reaching further back holds only what was tracked.
+ */
+export async function visitorsSince(start: Date): Promise<{ visitors: number; fresh: number; since: Date | null }> {
+  const d = db();
+  const earlier = alias(visits, "earlier");
+  const [[all], [fresh], [first]] = await Promise.all([
+    d.select({ n: countDistinct(visits.visitor) }).from(visits).where(gt(visits.at, start)),
+    d.select({ n: countDistinct(visits.visitor) }).from(visits).where(and(gt(visits.at, start), notExists(d.select({ one: sql`1` }).from(earlier).where(and(eq(earlier.visitor, visits.visitor), lte(earlier.at, start)))))),
+    d.select({ at: sql<Date | null>`min(${visits.at})` }).from(visits),
+  ]);
+  return { visitors: Number(all?.n ?? 0), fresh: Number(fresh?.n ?? 0), since: first?.at ? new Date(first.at) : null };
 }

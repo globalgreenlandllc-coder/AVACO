@@ -526,6 +526,9 @@ export interface Live {
   /** The map's span in minutes, and how many visitors it held before the cap. */
   spanMin: number;
   mapTotal: number;
+  /** Filled in by the API for a span longer than an hour: the span's visitors who had never been on the site before it, and when tracking began. */
+  newVisitors?: number;
+  since?: number | null;
   /** The latest page views, newest first; `key` is the visitor's, so a row can point at them on the map. */
   feed: Array<{ key: string; at: number; path: string; source: string; paid: boolean; city: string | null; country: string | null; device: Device; landing: boolean; signedIn: boolean }>;
 }

@@ -1,6 +1,6 @@
 /**
  * GET — the live traffic view (components/LiveTraffic.tsx): the last hour of visits, summarised, each visitor with their
- * story. `?span=` (minutes, 60 to 43200 = 30 days) widens the visitors for the map; the live numbers stay on the last hour.
+ * story. `?span=` (minutes, 60 to 525600 = a year) widens the visitors for the map; the live numbers stay on the last hour.
  * Admins only.
  */
 import { auth } from "@clerk/nextjs/server";
@@ -8,12 +8,13 @@ import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { isAdminUser } from "@/lib/admin";
 import { creditLedger, db, reportAccess, visits } from "@/lib/db";
 import { userLabels } from "@/lib/page";
+import { visitorsSince } from "@/lib/stats";
 import { liveSummary, type LiveRow } from "@/lib/visits-math";
 
 export const dynamic = "force-dynamic";
 
-/** The spans the map offers, in minutes: an hour up to a month. */
-const SPANS = new Set([60, 120, 240, 360, 1440, 4320, 10080, 43200]);
+/** The spans the map offers, in minutes: an hour up to a year (3 months = 90 days, a year = 365). */
+const SPANS = new Set([60, 120, 240, 360, 1440, 4320, 10080, 43200, 129600, 525600]);
 /** The most visitors the map draws; the newest are kept and the total is said. */
 const MAX_ON_MAP = 3000;
 
@@ -24,13 +25,16 @@ export async function GET(req: Request) {
   const spanMin = SPANS.has(asked) ? asked : 60;
   const since = Date.now() - Math.max(61, spanMin + 1) * 60_000;
   const d = db();
+  const limit = spanMin > 60 ? 100_000 : 5000;
+  const spanStart = Date.now() - spanMin * 60_000;
+  // A span longer than an hour: its visitors counted in the database, and the new ones among them.
+  const counted = spanMin > 60 ? visitorsSince(new Date(spanStart)) : null;
   const rows = await d.select({
     at: visits.at, path: visits.path, visitor: visits.visitor, session: visits.session, landing: visits.landing, source: visits.source, device: visits.device,
     userId: visits.userId, medium: visits.medium, click: visits.click, campaign: visits.campaign, content: visits.content, referrer: visits.referrer, locale: visits.locale,
     country: visits.country, city: visits.city, region: visits.region, lat: visits.lat, lon: visits.lon,
-  }).from(visits).where(gte(visits.at, new Date(since))).orderBy(desc(visits.at)).limit(spanMin > 60 ? 100_000 : 5000);
+  }).from(visits).where(gte(visits.at, new Date(since))).orderBy(desc(visits.at)).limit(limit);
   // The visitors the map will show: the most recent ones of the span (rows come newest first), as liveSummary picks them.
-  const spanStart = Date.now() - spanMin * 60_000;
   const ids: string[] = [];
   const seen = new Set<string>();
   for (const r of rows) if (r.at.getTime() > spanStart && !seen.has(r.visitor)) { seen.add(r.visitor); if (ids.length < MAX_ON_MAP) ids.push(r.visitor); }
@@ -40,6 +44,13 @@ export async function GET(req: Request) {
       .from(visits).where(and(inArray(visits.visitor, ids), gte(visits.at, new Date(Date.now() - 30 * 86_400_000)))).groupBy(visits.visitor)
     : [];
   const live = liveSummary(rows as LiveRow[], new Date(), new Map(history.map((h) => [h.visitor, { first: new Date(h.first), sessions: Number(h.sessions), userId: h.userId }])), { spanMin, maxVisitors: MAX_ON_MAP });
+  if (counted) {
+    const c = await counted;
+    // Rows cut short (a long span holds more page views than the limit): then the span's total is the database's count.
+    if (rows.length >= limit) live.mapTotal = Math.max(live.mapTotal, c.visitors);
+    live.newVisitors = c.fresh;
+    live.since = c.since?.getTime() ?? null;
+  }
   // Green pins: a purchase made within the span (a report, a pack, an add-on). Older buyers stay blue, marked as customers.
   const accounts = [...new Set(live.visitors.map((v) => v.userId).filter((u): u is string => Boolean(u)))];
   const purchases = accounts.length

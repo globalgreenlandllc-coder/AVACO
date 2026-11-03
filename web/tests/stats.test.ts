@@ -14,7 +14,7 @@ vi.mock("@/lib/page", () => ({ userLabels: async (ids: string[]) => new Map(ids.
 
 import * as schema from "@/lib/db/schema";
 import { setDbForTests, type Db } from "@/lib/db";
-import { statistics } from "@/lib/stats";
+import { statistics, visitorsSince } from "@/lib/stats";
 import { excludeVisitor, isExcludedVisitor } from "@/lib/visit-exclusions";
 
 const DAY = 86_400_000, H = 3_600_000;
@@ -75,5 +75,18 @@ describe("statistics", () => {
     expect((await statistics()).visits.month.visitors).toBe(2);
     expect(await db.select().from(schema.visits).where(eq(schema.visits.visitor, "boss-phone"))).toHaveLength(0);
     await excludeVisitor("boss-phone", "user_boss"); // noting it twice is fine
+  });
+
+  it("counts a long span's visitors in the database, and the new ones among them", async () => {
+    // Already here: Anna and Ben this week, "old" 45 days ago. Then a newcomer, a regular first seen 200 days ago, and
+    // a browser last seen 400 days ago.
+    const now = Date.now();
+    const v = (visitor: string, days: number) => ({ id: crypto.randomUUID(), at: new Date(now - days * DAY), site: "main" as const, path: "/", visitor, session: `${visitor}-${days}`, landing: true, source: "direct", device: "phone" as const });
+    await db.insert(schema.visits).values([v("newcomer", 10), v("regular", 200), v("regular", 5), v("lapsed", 400)]);
+    const quarter = await visitorsSince(new Date(now - 90 * DAY));
+    expect(quarter).toMatchObject({ visitors: 5, fresh: 4 }); // the regular was here before the 3 months
+    expect(quarter.since?.getTime()).toBeCloseTo(now - 400 * DAY, -3);
+    expect(await visitorsSince(new Date(now - 365 * DAY))).toMatchObject({ visitors: 5, fresh: 5 }); // the lapsed one is older than a year
+    expect(await visitorsSince(new Date(now - 7 * DAY))).toMatchObject({ visitors: 3, fresh: 2 }); // Anna, Ben; the regular is back, not new
   });
 });
